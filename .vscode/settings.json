@@ -1,0 +1,9 @@
+{
+    "files.exclude": {
+        "**/*.vcxproj*": true,
+        "**/*.cmake": true,
+        "**/ALL_BUILD/":true,
+        "**/ZERO_CHECK/":true,
+        "**/*.dir":true,
+    }
+}
