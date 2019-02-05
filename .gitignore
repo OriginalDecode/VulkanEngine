@@ -34,3 +34,10 @@
 **/build/*
 **/bin/*
 **/lib/*
+
+*.vcxproj
+*.suo
+*.sln
+*.db
+*.ipch
+**/build/**
