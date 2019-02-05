@@ -7,11 +7,12 @@
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 bool gameRunning = true; //we'll need this in the WindowProc
 
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int)
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 {
     Window window{ { 1920, 1080, instance, WindowProc } };
 
-    Graphics::GraphicsEngine* graphics_engine = Graphics::GraphicsEngine::Create();
+	Graphics::GraphicsEngine::Create();
+    Graphics::GraphicsEngine* graphics_engine = Graphics::GraphicsEngine::Get();
 	graphics_engine->Init(window);
     
     MSG msg;
@@ -33,8 +34,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int)
 
     } while ( gameRunning );
  
-    
-
+    Graphics::GraphicsEngine::Destroy();
  
     return 0;
 }

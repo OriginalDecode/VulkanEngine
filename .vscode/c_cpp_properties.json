@@ -3,9 +3,7 @@
         {
             "name": "Debug|x64",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/graphics/*",
-                "${workspaceFolder}/commonlib/*"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_DEBUG"

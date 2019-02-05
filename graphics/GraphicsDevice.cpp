@@ -6,6 +6,7 @@
 #include <cassert>
 
 #pragma comment( lib, "dxguid.lib" ) 
+#pragma comment( lib, "d3d11.lib" ) 
 
 ID3D11Device* device = nullptr;
 IDXGISwapChain* swapchain = nullptr;

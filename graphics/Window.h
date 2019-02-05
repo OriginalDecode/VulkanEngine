@@ -3,7 +3,7 @@
 #ifdef LINUX
 #include <X11/Xlib.h>
 #endif
-#include <commonlib/Types.h>
+#include "Core/Types.h"
 
 #ifdef _WIN32
 #ifndef _WINDEF_
@@ -17,14 +17,8 @@ typedef HWND HWindow;
 typedef Window HWindow; //X11 Window
 #endif
 
-namespace Graphics
-{
-	class GraphicsEngine;
-}; //namespace Graphics
-
 class Window
 {
-	friend Graphics::GraphicsEngine;
 public:
 	struct Size
 	{
@@ -68,8 +62,9 @@ public:
 
 	void SetText(const char* window_text); 
 
-private:
+	
 	HWindow GetHandle() const { return m_WindowHandle; }
+private:
 	HWindow m_WindowHandle;
 
 	bool m_WindowIsActive = false;

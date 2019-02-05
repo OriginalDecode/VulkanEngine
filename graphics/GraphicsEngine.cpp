@@ -1,11 +1,9 @@
 #include "GraphicsEngine.h"
+#include "Window.h"
 
 #include <cassert>
 #include <d3d11.h>
-
-#include "Window.h"
-
-
+#include <Windows.h>
 
 constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
@@ -56,23 +54,23 @@ namespace Graphics
 		switch (hr)
 		{
 			case DXGI_ERROR_DEVICE_HUNG:
-				OutputDebugString("device hung\n");
+				OutputDebugStringA("device hung\n");
 				break;
 
 			case DXGI_ERROR_DEVICE_REMOVED:
-				OutputDebugString("removed\n");
+				OutputDebugStringA("removed\n");
 				break;
 
 			case DXGI_ERROR_DEVICE_RESET:
-				OutputDebugString("reset\n");
+				OutputDebugStringA("reset\n");
 				break;
 
 			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
-				OutputDebugString("internal_error\n");
+				OutputDebugStringA("internal_error\n");
 				break;
 
 			case DXGI_ERROR_INVALID_CALL:
-				OutputDebugString("invalid_call\n");
+				OutputDebugStringA("invalid_call\n");
 				break;
 		};
 

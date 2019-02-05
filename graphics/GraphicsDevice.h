@@ -1,5 +1,5 @@
 #pragma once
-#include "CommonLib/Types.hpp"
+#include <Core/Types.h>
 #include "Utilities.h"
 
 struct ID3D11RenderTargetView;

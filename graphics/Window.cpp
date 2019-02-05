@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "Core/utilities/utilities.h"
+
 
 BOOL CALLBACK MonitorFound(HMONITOR /*hMonitor*/,
 				  HDC /*hdcMonitor*/,
@@ -33,7 +35,7 @@ Window::Window(const CreateInfo& info)
 	wc.hInstance = info.m_InstanceHandle;
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
-	wc.lpszClassName = "WindowsClass";
+	wc.lpszClassName = L"WindowsClass";
 	RegisterClassEx(&wc);
 
 	const int count_monitors = GetSystemMetrics(SM_CMONITORS);
@@ -52,7 +54,7 @@ Window::Window(const CreateInfo& info)
 
 
 	m_WindowHandle = CreateWindow(
-		"WindowsClass"
+		L"WindowsClass"
 		, nullptr
 		, WS_OVERLAPPEDWINDOW   //WS_POPUP, Borderless windowed
 		, window_x 
