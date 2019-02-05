@@ -8,7 +8,7 @@
             "type": "shell",
             "command": "msbuild",
             "args": [
-                "build/JadeEngine.sln",
+                "build/Engine.sln",
                 "/property:GenerateFullPaths=true",
                 "/t:build"
             ],
