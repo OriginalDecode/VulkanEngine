@@ -1,9 +1,11 @@
 {
     "configurations": [
         {
-            "name": "AriEngine",
+            "name": "Debug|x64",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/graphics/*",
+                "${workspaceFolder}/commonlib/*"
             ],
             "defines": [
                 "_DEBUG"

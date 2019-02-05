@@ -11,9 +11,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int)
 {
     Window window{ { 1920, 1080, instance, WindowProc } };
 
-    Graphics::GraphicsEngine graphics_engine;
-	graphics_engine.CreateDeviceAndSwapchain(window);
-	
+    Graphics::GraphicsEngine* graphics_engine = Graphics::GraphicsEngine::Create();
+	graphics_engine->Init(window);
+    
     MSG msg;
 	do
 	{
@@ -29,7 +29,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR args, int)
 			break;
 		}
 
-        graphics_engine.Present();
+        graphics_engine->Present();
 
     } while ( gameRunning );
  
