@@ -41,3 +41,5 @@
 *.db
 *.ipch
 **/build/**
+
+Makefile
