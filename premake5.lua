@@ -1,3 +1,4 @@
+--beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
 workspace "Engine" --this is the solution name in a vs project if no filename specified
     --filename "whiteroom"
     configurations { "Debug" , "Release" }
@@ -9,70 +10,46 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     warnings "Extra"
     location "build"
 
+    objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
 
-    filter "StaticLib"
-        targetdir "lib/%{cfg.buildcfg}"
-    
+    filter "kind:StaticLib"
+        targetdir "%{wks.location}/lib/%{cfg.buildcfg}"
+
+    filter "kind:WindowedApp"
+        targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
+
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On"
+
+    filter "configurations:Release"
+        defines {"NDEBUG"}
+        optimize "On"
 
     
     project "Executable" --project name
-    kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-    language "C++" --language
-    links { "Graphics", "Core" } --libraries to link
-    location ("./executable")
-    targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
-    objdir "%{wks.location}/obj/%{cfg.buildcfg}"
+        
+        kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
+        language "C++" --language
+        location ("./executable")
+        
+        dependson { "Core", "Graphics" }
+        links { "Graphics", "Core" } --libraries to link
+        
+        files { "executable/*.cpp" }
 
-    dependson { "Core", "Graphics" }
+        filter "platforms:Windows"
+            defines { "_WIN32" }
 
-    files { "executable/*.cpp" }
+    project "Graphics"
+        kind "StaticLib"
+        language "C++"
+        location ("./graphics")    
+        files { "graphics/*.cpp", "graphics/*.h" }
 
-    filter "platforms:Windows"
-        defines { "_WIN32" }
+    project "Core"
+        kind "StaticLib"
+        language "C++"
+        location ("./core")
 
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines {"NDEBUG"}
-        optimize "On"
-
-
-
-project "Graphics"
-    kind "StaticLib"
-    language "C++"
-    location ("./graphics")    
-    files { "graphics/*.cpp", "graphics/*.h" }
-
-    targetdir "%{wks.location}/lib/%{cfg.buildcfg}"
-    objdir "%{wks.location}/obj/%{cfg.buildcfg}"
-    
-    
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines {"NDEBUG"}
-        optimize "On"
-
-
-project "Core"
-    kind "StaticLib"
-    language "C++"
-    location ("./core")
-
-    files { "core/**.cpp", "core/**.h" }
-
-    targetdir "%{wks.location}/lib/%{cfg.buildcfg}"
-    objdir "%{wks.location}/obj/%{cfg.buildcfg}"
-
-    filter "configurations:Debug"
-        defines { "DEBUG" }
-        symbols "On"
-
-    filter "configurations:Release"
-        defines {"NDEBUG"}
-        optimize "On"
+        files { "core/**.cpp", "core/**.h" }

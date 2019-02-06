@@ -9,8 +9,12 @@ constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
-	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
+	GraphicsDevice& GetDevice()
+	{
+		return GraphicsEngine::GetDevice();
+	}
 
+	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
 	GraphicsEngine::~GraphicsEngine()
 	{
 		m_DefaultRenderTarget->Release();
@@ -51,6 +55,7 @@ namespace Graphics
 	void GraphicsEngine::Present()
 	{
 		HRESULT hr = Graphics::Present(1, 0);
+
 		switch (hr)
 		{
 			case DXGI_ERROR_DEVICE_HUNG:

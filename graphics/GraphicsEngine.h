@@ -13,6 +13,8 @@ namespace Graphics
 {
 	void Release(ID3D11Buffer* buffer);
 
+	GraphicsDevice& GetDevice();
+
 	class GraphicsEngine
 	{
 	public:
@@ -25,9 +27,6 @@ namespace Graphics
 		void Present();
 
 		static GraphicsDevice& GetDevice();
-
-
-
 	private:
 		static GraphicsEngine* s_Instance;
 		GraphicsEngine() = default;
