@@ -1,8 +1,18 @@
+
+local fnc = require "test"
+-- require "lua"
+
 --beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
 workspace "Engine" --this is the solution name in a vs project if no filename specified
-    --filename "whiteroom"
-    configurations { "Debug" , "Release" }
-    platforms { "Windows" }
+
+    fnc.setWorkspace("Engine")
+    fnc.addConfig("Debug")
+    fnc.addConfig("Release")
+    fnc.setPlatform("Windows")
+
+--filename "whiteroom"
+    -- configurations { "Debug" , "Release" }
+    -- platforms { "Windows" }
     architecture "x64"
     includedirs { ".\\" }
     libdirs { "" }
@@ -14,6 +24,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
 
     filter "kind:StaticLib"
         targetdir "%{wks.location}/lib/%{cfg.buildcfg}"
+
 
     filter "kind:WindowedApp"
         targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
