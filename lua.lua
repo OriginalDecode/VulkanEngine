@@ -10,7 +10,7 @@ newaction {
 	description = "Export project information as Lua tables",
 
 	onStart = function()
-		print("Starting Lua generation")
+		print(ansicolors.red .. "Starting Lua generation")
 	end,
 
 	onWorkspace = function(wks)

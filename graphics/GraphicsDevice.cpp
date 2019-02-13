@@ -5,12 +5,14 @@
 #include <d3d11.h>
 #include <cassert>
 
+#pragma comment( lib, "d3d11.lib" )
 #pragma comment( lib, "dxguid.lib" ) 
-#pragma comment( lib, "d3d11.lib" ) 
+#pragma comment( lib, "D3DCompiler.lib" )
+#pragma comment( lib, "dxgi.lib" )
+//d3d11.lib
 
 ID3D11Device* device = nullptr;
 IDXGISwapChain* swapchain = nullptr;
-
 
 namespace Graphics
 {
@@ -36,7 +38,6 @@ namespace Graphics
 	{
 		swapchain->Release();
 		device->Release();
-
 	}
 
 	void GraphicsDevice::CreateDevice(const Window& window, ID3D11RenderTargetView** defaultRenderTarget, ID3D11DepthStencilView** defaultDepthStencil)
@@ -165,13 +166,60 @@ namespace Graphics
 		return buffer;
 	}
 
-	ID3D11InputLayout* GraphicsDevice::CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* desc, uint32 elementCount)
+	ID3D11InputLayout* GraphicsDevice::CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* desc, uint32 elementCount, ID3D10Blob* shaderBlob)
 	{
 		assert(!"Missing vertex shader");
 		ID3D11InputLayout* layout = nullptr;
-		HRESULT hr = device->CreateInputLayout(desc, elementCount, nullptr, 0, &layout);
+		HRESULT hr = device->CreateInputLayout(desc, elementCount, shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), &layout);
 		assert(!FAILED(hr) && "Failed to create input layout");
 		return layout;
+	}
+
+	void* GraphicsDevice::CreateShader(ID3D10Blob* blobData, ShaderType shaderType)
+	{
+		
+		switch (shaderType)
+		{
+			case EShaderType_VERTEX: 
+			{	
+				ID3D11VertexShader* shader = nullptr;
+				device->CreateVertexShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+			case EShaderType_FRAGMENT:
+			{
+				ID3D11PixelShader* shader = nullptr;
+				device->CreatePixelShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+
+			case EShaderType_GEOMETRY:
+			{
+				ID3D11GeometryShader* shader = nullptr;
+				device->CreateGeometryShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+			case EShaderType_HULL:
+			{
+				ID3D11HullShader* shader = nullptr;
+				device->CreateHullShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+			case EShaderType_DOMAIN:
+			{
+				ID3D11DomainShader* shader = nullptr;
+				device->CreateDomainShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+			case EShaderType_COMPUTE:
+			{
+				ID3D11ComputeShader* shader = nullptr;
+				device->CreateComputeShader(blobData->GetBufferPointer(), blobData->GetBufferSize(), nullptr, &shader);
+				return shader;
+			} break;
+		}
+
+		return nullptr;
 	}
 
 	void GraphicsDevice::SetDebugName(void* pResource, const char* objectName)

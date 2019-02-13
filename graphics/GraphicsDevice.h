@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/Types.h>
+#include "Core/Types.h"
 #include "Utilities.h"
 
 struct ID3D11RenderTargetView;
@@ -49,7 +49,9 @@ namespace Graphics
 		void CreateDevice(const Window& window, ID3D11RenderTargetView** defaultRenderTarget, ID3D11DepthStencilView** defaultDepthStencil);
 
 		ID3D11Buffer* CreateBuffer(const BufferDesc& buffer_desc);
-		ID3D11InputLayout* CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* desc, uint32 elementCount);
+		ID3D11InputLayout* CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* desc, uint32 elementCount, ID3D10Blob* shaderBlob);
+
+		void* CreateShader(ID3D10Blob* blobData, ShaderType shaderType );
 
 
 		void SetDebugName(void* pResource, const char* objectName);

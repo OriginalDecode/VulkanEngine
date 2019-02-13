@@ -39,7 +39,7 @@ namespace Graphics
 		s_Instance = nullptr;
 	}
 
-	Graphics::GraphicsEngine* GraphicsEngine::Get()
+	GraphicsEngine* GraphicsEngine::Get()
 	{
 		return s_Instance;
 	}
