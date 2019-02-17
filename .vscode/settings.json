@@ -5,5 +5,17 @@
         "**/ALL_BUILD/":true,
         "**/ZERO_CHECK/":true,
         "**/*.dir":true,
-    }
+    },
+    "files.associations": {
+        "*.ps": "hlsl",
+        "*.vs": "hlsl",
+        "*.gs": "hlsl",
+        "*.ds": "hlsl",
+        "*.hs": "hlsl",
+        "*.cs": "hlsl",
+        "*.level": "json",
+        "*.entity": "json",
+        "system_error": "cpp"
+    },
+    "python.linting.enabled": true
 }

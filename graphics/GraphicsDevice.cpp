@@ -1,9 +1,11 @@
 #include "GraphicsDevice.h"
 
 #include "Window.h"
-
-#include <d3d11.h>
 #include <cassert>
+
+#ifdef _WIN32
+#include <d3d11.h>
+
 
 #pragma comment( lib, "d3d11.lib" )
 #pragma comment( lib, "dxguid.lib" ) 
@@ -13,10 +15,11 @@
 
 ID3D11Device* device = nullptr;
 IDXGISwapChain* swapchain = nullptr;
+#endif
 
 namespace Graphics
 {
-
+#ifdef _WIN32
 	ID3D11DeviceContext* GetContext()
 	{
 		ID3D11DeviceContext* context = nullptr;
@@ -28,17 +31,22 @@ namespace Graphics
 	{
 		return swapchain->Present(syncInterval, flags);
 	}
+#endif
 
 	GraphicsDevice::GraphicsDevice()
 	{
 	}
 
-
 	GraphicsDevice::~GraphicsDevice()
 	{
+#ifdef _WIN32
+
 		swapchain->Release();
 		device->Release();
+#endif
 	}
+
+#ifdef _WIN32
 
 	void GraphicsDevice::CreateDevice(const Window& window, ID3D11RenderTargetView** defaultRenderTarget, ID3D11DepthStencilView** defaultDepthStencil)
 	{
@@ -227,5 +235,7 @@ namespace Graphics
 		ID3D11DeviceChild* resource = static_cast<ID3D11DeviceChild*>(pResource);
 		resource->SetPrivateData(WKPDID_D3DDebugObjectName, static_cast<UINT>(strlen(objectName)), objectName);
 	}
+#endif
 
 }; //namespace Graphics
+

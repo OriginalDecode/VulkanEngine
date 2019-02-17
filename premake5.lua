@@ -9,9 +9,11 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
     -- fnc.setPlatform("Windows")
-    platforms { "Windows" }
+    platforms { "Windows", "Linux" }
     configurations { "Debug" , "Release" }
-
+    -- language "C++"
+    cppdialect "C++14"
+    -- flags { "C++14" }
 --filename "whiteroom"
     -- platforms { "Windows" }
     architecture "x64"
@@ -43,7 +45,6 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     project "Executable" --project name
         targetname("engine")
         kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-        language "C++" --language
         location ("./executable")
         
         dependson { "Core", "Graphics" }
@@ -51,21 +52,26 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
         
         files { "executable/*.cpp" }
 
-        filter "platforms:Windows"
-            defines { "_WIN32" }
+        
 
     project "Graphics"
         kind "StaticLib"
-        language "C++"
         location ("./graphics")    
         files { "graphics/*.cpp", "graphics/*.h" }
+        dependson { "Core" }
         -- symbolspath does not seem to work as inteded
         -- symbolspath "%{wks.location}/bin/%{cfg.buildcfg}/%{prj.name}.pdb"
         
 
     project "Core"
         kind "StaticLib"
-        language "C++"
         location ("./core")
 
         files { "core/**.cpp", "core/**.h" }
+
+    workspace "*"
+        filter "platforms:Windows"
+            defines { "_WIN32" }
+            
+        filter "platforms:Linux"
+            defines { "_GCC_" }

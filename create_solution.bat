@@ -1,8 +1,30 @@
 @echo off
 
-rmdir /S /Q build
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=.. -DBUID_SHARED_LIBS=ON -DCMAKE_GENERATOR_PLATFORM=x64 -G "Visual Studio 14 2015"
 
-cd ..
+set CONFIG=%1
+set TYPE=%2
+set BUILD=%3
+
+
+IF "%CONFIG%"=="configure" (
+    IF NOT DEFINED TYPE (
+        echo No configuarion set.
+    ) else (
+        premake5 %TYPE%
+    )
+) else (
+    IF NOT DEFINED BUILD (
+        echo No build parameters
+    ) else (
+        IF EXIST "build" (
+            cd "build/Engine.sln"
+
+        ) else (
+            echo No solution found. Failed to build
+        )
+        REM "/property:GenerateFullPaths=true",
+                REM "/t:build"
+    )
+    
+    
+)

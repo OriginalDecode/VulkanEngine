@@ -2,7 +2,9 @@
 #include <Core/Types.h>
 #include <Core/Defines.h>
 
+#ifdef _WIN32
 #include <d3d11.h>
+#endif
 #define ARRSIZE(x) sizeof(x) / sizeof(x[0])
 
 namespace Graphics
@@ -89,7 +91,7 @@ namespace Graphics
 		sRGBA8 = 1 << 21,
 	};
 
-
+#ifdef _WIN32
 	D3D11_USAGE GetUsage(int32 usage);
 
 	uint32 GetBindFlag(int32 binding);
@@ -97,5 +99,5 @@ namespace Graphics
 	uint32 GetCPUAccessFlag(int32 flags);
 
 	D3D11_PRIMITIVE_TOPOLOGY GetTopology(ETopology topology);
-
+#endif
 }; //namespace Graphics

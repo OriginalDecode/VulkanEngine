@@ -2,7 +2,7 @@
 
 namespace Graphics
 {
-
+#ifdef _WIN32
 	D3D11_USAGE GetUsage(int32 usage)
 	{
 		if (usage == DEFAULT_USAGE)
@@ -71,5 +71,6 @@ namespace Graphics
 
 		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	}
+#endif
 
 }; //namespace Graphics

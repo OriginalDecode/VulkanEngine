@@ -11,6 +11,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 {
     Window window{ { 1920, 1080, instance, WindowProc } };
 
+	window.SetText("Engine2");
+
 	Graphics::GraphicsEngine::Create();
     Graphics::GraphicsEngine* graphics_engine = Graphics::GraphicsEngine::Get();
 	graphics_engine->Init(window);

@@ -14,7 +14,7 @@ typedef HWND__* HWND;
 #endif
 typedef HWND HWindow;
 #else
-typedef Window HWindow; //X11 Window
+typedef void* HWindow; //X11 Window
 #endif
 
 class Window

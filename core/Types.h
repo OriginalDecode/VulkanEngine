@@ -8,7 +8,7 @@ typedef unsigned char uint8;
 typedef unsigned char int8;
 #elif(_GCC_)
 typedef unsigned char uint8;
-typedef unsigned char int8;
+typedef char int8;
 #endif
 
 typedef char int8;

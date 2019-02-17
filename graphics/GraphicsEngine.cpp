@@ -2,8 +2,11 @@
 #include "Window.h"
 
 #include <cassert>
+
+#ifdef _WIN32
 #include <d3d11.h>
 #include <Windows.h>
+#endif
 
 constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
