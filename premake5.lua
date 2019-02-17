@@ -18,7 +18,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- platforms { "Windows" }
     architecture "x64"
     includedirs { ".\\" }
-    libdirs { "" }
+    -- libdirs { "" }
     flags { "FatalCompileWarnings" }
     warnings "Extra"
     location "build"

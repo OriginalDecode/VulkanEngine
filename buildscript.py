@@ -114,10 +114,22 @@ if args.config != None:
     printOk("Configure done")
 
 def buildWindows(buildConfig):
-        os.system("msbuild " + "build/" + args.build + 
-            " /p:GenerateFullPaths=true" +
-            " /p:Configuration=" + buildConfig + 
-            " /t:build")
+    
+    if buildConfig == None:
+        buildConfig="Debug"
+
+    os.system("msbuild " + "build/" + args.build + 
+        " /p:GenerateFullPaths=true" +
+        " /p:Configuration=" + buildConfig + 
+        " /t:build")
+
+def buildLinux(buildConfig):
+    if buildConfig == None:
+        buildConfig = "debug_" + system.lower()
+
+    os.chdir("build")
+    os.system("make config=" + buildConfig)
+    os.chdir("..")
 
 #build
 if canBuild():
@@ -125,15 +137,8 @@ if canBuild():
     buildConfig = args.buildConfig 
 
     if system == "Windows":
-        if buildConfig == None:
-            buildConfig="Debug"
-
-        
-
+        buildWindows(buildConfig)
     elif system == "Linux":
-        if buildConfig == None:
-            buildConfig = "debug_" + system.lower()
-        os.chdir("build")
-        os.system("make config=" + buildConfig)
-        os.chdir("..")
-    
+        buildLinux(buildConfig)
+
+    printOk("Finished build")
