@@ -20,8 +20,6 @@ namespace Graphics
 	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
 	GraphicsEngine::~GraphicsEngine()
 	{
-		m_DefaultRenderTarget->Release();
-		m_DefaultDepthTarget->Release();
 	}
 
 
@@ -49,38 +47,12 @@ namespace Graphics
 
 	void GraphicsEngine::Init(const Window& window)
 	{
-		m_Device.CreateDevice(window, &m_DefaultRenderTarget, &m_DefaultDepthTarget);
-		ID3D11DeviceContext* context = Graphics::GetContext();
-		context->OMSetRenderTargets(1, &m_DefaultRenderTarget, m_DefaultDepthTarget);
-		context->Release();
 	}
 
 	void GraphicsEngine::Present()
 	{
 		HRESULT hr = Graphics::Present(1, 0);
 
-		switch (hr)
-		{
-			case DXGI_ERROR_DEVICE_HUNG:
-				OutputDebugStringA("device hung\n");
-				break;
-
-			case DXGI_ERROR_DEVICE_REMOVED:
-				OutputDebugStringA("removed\n");
-				break;
-
-			case DXGI_ERROR_DEVICE_RESET:
-				OutputDebugStringA("reset\n");
-				break;
-
-			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
-				OutputDebugStringA("internal_error\n");
-				break;
-
-			case DXGI_ERROR_INVALID_CALL:
-				OutputDebugStringA("invalid_call\n");
-				break;
-		};
 
 		BeginFrame();
 
@@ -94,15 +66,6 @@ namespace Graphics
 
 	void GraphicsEngine::BeginFrame()
 	{
-		ID3D11DeviceContext* context = Graphics::GetContext();
-		context->ClearRenderTargetView(m_DefaultRenderTarget, BLACK);
-		context->ClearDepthStencilView(m_DefaultDepthTarget, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-		context->Release();
-	}
-
-	void Release(ID3D11Buffer* buffer)
-	{
-		buffer->Release();
 	}
 
 
