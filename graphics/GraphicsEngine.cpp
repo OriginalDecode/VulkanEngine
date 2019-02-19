@@ -12,11 +12,6 @@ constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
-	GraphicsDevice& GetDevice()
-	{
-		return GraphicsEngine::GetDevice();
-	}
-
 	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
 	GraphicsEngine::~GraphicsEngine()
 	{
@@ -45,23 +40,16 @@ namespace Graphics
 		return s_Instance;
 	}
 
-	void GraphicsEngine::Init(const Window& window)
+	void GraphicsEngine::Init(const Window& /**/)
 	{
 	}
 
 	void GraphicsEngine::Present()
 	{
-		HRESULT hr = Graphics::Present(1, 0);
 
 
 		BeginFrame();
 
-	}
-
-
-	GraphicsDevice& GraphicsEngine::GetDevice()
-	{
-		return s_Instance->m_Device;
 	}
 
 	void GraphicsEngine::BeginFrame()

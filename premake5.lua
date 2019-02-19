@@ -59,6 +59,8 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
         location ("./graphics")    
         files { "graphics/*.cpp", "graphics/*.h" }
         dependson { "Core" }
+        links { "$(VULKAN_SDK)/lib/vulkan-1.lib" }
+        includedirs { "$(VULKAN_SDK)/Include/" }
         -- symbolspath does not seem to work as inteded
         -- symbolspath "%{wks.location}/bin/%{cfg.buildcfg}/%{prj.name}.pdb"
         

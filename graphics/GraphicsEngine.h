@@ -5,7 +5,6 @@
 class Window;
 namespace Graphics
 {
-	GraphicsDevice& GetDevice();
 	class GraphicsEngine
 	{
 	public:
@@ -17,14 +16,12 @@ namespace Graphics
 		void Init(const Window& window);
 		void Present();
 
-		static GraphicsDevice& GetDevice();
 	private:
 		static GraphicsEngine* s_Instance;
 		GraphicsEngine() = default;
 		~GraphicsEngine();
 		void BeginFrame();
 
-		GraphicsDevice m_Device;
 	};
 
 }; //namespace Graphics

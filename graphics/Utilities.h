@@ -49,6 +49,38 @@ namespace Graphics
 		READ					= BIT(1),
 		WRITE					= BIT(2),
 	};
+	
+	enum ETextureFormat
+	{
+		NO_FORMAT 			= BIT(0),
+		RGBA32_FLOAT 		= BIT(1),
+		RGBA32_UINT 		= BIT(2),
+		RGBA32_SINT 		= BIT(3),
+
+		RGB32_FLOAT 		= BIT(4),
+		RGB32_UINT 			= BIT(5),
+		RGB32_SINT 			= BIT(6),
+
+		RG32_FLOAT 			= BIT(7),
+		RG32_UINT 			= BIT(8),
+
+		RGBA16_FLOAT 		= BIT(9),
+		RGBA16_UINT 		= BIT(10),
+		RGBA16_SINT 		= BIT(11),
+
+		RGBA8_UINT 			= BIT(12),
+		RGBA8_SINT 			= BIT(13),
+
+		R32_TYPELESS 		= BIT(14),
+		R32_FLOAT 			= BIT(15),
+		R32_UINT 			= BIT(16),
+		DEPTH_32_FLOAT		= BIT(17),
+
+		RGBA8_UNORM 		= BIT(18),
+		RGB10A2_TYPELESS 	= BIT(19),
+		RGBA8_TYPELESS 		= BIT(20),
+		sRGBA8 				= BIT(21),
+	};
 
 	enum ETopology
 	{
@@ -58,46 +90,4 @@ namespace Graphics
 		_4_CONTROL_POINT_PATCHLIST,
 	};
 
-	
-	enum ETextureFormat
-	{
-		NO_FORMAT = 1 << 0,
-		RGBA32_FLOAT = 1 << 1,
-		RGBA32_UINT = 1 << 2,
-		RGBA32_SINT = 1 << 3,
-
-		RGB32_FLOAT = 1 << 4,
-		RGB32_UINT = 1 << 5,
-		RGB32_SINT = 1 << 6,
-
-		RG32_FLOAT = 1 << 7,
-		RG32_UINT = 1 << 8,
-
-		RGBA16_FLOAT = 1 << 9,
-		RGBA16_UINT = 1 << 10,
-		RGBA16_SINT = 1 << 11,
-
-		RGBA8_UINT = 1 << 12,
-		RGBA8_SINT = 1 << 13,
-
-		R32_TYPELESS = 1 << 14,
-		R32_FLOAT = 1 << 15,
-		R32_UINT = 1 << 16,
-		DEPTH_32_FLOAT = 1 << 17,
-
-		RGBA8_UNORM = 1 << 18,
-		RGB10A2_TYPELESS = 1 << 19,
-		RGBA8_TYPELESS = 1 << 20,
-		sRGBA8 = 1 << 21,
-	};
-
-#ifdef _WIN32
-	D3D11_USAGE GetUsage(int32 usage);
-
-	uint32 GetBindFlag(int32 binding);
-
-	uint32 GetCPUAccessFlag(int32 flags);
-
-	D3D11_PRIMITIVE_TOPOLOGY GetTopology(ETopology topology);
-#endif
 }; //namespace Graphics
