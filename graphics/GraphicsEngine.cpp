@@ -8,15 +8,18 @@
 #include <Windows.h>
 #endif
 
+#include "vkGraphicsDevice.h"
+
 constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
 	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
-	GraphicsEngine::~GraphicsEngine()
+	GraphicsEngine::~GraphicsEngine() 
 	{
+		delete m_Device;
+		m_Device = nullptr;
 	}
-
 
 	void GraphicsEngine::Create()
 	{
@@ -42,12 +45,11 @@ namespace Graphics
 
 	void GraphicsEngine::Init(const Window& /**/)
 	{
+		m_Device = new vkGraphicsDevice;
 	}
 
 	void GraphicsEngine::Present()
 	{
-
-
 		BeginFrame();
 
 	}

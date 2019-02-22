@@ -5,6 +5,7 @@
 class Window;
 namespace Graphics
 {
+	class vkGraphicsDevice;
 	class GraphicsEngine
 	{
 	public:
@@ -21,6 +22,8 @@ namespace Graphics
 		GraphicsEngine() = default;
 		~GraphicsEngine();
 		void BeginFrame();
+
+		vkGraphicsDevice* m_Device = nullptr;
 
 	};
 

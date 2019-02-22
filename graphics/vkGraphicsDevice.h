@@ -1,12 +1,13 @@
-#include "GraphicsDevice.h"
+#pragma once
 
-//namespace Graphics
-//{
-//    class vkGraphicsDevice : public IGraphicsDevice
-//    {
-//        public:
-//
-//        private:
-//
-//    };
-//}; // namespace Graphics
+namespace Graphics
+{
+    class vkGraphicsDevice
+    {
+    public:
+        vkGraphicsDevice();
+        ~vkGraphicsDevice();
+    private:
+
+    };
+}; // namespace Graphics

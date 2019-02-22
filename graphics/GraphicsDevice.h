@@ -29,14 +29,13 @@
 
 */
 
-//#include <vulkan/vulkan.h>
 namespace Graphics
 {
-	class vkGraphicsDevice
+	class IGraphicsDevice
 	{
 		public:
-			vkGraphicsDevice();
-			~vkGraphicsDevice();
+			IGraphicsDevice();
+			~IGraphicsDevice();
 		private:
 	};
 
