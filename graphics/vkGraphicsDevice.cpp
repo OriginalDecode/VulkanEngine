@@ -115,4 +115,13 @@ namespace Graphics
         //
     }
 
+    void vkGraphicsDevice::CreateDevice()
+    {
+        uint32 device_count = 0;
+        vkEnumeratePhysicalDevices(nullptr/*instance*/, &device_count, nullptr);
+
+
+    }
+
+
 }; //namespace Graphics

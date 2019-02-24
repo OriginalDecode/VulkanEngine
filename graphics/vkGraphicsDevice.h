@@ -8,6 +8,9 @@ namespace Graphics
         vkGraphicsDevice();
         ~vkGraphicsDevice();
     private:
+        void CreateDevice();
+
+
 
     };
 }; // namespace Graphics
