@@ -4,13 +4,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
+            "label": "build|Win32",
             "type": "shell",
-            "command": "msbuild",
+            "command": "python",
             "args": [
-                "build/Engine.sln",
-                "/property:GenerateFullPaths=true",
-                "/t:build"
+                "buildscript.py",
+                "-b=Engine.sln",
+                "-v=m"
             ],
             "group": {
                 "kind": "build",

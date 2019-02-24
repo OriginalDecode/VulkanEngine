@@ -17,5 +17,6 @@
         "*.entity": "json",
         "system_error": "cpp"
     },
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "editor.renderWhitespace": "all"
 }

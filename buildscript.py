@@ -154,6 +154,7 @@ def canBuild():
 
 if canBuild():
     print(white("===Starting build==="))
+    print(system)
     buildConfig = args.buildConfig 
 
     if system == "Windows":
