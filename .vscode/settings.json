@@ -15,8 +15,11 @@
         "*.cs": "hlsl",
         "*.level": "json",
         "*.entity": "json",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "vector": "cpp",
+        "xstring": "cpp"
     },
     "python.linting.enabled": true,
-    "editor.renderWhitespace": "all"
+    "editor.renderWhitespace": "all",
+    "editor.formatOnSave": true
 }
