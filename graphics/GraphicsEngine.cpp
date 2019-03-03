@@ -14,38 +14,32 @@ constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
-	GraphicsEngine* GraphicsEngine::s_Instance = nullptr;
-	GraphicsEngine::~GraphicsEngine() 
+	std::unique_ptr<GraphicsEngine> GraphicsEngine::m_Instance = nullptr;
+
+	GraphicsEngine::GraphicsEngine()
 	{
-		delete m_Device;
-		m_Device = nullptr;
+
 	}
 
 	void GraphicsEngine::Create()
 	{
-		if (s_Instance)
+		m_Instance = std::make_unique<GraphicsEngine>();
+	}
+
+	GraphicsEngine& GraphicsEngine::Get()
+	{
+		return *m_Instance;
+	}
+
+	bool GraphicsEngine::Init(const Window* window)
+	{
+		m_Device = std::make_unique<vkGraphicsDevice>();
+		if (!m_Device->Init(window))
 		{
-			assert(!"GraphicsEngine::Create() called twice or more");
-			return;
+			return false;
 		}
-
-		s_Instance = new GraphicsEngine;
-	}
-
-	void GraphicsEngine::Destroy()
-	{
-		delete s_Instance;
-		s_Instance = nullptr;
-	}
-
-	GraphicsEngine* GraphicsEngine::Get()
-	{
-		return s_Instance;
-	}
-
-	void GraphicsEngine::Init(const Window& /**/)
-	{
-		m_Device = new vkGraphicsDevice;
+		
+		return true;
 	}
 
 	void GraphicsEngine::Present()
@@ -58,5 +52,9 @@ namespace Graphics
 	{
 	}
 
+	GraphicsEngine::~GraphicsEngine()
+	{
+
+	}
 
 }; // namespace Graphics

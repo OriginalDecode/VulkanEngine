@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GraphicsDevice.h"
+#include <memory>
 
 class Window;
 namespace Graphics
@@ -9,21 +10,21 @@ namespace Graphics
 	class GraphicsEngine
 	{
 	public:
+		GraphicsEngine();
+		~GraphicsEngine();
 	
 		static void Create();
-		static void Destroy();
-		static GraphicsEngine* Get();
+		static GraphicsEngine& Get();
 
-		void Init(const Window& window);
+		bool Init(const Window* window);
 		void Present();
 
 	private:
-		static GraphicsEngine* s_Instance;
-		GraphicsEngine() = default;
-		~GraphicsEngine();
+		static std::unique_ptr<GraphicsEngine> m_Instance;
+
 		void BeginFrame();
 
-		vkGraphicsDevice* m_Device = nullptr;
+		std::unique_ptr<vkGraphicsDevice> m_Device;
 
 	};
 
