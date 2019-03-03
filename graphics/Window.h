@@ -4,18 +4,7 @@
 #include <X11/Xlib.h>
 #endif
 #include "Core/Types.h"
-
-#ifdef _WIN32
-#ifndef _WINDEF_
-struct HINSTANCE__;
-typedef HINSTANCE__* HINSTANCE;
-struct HWND__;
-typedef HWND__* HWND;
-#endif
-typedef HWND HWindow;
-#else
-typedef void* HWindow; //X11 Window
-#endif
+#include "Core/Defines.h"
 
 class Window
 {
@@ -49,11 +38,10 @@ public:
 		Size m_Size;
 	};
 
-	Window( const CreateInfo& info );
+	Window( CreateInfo info );
 
 	Window() = default;
 	~Window();
-
 
 	void ShowWindow();
 

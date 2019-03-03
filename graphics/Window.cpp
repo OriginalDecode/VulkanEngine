@@ -1,12 +1,12 @@
 #include "Window.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include "Core/utilities/utilities.h"
 
 #include <vector>
 
-#include "Core/utilities/utilities.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 struct MonitorCallbackData
 {
@@ -44,7 +44,7 @@ BOOL CALLBACK MonitorFound( HMONITOR hMonitor,
     return TRUE;
 }
 
-Window::Window( const CreateInfo& info )
+Window::Window( CreateInfo info )
 {
     m_WindowSize = info.m_Size;
 #ifdef _WIN32
@@ -87,7 +87,7 @@ Window::Window( const CreateInfo& info )
 
     RECT inner_size;
     GetClientRect( m_WindowHandle, &inner_size );
-    m_InnerSize = { (float)inner_size.bottom, (float)inner_size.right };
+    m_InnerSize = { (float)inner_size.right, (float)inner_size.bottom };
 #else
 
 #endif
