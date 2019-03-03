@@ -2,7 +2,6 @@
 #include "Core/Types.h"
 #include <string>
 
-#define LPE_DEFINE_HANDLE( object ) typedef struct object##_T* object;
 namespace Core
 {
     std::wstring ToWideString( const std::string& str );
