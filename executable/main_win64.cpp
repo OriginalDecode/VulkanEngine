@@ -19,7 +19,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
     Graphics::GraphicsEngine::Create();
     Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
-    if( !graphics_engine.Init( window.get() ) )
+    if( !graphics_engine.Init( *window ) )
     {
         return 1;
     }

@@ -31,7 +31,7 @@ namespace Graphics
 		return *m_Instance;
 	}
 
-	bool GraphicsEngine::Init(const Window* window)
+	bool GraphicsEngine::Init(const Window& window)
 	{
 		m_Device = std::make_unique<vkGraphicsDevice>();
 		if (!m_Device->Init(window))
@@ -44,7 +44,8 @@ namespace Graphics
 
 	void GraphicsEngine::Present()
 	{
-		BeginFrame();
+		//BeginFrame();
+		m_Device->DrawFrame();
 
 	}
 

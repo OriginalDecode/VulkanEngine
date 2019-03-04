@@ -5,7 +5,6 @@
 #ifdef _WIN32
 #include <d3d11.h>
 #endif
-#define ARRSIZE(x) sizeof(x) / sizeof(x[0])
 
 namespace Graphics
 {

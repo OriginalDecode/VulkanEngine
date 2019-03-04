@@ -1,5 +1,7 @@
 #include "vkGraphicsDevice.h"
 
+#include "VulkanInstance.h"
+
 #include "Utilities.h"
 #include "Window.h"
 
@@ -8,7 +10,6 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
-#define VK_FAILED( x ) x != VK_SUCCESS
 
 VkDebugReportCallbackEXT _debugCallback;
 VkClearValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
@@ -29,41 +30,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
     return VK_FALSE;
 }
 
-std::vector<const char*> GetDebugInstanceNames()
-{
-    uint32 layer_count = 0;
-    vkEnumerateInstanceLayerProperties( &layer_count, nullptr );
-    std::vector<VkLayerProperties> instance_layers{ layer_count };
-
-    vkEnumerateInstanceLayerProperties( &layer_count, instance_layers.data() );
-
-    std::vector<const char*> result;
-    for( const auto& layer : instance_layers )
-    {
-        if( strcmp( layer.layerName, "VK_LAYER_LUNARG_standard_validation" ) == 0 )
-            result.push_back( "VK_LAYER_LUNARG_standard_validation" );
-    }
-
-    return result;
-}
-
-std::vector<const char*> GetDebugInstanceExtNames()
-{
-    uint32 extension_count = 0;
-    vkEnumerateInstanceExtensionProperties( nullptr, &extension_count, nullptr );
-    std::vector<VkExtensionProperties> instance_extensions{ extension_count };
-
-    vkEnumerateInstanceExtensionProperties( nullptr, &extension_count, instance_extensions.data() );
-
-    std::vector<const char*> result;
-    for( const auto& ext : instance_extensions )
-    {
-        if( strcmp( ext.extensionName, "VK_EXT_debug_report" ) == 0 )
-            result.push_back( "VK_EXT_debug_report" );
-    }
-
-    return result;
-}
 
 std::vector<const char*> GetDebugDeviceLayerNames( VkPhysicalDevice device )
 {
@@ -92,7 +58,7 @@ namespace Graphics
     vkGraphicsDevice::~vkGraphicsDevice()
     {
         vkDestroySwapchainKHR( m_Device, m_Swapchain, nullptr );
-        vkDestroySurfaceKHR( m_Instance, m_Backbuffer, nullptr );
+        vkDestroySurfaceKHR( m_Instance->get(), m_Backbuffer, nullptr );
 
         for( auto fb : m_FrameBuffers )
         {
@@ -109,15 +75,20 @@ namespace Graphics
             vkDestroyImageView( m_Device, view, nullptr );
         }
 
+		vkDestroySemaphore(m_Device, m_RendererFinished, nullptr);
+		vkDestroySemaphore(m_Device, m_ImageAvailable, nullptr);
+
         vkDestroyCommandPool( m_Device, m_CommandPool, nullptr );
 
         vkDestroyDevice( m_Device, nullptr );
-        vkDestroyInstance( m_Instance, nullptr );
+        //vkDestroyInstance( m_Instance, nullptr );
     }
 
-    bool vkGraphicsDevice::Init( const Window* window )
+    bool vkGraphicsDevice::Init( const Window& window )
     {
-        m_Instance = CreateInstance();
+
+		m_Instance = std::make_unique<VulkanInstance>();
+		m_Instance->Init();
 
         if( !CreateDeviceAndQueue() )
             return false;
@@ -127,84 +98,71 @@ namespace Graphics
         CreateSwapchain( window );
 
         m_RenderPass = CreateRenderPass();
+		CreateImageViews();
         CreateFramebuffers( window );
+
+		CreateCommandPool();
+		CreateCommandBuffers();
+
+		CreateSemaphores();
         return true;
     }
 
-    void vkGraphicsDevice::Present()
-    {
+	void vkGraphicsDevice::Present()
+	{
+		
+	
+	}
 
-        for( size_t i = 0; i < m_CommandBuffers.size(); ++i )
-        {
-            VkCommandBufferBeginInfo begin_info = {};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-            begin_info.pInheritanceInfo = nullptr;
+	void vkGraphicsDevice::DrawFrame()
+	{
+		uint32_t imageIndex;
+		vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, nullptr, nullptr, &imageIndex);
 
-            VkResult result = vkBeginCommandBuffer( m_CommandBuffers[i], &begin_info );
-            assert( !VK_FAILED( result ) && "Failed to being command buffer!" );
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-            VkRenderPassBeginInfo renderPassInfo = {};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = m_RenderPass;
-            renderPassInfo.framebuffer = m_FrameBuffers[i];
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = m_Extent;
+		VkSemaphore waitSemaphore[] = { m_ImageAvailable };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphore;
+		submitInfo.pWaitDstStageMask = waitStages;
 
-            renderPassInfo.clearValueCount = 1;
-            renderPassInfo.pClearValues = &_clearColor;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
 
-            vkCmdBeginRenderPass( m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
-        }
-    }
+		VkSemaphore signal[] = { m_RendererFinished };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signal;
 
-    VkInstance vkGraphicsDevice::CreateInstance()
-    {
-        VkApplicationInfo app_info = {
-            VK_STRUCTURE_TYPE_APPLICATION_INFO, /* VkStructureType              sType */
-            nullptr,                            /* const void*                  pNext */
-            "Hello World!",                     /* const char*                  pApplicationName */
-            VK_MAKE_VERSION( 1, 0, 0 ),         /* uint32_t                     applicationVersion */
-            "Engine",                           /* const char*                  pEngineName */
-            VK_MAKE_VERSION( 1, 0, 0 ),         /* uint32_t                     engineVersion */
-            VK_API_VERSION_1_1                  /* uint32_t                     apiVersion */
-        };
+		VkResult result = vkQueueSubmit(m_Queue, 1, &submitInfo, nullptr);
+		assert(!VK_FAILED(result));
 
-        std::vector<const char*> instance_extensions = {
-            "VK_KHR_surface",
-            "VK_KHR_win32_surface"
-        };
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		//renderPassInfo.dependencyCount = 1;
+		//renderPassInfo.pDependencies = &dependency;
 
-        auto insertInto = []( auto& destination, const auto& source ) {
-            destination.insert( destination.end(), source.begin(), source.end() );
-        };
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signal;
 
-#ifdef _DEBUG
-        insertInto( instance_extensions, GetDebugInstanceExtNames() );
-#endif
+		VkSwapchainKHR swapchains[] = { m_Swapchain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapchains;
+		presentInfo.pImageIndices = &imageIndex;
 
-        std::vector<const char*> instance_layers;
-#ifdef _DEBUG
-        insertInto( instance_layers, GetDebugInstanceNames() );
-#endif
+		presentInfo.pResults = nullptr;
 
-        VkInstanceCreateFlags create_flags = 0;
-        VkInstanceCreateInfo create_info{
-            VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, /* VkStructureType             sType; */
-            nullptr,                                /* const void*                 pNext; */
-            create_flags,                           /* VkInstanceCreateFlags       flags; */
-            &app_info,                              /* const VkApplicationInfo*    pApplicationInfo; */
-            (uint32_t)instance_layers.size(),       /* uint32_t                    enabledLayerCount; */
-            instance_layers.data(),                 /* const char* const*          ppEnabledLayerNames; */
-            (uint32_t)instance_extensions.size(),   /* uint32_t                    enabledExtensionCount; */
-            instance_extensions.data()              /* const char* const*          ppEnabledExtensionNames; */
-        };
+		vkQueuePresentKHR(m_Queue, &presentInfo);
 
-        VkInstance instance = nullptr;
-        VkResult result = vkCreateInstance( &create_info, nullptr /*allocator*/, &instance );
-        assert( !VK_FAILED( result ) && "Failed to create vulkan instance!" );
-        return instance;
-    }
+	}
 
     bool vkGraphicsDevice::GetPhysicalDevice( uint32_t* outDeviceIndex, VkPhysicalDevice* physicalDevice, VkInstance instance )
     {
@@ -258,7 +216,7 @@ namespace Graphics
     {
         uint32_t queueFamilyIndex = 0;
         VkPhysicalDevice physical_device;
-        if( !GetPhysicalDevice( &queueFamilyIndex, &physical_device, m_Instance ) )
+        if( !GetPhysicalDevice( &queueFamilyIndex, &physical_device, m_Instance->get() ) )
         {
             assert( !"Failed to get physical device!" );
             return false;
@@ -316,10 +274,10 @@ namespace Graphics
         return true;
     }
 
-    void vkGraphicsDevice::CreateSwapchain( const Window* window )
+    void vkGraphicsDevice::CreateSwapchain( const Window& window )
     {
         VkSurfaceCapabilitiesKHR surface_capabilities;
-        VkSurfaceKHR surface = CreateSurface( window->GetHandle() );
+        VkSurfaceKHR surface = CreateSurface( window.GetHandle() );
 
         VkBool32 presentSupported = VK_FALSE;
         VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR( m_PhysicalDevice, 0, surface, &presentSupported );
@@ -341,8 +299,8 @@ namespace Graphics
 
         //validate size of swapchain vs window
         m_Extent = surface_capabilities.currentExtent;
-        assert( (int32)m_Extent.width == (int32)window->GetInnerSize().m_Width );
-        assert( (int32)m_Extent.height == (int32)window->GetInnerSize().m_Height );
+        assert( (int32)m_Extent.width == (int32)window.GetInnerSize().m_Width );
+        assert( (int32)m_Extent.height == (int32)window.GetInnerSize().m_Height );
 
         uint32 swapchain_image_count = 2; //backbuffer count, atleast 2;
         assert( swapchain_image_count >= surface_capabilities.minImageCount );
@@ -411,7 +369,7 @@ namespace Graphics
 
     void vkGraphicsDevice::SetupDebugCallback()
     {
-        auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( m_Instance, "vkCreateDebugReportCallbackEXT" );
+        auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( m_Instance->get(), "vkCreateDebugReportCallbackEXT" );
 
         if( !func )
             return;
@@ -429,7 +387,7 @@ namespace Graphics
             nullptr                                                  /* void*                           pUserData;   */
         };
 
-        VkResult result = func( m_Instance, &callbackCreateInfo, nullptr /*allocator*/, &_debugCallback );
+        VkResult result = func( m_Instance->get(), &callbackCreateInfo, nullptr /*allocator*/, &_debugCallback );
         assert( !VK_FAILED( result ) );
     }
 
@@ -441,13 +399,13 @@ namespace Graphics
         surfaceCreateInfo.hinstance = ::GetModuleHandle( nullptr );
 
         VkSurfaceKHR surface = nullptr;
-        VkResult result = vkCreateWin32SurfaceKHR( m_Instance, &surfaceCreateInfo, nullptr, &surface );
+        VkResult result = vkCreateWin32SurfaceKHR( m_Instance->get(), &surfaceCreateInfo, nullptr, &surface );
         assert( !VK_FAILED( result ) );
 
         return surface;
     }
 
-    void vkGraphicsDevice::CreateFramebuffers( const Window* window )
+    void vkGraphicsDevice::CreateFramebuffers( const Window& window )
     {
         m_FrameBuffers.resize( m_ImageViews.size() );
         for( size_t i = 0; i < m_ImageViews.size(); ++i )
@@ -461,8 +419,8 @@ namespace Graphics
             createInfo.renderPass = m_RenderPass;
             createInfo.attachmentCount = 1;
             createInfo.pAttachments = attatchment;
-            createInfo.width = (uint32_t)window->GetInnerSize().m_Width;
-            createInfo.height = (uint32_t)window->GetInnerSize().m_Height;
+            createInfo.width = (uint32_t)window.GetInnerSize().m_Width;
+            createInfo.height = (uint32_t)window.GetInnerSize().m_Height;
             createInfo.layers = 1;
 
             VkResult result = vkCreateFramebuffer( m_Device, &createInfo, nullptr /*allocator*/, &m_FrameBuffers[i] );
@@ -562,6 +520,34 @@ namespace Graphics
 
         VkResult result = vkAllocateCommandBuffers( m_Device, &allocInfo, m_CommandBuffers.data() );
         assert( !VK_FAILED( result ) && "Failed to allocated command buffers!" );
+
+		for (size_t i = 0; i < m_CommandBuffers.size(); ++i)
+		{
+			VkCommandBufferBeginInfo begin_info = {};
+			begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+			begin_info.pInheritanceInfo = nullptr;
+
+			result = vkBeginCommandBuffer(m_CommandBuffers[i], &begin_info);
+			assert(!VK_FAILED(result) && "Failed to being command buffer!");
+
+			VkRenderPassBeginInfo renderPassInfo = {};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = m_RenderPass;
+			renderPassInfo.framebuffer = m_FrameBuffers[i];
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = m_Extent;
+
+			renderPassInfo.clearValueCount = 1;
+			renderPassInfo.pClearValues = &_clearColor;
+
+			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			//vkCmdBindPipeline
+			//vkCmdDraw
+			vkCmdEndRenderPass(m_CommandBuffers[i]);
+		}
+
+
     }
 
     void vkGraphicsDevice::CreatePipeline()
@@ -569,5 +555,18 @@ namespace Graphics
         // https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Shader_modules
         // https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Fixed_functions
     }
+
+	void vkGraphicsDevice::CreateSemaphores()
+	{
+		VkSemaphoreCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkResult result = vkCreateSemaphore(m_Device, &info, nullptr/*allocator*/, &m_ImageAvailable);
+		assert(!VK_FAILED(result) && "Failed to create imageAvailable semaphore");
+
+		result = vkCreateSemaphore(m_Device, &info, nullptr/*allocator*/, &m_RendererFinished);
+		assert(!VK_FAILED(result) && "Failed to create rendererFinished semaphore");
+
+	}
 
 }; //namespace Graphics

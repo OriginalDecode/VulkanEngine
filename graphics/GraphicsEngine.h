@@ -16,7 +16,7 @@ namespace Graphics
 		static void Create();
 		static GraphicsEngine& Get();
 
-		bool Init(const Window* window);
+		bool Init(const Window& window);
 		void Present();
 
 	private:
