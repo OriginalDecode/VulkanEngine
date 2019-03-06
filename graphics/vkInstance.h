@@ -1,18 +1,18 @@
 #pragma once
-#include "IVulkanObject.h"
+#include <Core/Defines.h>
 
 LPE_DEFINE_HANDLE(VkInstance);
 
 namespace Graphics
 {
-	class VulkanInstance final : public IVulkanObject
+	class vkInstance
 	{
 	public:
-		VulkanInstance();
-		~VulkanInstance();
+		vkInstance() = default;
+		~vkInstance();
 
-		virtual void Init() override;
-		virtual void Release() override;
+		void Init();
+		void Release();
 
 		VkInstance get() { return m_Instance; }
 	private:

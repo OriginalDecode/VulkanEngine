@@ -1,6 +1,7 @@
 #include "vkGraphicsDevice.h"
 
-#include "VulkanInstance.h"
+#include "vkInstance.h"
+#include "vkPhysicalDevice.h"
 
 #include "Utilities.h"
 #include "Window.h"
@@ -87,8 +88,11 @@ namespace Graphics
     bool vkGraphicsDevice::Init( const Window& window )
     {
 
-		m_Instance = std::make_unique<VulkanInstance>();
+		m_Instance = std::make_unique<vkInstance>();
 		m_Instance->Init();
+
+		m_PhysicalDevice = std::make_unique<vkPhysicalDevice>();
+		m_PhysicalDevice->Init(m_Instance.get());
 
         if( !CreateDeviceAndQueue() )
             return false;
@@ -164,53 +168,7 @@ namespace Graphics
 
 	}
 
-    bool vkGraphicsDevice::GetPhysicalDevice( uint32_t* outDeviceIndex, VkPhysicalDevice* physicalDevice, VkInstance instance )
-    {
-        uint32 device_count = 0;
-        VkResult result = vkEnumeratePhysicalDevices( instance, &device_count, nullptr );
-        if( VK_FAILED( result ) )
-        {
-            assert( !"Failed to enumerate devices" );
-            return false;
-        }
-
-        std::vector<VkPhysicalDevice> devices{ device_count };
-        result = vkEnumeratePhysicalDevices( instance, &device_count, devices.data() );
-
-        if( VK_FAILED( result ) )
-        {
-            assert( !"Failed to enumerate devices" );
-            return false;
-        }
-        /*
-		* Find a physical device with a graphics queue
-		*/
-        for( auto device : devices )
-        {
-            uint32 property_count = 0;
-            vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, nullptr );
-
-            std::vector<VkQueueFamilyProperties> queue_properties{ property_count };
-            vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, queue_properties.data() );
-
-            for( size_t i = 0; i < queue_properties.size(); ++i )
-            {
-                const VkQueueFamilyProperties& property = queue_properties[i];
-                if( property.queueFlags & VK_QUEUE_GRAPHICS_BIT )
-                {
-                    if( physicalDevice )
-                        *physicalDevice = device;
-
-                    *outDeviceIndex = (uint32_t)i;
-                    break;
-                }
-            }
-        }
-
-        assert( physicalDevice );
-
-        return true;
-    }
+    
 
     bool vkGraphicsDevice::CreateDeviceAndQueue()
     {

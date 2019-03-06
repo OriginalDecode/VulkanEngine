@@ -7,7 +7,8 @@
 class Window;
 namespace Graphics
 {
-	class VulkanInstance;
+	class vkInstance;
+	class vkPhysicalDevice;
     class vkGraphicsDevice
     {
     public:
@@ -20,7 +21,7 @@ namespace Graphics
 		void DrawFrame();
 
     private:
-        bool GetPhysicalDevice( uint32_t* outDeviceIndex, VkPhysicalDevice* physicalDevice, VkInstance instance );
+        //bool GetPhysicalDevice( uint32_t* outDeviceIndex, VkPhysicalDevice* physicalDevice, VkInstance instance );
         bool CreateDeviceAndQueue();
         void CreateSwapchain( const Window& window );
         void SetupDebugCallback();
@@ -34,7 +35,8 @@ namespace Graphics
 		void CreateSemaphores();
 
 
-		std::unique_ptr<VulkanInstance> m_Instance;
+		std::unique_ptr<vkInstance> m_Instance;
+		std::unique_ptr<vkPhysicalDevice> m_PhysicalDevice;
 
         std::vector<VkImage> m_Images;
         std::vector<VkImageView> m_ImageViews;
@@ -48,7 +50,7 @@ namespace Graphics
         VkSurfaceKHR m_Backbuffer = nullptr;
         VkRenderPass m_RenderPass = nullptr;
         VkSwapchainKHR m_Swapchain = nullptr;
-        VkPhysicalDevice m_PhysicalDevice = nullptr;
+        //VkPhysicalDevice m_PhysicalDevice = nullptr;
         VkCommandPool m_CommandPool = nullptr;
 
 		VkSemaphore m_RendererFinished = nullptr;

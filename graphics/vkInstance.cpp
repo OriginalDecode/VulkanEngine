@@ -1,4 +1,4 @@
-#include "VulkanInstance.h"
+#include "vkInstance.h"
 #include <vulkan/vulkan.h>
 #include <cassert>
 #include <vector>
@@ -7,18 +7,13 @@ namespace Graphics
 {
 	constexpr char* validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
 	constexpr char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface", "VK_EXT_debug_report" };
-
-	VulkanInstance::VulkanInstance()
-	{
-	}
-
-
-	VulkanInstance::~VulkanInstance()
+	
+	vkInstance::~vkInstance()
 	{
 		Release();
 	}
 
-	void VulkanInstance::Init()
+	void vkInstance::Init()
 	{
 		VkApplicationInfo appInfo = {};
 
@@ -45,10 +40,10 @@ namespace Graphics
 
 
 		VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &m_Instance);
-		assert(!VK_FAILED(result) && "Failed to create vulkan instance!");
+		assert(result == VK_SUCCESS && "Failed to create vulkan instance!");
 	}
 
-	void VulkanInstance::Release()
+	void vkInstance::Release()
 	{
 		vkDestroyInstance(m_Instance, nullptr);
 	}
