@@ -7,6 +7,7 @@
         "**/*.dir":true,
     },
     "files.associations": {
+        "*.al": "python",
         "*.ps": "hlsl",
         "*.vs": "hlsl",
         "*.gs": "hlsl",
@@ -17,7 +18,8 @@
         "*.entity": "json",
         "system_error": "cpp",
         "vector": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "xiosbase": "cpp"
     },
     "python.linting.enabled": true,
     "editor.renderWhitespace": "all",

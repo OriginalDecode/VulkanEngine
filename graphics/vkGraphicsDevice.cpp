@@ -2,6 +2,7 @@
 
 #include "vkInstance.h"
 #include "vkPhysicalDevice.h"
+#include "vkDevice.h"
 
 #include "Utilities.h"
 #include "Window.h"
@@ -10,7 +11,6 @@
 #include <windows.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
-
 
 VkDebugReportCallbackEXT _debugCallback;
 VkClearValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
@@ -31,29 +31,31 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
     return VK_FALSE;
 }
 
-
-std::vector<const char*> GetDebugDeviceLayerNames( VkPhysicalDevice device )
-{
-    uint32 layer_count = 0;
-    vkEnumerateDeviceLayerProperties( device, &layer_count, nullptr );
-
-    std::vector<VkLayerProperties> device_layers{ layer_count };
-    vkEnumerateDeviceLayerProperties( device, &layer_count, device_layers.data() );
-
-    std::vector<const char*> result;
-    for( const auto& p : device_layers )
-    {
-        if( strcmp( p.layerName, "VK_LAYER_LUNARG_standard_validation" ) == 0 )
-            result.push_back( "VK_LAYER_LUNARG_standard_validation" );
-    }
-
-    return result;
-}
-
 namespace Graphics
 {
-    vkGraphicsDevice::vkGraphicsDevice()
+    void vkGraphicsDevice::SetupDebugCallback()
     {
+        VkInstance instance = m_Instance->get();
+        auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
+
+        if( !func )
+            return;
+
+        VkDebugReportFlagsEXT flags =
+            VK_DEBUG_REPORT_ERROR_BIT_EXT |
+            VK_DEBUG_REPORT_WARNING_BIT_EXT |
+            VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+
+        VkDebugReportCallbackCreateInfoEXT callbackCreateInfo{
+            VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, /* VkStructureType                 sType; */
+            nullptr,                                                 /* const void*                     pNext; */
+            flags,                                                   /* VkDebugReportFlagsEXT           flags; */
+            &DebugReportCallback,                                    /* PFN_vkDebugReportCallbackEXT    pfnCallback; */
+            nullptr                                                  /* void*                           pUserData;   */
+        };
+
+        VkResult result = func( instance, &callbackCreateInfo, nullptr /*allocator*/, &_debugCallback );
+        assert( result == VK_SUCCESS );
     }
 
     vkGraphicsDevice::~vkGraphicsDevice()
@@ -76,160 +78,90 @@ namespace Graphics
             vkDestroyImageView( m_Device, view, nullptr );
         }
 
-		vkDestroySemaphore(m_Device, m_RendererFinished, nullptr);
-		vkDestroySemaphore(m_Device, m_ImageAvailable, nullptr);
+        vkDestroySemaphore( m_Device, m_RendererFinished, nullptr );
+        vkDestroySemaphore( m_Device, m_ImageAvailable, nullptr );
 
         vkDestroyCommandPool( m_Device, m_CommandPool, nullptr );
-
-        vkDestroyDevice( m_Device, nullptr );
-        //vkDestroyInstance( m_Instance, nullptr );
     }
 
     bool vkGraphicsDevice::Init( const Window& window )
     {
 
-		m_Instance = std::make_unique<vkInstance>();
-		m_Instance->Init();
+        m_Instance = std::make_unique<vkInstance>();
+        m_Instance->Init();
 
-		m_PhysicalDevice = std::make_unique<vkPhysicalDevice>();
-		m_PhysicalDevice->Init(m_Instance.get());
+        m_PhysicalDevice = std::make_unique<vkPhysicalDevice>();
+        m_PhysicalDevice->Init( *m_Instance );
 
-        if( !CreateDeviceAndQueue() )
-            return false;
+        m_LogicalDevice = std::make_unique<vkDevice>();
+        m_LogicalDevice->Init( *m_PhysicalDevice );
 
         SetupDebugCallback();
 
         CreateSwapchain( window );
 
         m_RenderPass = CreateRenderPass();
-		CreateImageViews();
+        CreateImageViews();
         CreateFramebuffers( window );
 
-		CreateCommandPool();
-		CreateCommandBuffers();
+        CreateCommandPool();
+        CreateCommandBuffers();
 
-		CreateSemaphores();
+        CreateSemaphores();
         return true;
     }
 
-	void vkGraphicsDevice::Present()
-	{
-		
-	
-	}
-
-	void vkGraphicsDevice::DrawFrame()
-	{
-		uint32_t imageIndex;
-		vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX, nullptr, nullptr, &imageIndex);
-
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore waitSemaphore[] = { m_ImageAvailable };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphore;
-		submitInfo.pWaitDstStageMask = waitStages;
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
-
-		VkSemaphore signal[] = { m_RendererFinished };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signal;
-
-		VkResult result = vkQueueSubmit(m_Queue, 1, &submitInfo, nullptr);
-		assert(!VK_FAILED(result));
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		//renderPassInfo.dependencyCount = 1;
-		//renderPassInfo.pDependencies = &dependency;
-
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signal;
-
-		VkSwapchainKHR swapchains[] = { m_Swapchain };
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapchains;
-		presentInfo.pImageIndices = &imageIndex;
-
-		presentInfo.pResults = nullptr;
-
-		vkQueuePresentKHR(m_Queue, &presentInfo);
-
-	}
-
-    
-
-    bool vkGraphicsDevice::CreateDeviceAndQueue()
+    void vkGraphicsDevice::Present()
     {
-        uint32_t queueFamilyIndex = 0;
-        VkPhysicalDevice physical_device;
-        if( !GetPhysicalDevice( &queueFamilyIndex, &physical_device, m_Instance->get() ) )
-        {
-            assert( !"Failed to get physical device!" );
-            return false;
-        }
+    }
 
-        m_PhysicalDevice = physical_device;
+    void vkGraphicsDevice::DrawFrame()
+    {
+        uint32_t imageIndex;
+        vkAcquireNextImageKHR( m_Device, m_Swapchain, UINT64_MAX, nullptr, nullptr, &imageIndex );
 
-        VkDeviceQueueCreateFlags queue_flags = 0;
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        const float queue_priorities[] = { 1.f };
+        VkSemaphore waitSemaphore[] = { m_ImageAvailable };
+        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphore;
+        submitInfo.pWaitDstStageMask = waitStages;
 
-        VkDeviceQueueCreateInfo device_queue_create_info = {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, /* VkStructureType                  sType; */
-            nullptr,                                    /* const void*                      pNext; */
-            queue_flags,                                /* VkDeviceQueueCreateFlags         flags; */
-            queueFamilyIndex,                           /* uint32_t                         queueFamilyIndex; */
-            1,                                          /* uint32_t                         queueCount; */
-            queue_priorities                            /* const float*                     pQueuePriorities;  */
-        };
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
 
-        std::vector<const char*> device_layers;
-#ifdef _DEBUG
-        std::vector<const char*> device_debug_names = GetDebugDeviceLayerNames( m_PhysicalDevice );
-        device_layers.insert( device_layers.end(), device_debug_names.begin(), device_debug_names.end() );
-#endif
+        VkSemaphore signal[] = { m_RendererFinished };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signal;
 
-        VkPhysicalDeviceFeatures enabled_features;
-        memset( &enabled_features, 0, sizeof( enabled_features ) );
-        enabled_features.shaderClipDistance = true;
+        VkResult result = vkQueueSubmit( m_Queue, 1, &submitInfo, nullptr );
+        assert( result == VK_SUCCESS );
 
-        std::vector<const char*> device_extensions = {
-            "VK_KHR_swapchain"
-        };
+        VkSubpassDependency dependency = {};
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        //renderPassInfo.dependencyCount = 1;
+        //renderPassInfo.pDependencies = &dependency;
 
-        VkDeviceCreateFlags device_create_flags = 0;
-        VkDeviceCreateInfo device_create_info = {
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, /* VkStructureType                    sType; */
-            nullptr,                              /* const void*                        pNext; */
-            device_create_flags,                  /* VkDeviceCreateFlags                flags; */
-            1,                                    /* uint32_t                           queueCreateInfoCount; */
-            &device_queue_create_info,            /* const VkDeviceQueueCreateInfo*     pQueueCreateInfos; */
-            (uint32_t)device_layers.size(),       /* uint32_t                           enabledLayerCount; */
-            device_layers.data(),                 /* const char* const*                 ppEnabledLayerNames; */
-            (uint32_t)device_extensions.size(),   /* uint32_t                           enabledExtensionCount; */
-            device_extensions.data(),             /* const char* const*                 ppEnabledExtensionNames; */
-            &enabled_features                     /* const VkPhysicalDeviceFeatures*    pEnabledFeatures;         */
-        };
+        VkPresentInfoKHR presentInfo = {};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signal;
 
-        VkResult result = vkCreateDevice( m_PhysicalDevice, &device_create_info, nullptr, &m_Device );
-        assert( !VK_FAILED( result ) && "Failed to create Vulkan device!" );
+        VkSwapchainKHR swapchains[] = { m_Swapchain };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapchains;
+        presentInfo.pImageIndices = &imageIndex;
 
-        vkGetDeviceQueue( m_Device, queueFamilyIndex, 0, &m_Queue );
-        assert( !VK_FAILED( result ) && "Failed to create Vulkan queue!" );
+        presentInfo.pResults = nullptr;
 
-        return true;
+        vkQueuePresentKHR( m_Queue, &presentInfo );
     }
 
     void vkGraphicsDevice::CreateSwapchain( const Window& window )
@@ -239,21 +171,21 @@ namespace Graphics
 
         VkBool32 presentSupported = VK_FALSE;
         VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR( m_PhysicalDevice, 0, surface, &presentSupported );
-        if( VK_FAILED( result ) )
+        if( result != VK_SUCCESS )
         {
             assert( presentSupported && "Failed to support present on current device. Bad graphics card?" );
             return;
         }
 
         result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR( m_PhysicalDevice, surface, &surface_capabilities );
-        assert( !VK_FAILED( result ) && "Failed to get surface capabilities!" );
+        assert( result == VK_SUCCESS && "Failed to get surface capabilities!" );
 
         uint32 present_mode_count = 0;
         result = vkGetPhysicalDeviceSurfacePresentModesKHR( m_PhysicalDevice, surface, &present_mode_count, nullptr );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
         std::vector<VkPresentModeKHR> present_modes{ present_mode_count };
         result = vkGetPhysicalDeviceSurfacePresentModesKHR( m_PhysicalDevice, surface, &present_mode_count, present_modes.data() );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
 
         //validate size of swapchain vs window
         m_Extent = surface_capabilities.currentExtent;
@@ -276,11 +208,11 @@ namespace Graphics
         // get the nof formats for the surface
         uint32 surface_format_count = 0;
         result = vkGetPhysicalDeviceSurfaceFormatsKHR( m_PhysicalDevice, surface, &surface_format_count, nullptr );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
 
         std::vector<VkSurfaceFormatKHR> surface_formats{ surface_format_count };
         vkGetPhysicalDeviceSurfaceFormatsKHR( m_PhysicalDevice, surface, &surface_format_count, surface_formats.data() );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
 
         // Set the format of the swapchain
         VkFormat swapchain_format;
@@ -315,7 +247,7 @@ namespace Graphics
         };
 
         result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
         m_Format = swapchain_format;
         m_Backbuffer = surface;
 
@@ -323,30 +255,6 @@ namespace Graphics
         vkGetSwapchainImagesKHR( m_Device, m_Swapchain, &imageCount, nullptr );
         m_Images.resize( imageCount );
         vkGetSwapchainImagesKHR( m_Device, m_Swapchain, &imageCount, m_Images.data() );
-    }
-
-    void vkGraphicsDevice::SetupDebugCallback()
-    {
-        auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( m_Instance->get(), "vkCreateDebugReportCallbackEXT" );
-
-        if( !func )
-            return;
-
-        VkDebugReportFlagsEXT flags =
-            VK_DEBUG_REPORT_ERROR_BIT_EXT |
-            VK_DEBUG_REPORT_WARNING_BIT_EXT |
-            VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-
-        VkDebugReportCallbackCreateInfoEXT callbackCreateInfo{
-            VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, /* VkStructureType                 sType; */
-            nullptr,                                                 /* const void*                     pNext; */
-            flags,                                                   /* VkDebugReportFlagsEXT           flags; */
-            &DebugReportCallback,                                    /* PFN_vkDebugReportCallbackEXT    pfnCallback; */
-            nullptr                                                  /* void*                           pUserData;   */
-        };
-
-        VkResult result = func( m_Instance->get(), &callbackCreateInfo, nullptr /*allocator*/, &_debugCallback );
-        assert( !VK_FAILED( result ) );
     }
 
     VkSurfaceKHR vkGraphicsDevice::CreateSurface( HWindow windowHandle )
@@ -358,7 +266,7 @@ namespace Graphics
 
         VkSurfaceKHR surface = nullptr;
         VkResult result = vkCreateWin32SurfaceKHR( m_Instance->get(), &surfaceCreateInfo, nullptr, &surface );
-        assert( !VK_FAILED( result ) );
+        assert( result == VK_SUCCESS );
 
         return surface;
     }
@@ -382,7 +290,7 @@ namespace Graphics
             createInfo.layers = 1;
 
             VkResult result = vkCreateFramebuffer( m_Device, &createInfo, nullptr /*allocator*/, &m_FrameBuffers[i] );
-            if( VK_FAILED( result ) )
+            if( result != VK_SUCCESS )
             {
                 assert( !"Failed to create framebuffer!" );
                 return;
@@ -451,21 +359,11 @@ namespace Graphics
             resource.layerCount = 1;
 
             VkResult result = vkCreateImageView( m_Device, &createInfo, nullptr /*allocator*/, &m_ImageViews[i] );
-            assert( !VK_FAILED( result ) && "Failed to create image view" );
+            assert( result == VK_SUCCESS && "Failed to create image view" );
         }
     }
 
-    void vkGraphicsDevice::CreateCommandPool()
-    {
-        VkCommandPoolCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        createInfo.queueFamilyIndex = 0;
-        createInfo.flags = 0;
-
-        VkResult result = vkCreateCommandPool( m_Device, &createInfo, nullptr, &m_CommandPool );
-        assert( !VK_FAILED( result ) && "Failed to create command pool" );
-    }
-
+  
     void vkGraphicsDevice::CreateCommandBuffers()
     {
         m_CommandBuffers.resize( m_FrameBuffers.size() );
@@ -477,54 +375,54 @@ namespace Graphics
         allocInfo.commandBufferCount = (uint32_t)m_CommandBuffers.size();
 
         VkResult result = vkAllocateCommandBuffers( m_Device, &allocInfo, m_CommandBuffers.data() );
-        assert( !VK_FAILED( result ) && "Failed to allocated command buffers!" );
+        assert( result == VK_SUCCESS && "Failed to allocated command buffers!" );
 
-		for (size_t i = 0; i < m_CommandBuffers.size(); ++i)
-		{
-			VkCommandBufferBeginInfo begin_info = {};
-			begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-			begin_info.pInheritanceInfo = nullptr;
+        for( size_t i = 0; i < m_CommandBuffers.size(); ++i )
+        {
+            VkCommandBufferBeginInfo begin_info = {};
+            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+            begin_info.pInheritanceInfo = nullptr;
 
-			result = vkBeginCommandBuffer(m_CommandBuffers[i], &begin_info);
-			assert(!VK_FAILED(result) && "Failed to being command buffer!");
+            result = vkBeginCommandBuffer( m_CommandBuffers[i], &begin_info );
+            assert( result == VK_SUCCESS && "Failed to being command buffer!" );
 
-			VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = m_RenderPass;
-			renderPassInfo.framebuffer = m_FrameBuffers[i];
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = m_Extent;
+            VkRenderPassBeginInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = m_RenderPass;
+            renderPassInfo.framebuffer = m_FrameBuffers[i];
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent = m_Extent;
 
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &_clearColor;
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &_clearColor;
 
-			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			//vkCmdBindPipeline
-			//vkCmdDraw
-			vkCmdEndRenderPass(m_CommandBuffers[i]);
-		}
-
-
+            vkCmdBeginRenderPass( m_CommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
+            vkCmdEndRenderPass( m_CommandBuffers[i] );
+        }
     }
 
-    void vkGraphicsDevice::CreatePipeline()
+    void vkGraphicsDevice::CreateCommandPool()
     {
-        // https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Shader_modules
-        // https://vulkan-tutorial.com/Drawing_a_triangle/Graphics_pipeline_basics/Fixed_functions
+        VkCommandPoolCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        createInfo.queueFamilyIndex = 0;
+        createInfo.flags = 0;
+
+        VkResult result = vkCreateCommandPool( m_Device, &createInfo, nullptr, &m_CommandPool );
+        assert( result == VK_SUCCESS && "Failed to create command pool" );
     }
 
-	void vkGraphicsDevice::CreateSemaphores()
-	{
-		VkSemaphoreCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    void vkGraphicsDevice::CreateSemaphores()
+    {
+        VkSemaphoreCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		VkResult result = vkCreateSemaphore(m_Device, &info, nullptr/*allocator*/, &m_ImageAvailable);
-		assert(!VK_FAILED(result) && "Failed to create imageAvailable semaphore");
+        VkResult result = vkCreateSemaphore( m_Device, &info, nullptr /*allocator*/, &m_ImageAvailable );
+        assert( result == VK_SUCCESS && "Failed to create imageAvailable semaphore" );
 
-		result = vkCreateSemaphore(m_Device, &info, nullptr/*allocator*/, &m_RendererFinished);
-		assert(!VK_FAILED(result) && "Failed to create rendererFinished semaphore");
-
-	}
+        result = vkCreateSemaphore( m_Device, &info, nullptr /*allocator*/, &m_RendererFinished );
+        assert( result == VK_SUCCESS && "Failed to create rendererFinished semaphore" );
+    }
 
 }; //namespace Graphics
