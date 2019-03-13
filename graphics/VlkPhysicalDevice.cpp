@@ -1,6 +1,6 @@
-#include "vkPhysicalDevice.h"
+#include "VlkPhysicalDevice.h"
 
-#include "vkInstance.h"
+#include "VlkInstance.h"
 
 #include <vulkan/vulkan_core.h>
 
@@ -9,11 +9,11 @@
 
 namespace Graphics
 {
-    vkPhysicalDevice::~vkPhysicalDevice()
+    VlkPhysicalDevice::~VlkPhysicalDevice()
     {
     }
 
-    void vkPhysicalDevice::Init( const vkInstance& instance )
+    void VlkPhysicalDevice::Init( const VlkInstance& instance )
     {
         uint32 device_count = 0;
         VkResult result = vkEnumeratePhysicalDevices( instance.get(), &device_count, nullptr );
@@ -48,5 +48,13 @@ namespace Graphics
 
         assert( m_PhysicalDevice );
     }
+		
+	VkDevice VlkPhysicalDevice::CreateDevice( const VkDeviceCreateInfo& createInfo ) const
+    {
+        VkDevice device = nullptr;
+		VkResult result = vkCreateDevice( m_PhysicalDevice, &createInfo, nullptr, &device );
+		assert( result == VK_SUCCESS && "Failed to create device!");
+        return device;
+	}
 
 }; //namespace Graphics

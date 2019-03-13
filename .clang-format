@@ -22,7 +22,7 @@ SpaceInEmptyParentheses: 'false'
 SpacesInAngles: 'false'
 SpacesInCStyleCastParentheses: 'false'
 SpacesInParentheses: 'true'
-IndentWidth: 4
+IndentWidth: 1
 AccessModifierOffset: -4
 FixNamespaceComments: 'true'
 AlignTrailingComments: 'true'
@@ -30,3 +30,5 @@ SpaceBeforeParens: Never
 BreakConstructorInitializers: BeforeComma
 IncludeBlocks: Regroup
 SortIncludes: 'false'
+UseTab: 'ForIndentation'
+TabWidth: 4

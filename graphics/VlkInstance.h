@@ -5,11 +5,11 @@ LPE_DEFINE_HANDLE( VkInstance );
 
 namespace Graphics
 {
-    class vkInstance
+    class VlkInstance
     {
     public:
-        vkInstance() = default;
-        ~vkInstance();
+        VlkInstance() = default;
+        ~VlkInstance();
 
         void Init();
         void Release();

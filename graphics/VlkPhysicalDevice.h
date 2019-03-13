@@ -2,20 +2,26 @@
 #include <Core/Defines.h>
 #include <Core/Types.h>
 
-LPE_DEFINE_HANDLE( VkPhysicalDevice );
+#include "IGfxObject.h"
 
+LPE_DEFINE_HANDLE( VkPhysicalDevice );
+LPE_DEFINE_HANDLE( VkDevice );
+
+struct VkDeviceCreateInfo;
 namespace Graphics
 {
-    class vkInstance;
-    class vkPhysicalDevice
+    class VlkInstance;
+    class VlkPhysicalDevice
     {
     public:
-        vkPhysicalDevice() = default;
-        ~vkPhysicalDevice();
+        VlkPhysicalDevice() = default;
+        ~VlkPhysicalDevice();
 
-        void Init( const vkInstance& instance );
+        void Init( const VlkInstance& instance );
 
         uint32 GetQueueFamilyIndex() const { return m_QueueFamilyIndex; }
+
+		VkDevice CreateDevice( const VkDeviceCreateInfo& createInfo ) const;
 
     private:
         VkPhysicalDevice m_PhysicalDevice = nullptr;

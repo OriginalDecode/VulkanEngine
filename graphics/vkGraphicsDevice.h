@@ -7,9 +7,9 @@
 class Window;
 namespace Graphics
 {
-    class vkInstance;
-    class vkPhysicalDevice;
-    class vkDevice;
+    class VlkInstance;
+    class VlkPhysicalDevice;
+    class VlkDevice;
     class vkGraphicsDevice
     {
     public:
@@ -33,9 +33,9 @@ namespace Graphics
         void CreateCommandBuffers();
         void CreateSemaphores();
 
-        std::unique_ptr<vkInstance> m_Instance;
-        std::unique_ptr<vkPhysicalDevice> m_PhysicalDevice;
-        std::unique_ptr<vkDevice> m_LogicalDevice;
+        std::unique_ptr<VlkInstance> m_Instance;
+        std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
+        std::unique_ptr<VlkDevice> m_LogicalDevice;
 
         std::vector<VkImage> m_Images;
         std::vector<VkImageView> m_ImageViews;

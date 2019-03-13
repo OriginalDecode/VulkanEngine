@@ -1,22 +1,33 @@
-#include "vkDevice.h"
-#include "vkPhysicalDevice.h"
+#include "VlkDevice.h"
+#include "VlkPhysicalDevice.h"
+
+#include <vulkan/vulkan_core.h>
+#include <cassert>
 namespace Graphics
 {
     const char* debugLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
     const char* deviceExt[] = { "VK_KHR_swapchain" };
 
-    vkDevice::~vkDevice()
+    VlkDevice::~VlkDevice()
     {
-        Release();
+        Release(nullptr);
     }
 
-    void vkDevice::Release()
+	void VlkDevice::Release( IGfxDevice* )
     {
+		vkDestroyDevice( m_Device, nullptr );
     }
 
-    void vkDevice::Init( const vkPhysicalDevice& physicalDevice )
+	VkSwapchainKHR VlkDevice::CreateSwapchain( const VkSwapchainCreateInfoKHR& createInfo ) const
     {
+     VkSwapchainKHR swapchain = nullptr;
+     VkResult result = vkCreateSwapchainKHR( m_Device, &createInfo, nullptr, &swapchain );
+     assert( result == VK_SUCCESS && "Failed to create swapchain" );
+     return swapchain;
+	}
 
+    void VlkDevice::Init( const VlkPhysicalDevice& physicalDevice )
+    {
         //queue create info
         const float queue_priorities[] = { 1.f };
         VkDeviceQueueCreateInfo queueCreateInfo = {};
@@ -33,7 +44,7 @@ namespace Graphics
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         createInfo.queueCreateInfoCount = 1;
-        createInfo.pQueueCreateInfos = &device_queue_create_info;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
 #ifdef _DEBUG
         createInfo.enabledLayerCount = ARRSIZE( debugLayers );
         createInfo.ppEnabledLayerNames = debugLayers;
@@ -42,10 +53,8 @@ namespace Graphics
         createInfo.ppEnabledExtensionNames = deviceExt;
         createInfo.pEnabledFeatures = &enabled_features;
 
-        VkResult result = vkCreateDevice( m_PhysicalDevice, &device_create_info, nullptr, &m_Device );
-        assert( result == VK_SUCCESS && "Failed to create Vulkan device!" );
+		m_Device = physicalDevice.CreateDevice( createInfo );
 
-        vkGetDeviceQueue( m_Device, queueFamilyIndex, 0, &m_Queue );
-        assert( result == VK_SUCCESS && "Failed to create Vulkan queue!" );
+        vkGetDeviceQueue( m_Device, physicalDevice.GetQueueFamilyIndex(), 0, &m_Queue );
     }
 }; //namespace Graphics

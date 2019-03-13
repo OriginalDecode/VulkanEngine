@@ -1,8 +1,8 @@
 #include "vkGraphicsDevice.h"
 
-#include "vkInstance.h"
-#include "vkPhysicalDevice.h"
-#include "vkDevice.h"
+#include "VlkInstance.h"
+#include "VlkPhysicalDevice.h"
+#include "VlkDevice.h"
 
 #include "Utilities.h"
 #include "Window.h"
@@ -87,13 +87,13 @@ namespace Graphics
     bool vkGraphicsDevice::Init( const Window& window )
     {
 
-        m_Instance = std::make_unique<vkInstance>();
+        m_Instance = std::make_unique<VlkInstance>();
         m_Instance->Init();
 
-        m_PhysicalDevice = std::make_unique<vkPhysicalDevice>();
+        m_PhysicalDevice = std::make_unique<VlkPhysicalDevice>();
         m_PhysicalDevice->Init( *m_Instance );
 
-        m_LogicalDevice = std::make_unique<vkDevice>();
+        m_LogicalDevice = std::make_unique<VlkDevice>();
         m_LogicalDevice->Init( *m_PhysicalDevice );
 
         SetupDebugCallback();
@@ -246,9 +246,11 @@ namespace Graphics
             nullptr                                      /*VkSwapchainKHR                   oldSwapchain;*/
         };
 
-        result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
-        assert( result == VK_SUCCESS );
-        m_Format = swapchain_format;
+        //result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
+        m_Swapchain = m_LogicalDevice->CreateSwapchain( swapchainCreateInfo );
+
+        
+		m_Format = swapchain_format;
         m_Backbuffer = surface;
 
         uint32_t imageCount = 0;
