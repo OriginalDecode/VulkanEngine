@@ -10,6 +10,7 @@ namespace Graphics
     class VlkInstance;
     class VlkPhysicalDevice;
     class VlkDevice;
+	class VlkSwapchain;
     class vkGraphicsDevice
     {
     public:
@@ -36,6 +37,7 @@ namespace Graphics
         std::unique_ptr<VlkInstance> m_Instance;
         std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
         std::unique_ptr<VlkDevice> m_LogicalDevice;
+        std::unique_ptr<VlkSwapchain> m_Swapchain;
 
         std::vector<VkImage> m_Images;
         std::vector<VkImageView> m_ImageViews;
@@ -43,10 +45,9 @@ namespace Graphics
         std::vector<VkCommandBuffer> m_CommandBuffers;
 
         uint32 m_Format;
-
         VkSurfaceKHR m_Backbuffer = nullptr;
+
         VkRenderPass m_RenderPass = nullptr;
-        VkSwapchainKHR m_Swapchain = nullptr;
         VkCommandPool m_CommandPool = nullptr;
 
         VkSemaphore m_RendererFinished = nullptr;

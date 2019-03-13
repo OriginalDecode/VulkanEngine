@@ -13,8 +13,9 @@ namespace Graphics
 	
 	}
 
-    void VlkSwapchain::Init( VlkDevice* device )
+    void VlkSwapchain::Init( const VlkDevice& device )
     {
+		m_Swapchain = device.CreateSwapchain( /*create info*/ );
     }
 
 }; //namespace Graphics

@@ -15,7 +15,7 @@ namespace Graphics
 		~VlkSwapchain() override;
         void Release(IGfxDevice* device) override;
 
-		void Init( VlkDevice* device );
+		void Init( const VlkDevice& device );
 
 	private:
 		VkSwapchainKHR m_Swapchain;

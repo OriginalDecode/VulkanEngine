@@ -5,10 +5,13 @@ AllowShortBlocksOnASingleLine: 'false'
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
 BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: 'false'
 BreakConstructorInitializersBeforeComma: 'false'
-ColumnLimit: '0'
+ColumnLimit: 0
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'false'
 Cpp11BracedListStyle: 'false'
 IndentCaseLabels: 'true'
@@ -22,7 +25,6 @@ SpaceInEmptyParentheses: 'false'
 SpacesInAngles: 'false'
 SpacesInCStyleCastParentheses: 'false'
 SpacesInParentheses: 'true'
-IndentWidth: 1
 AccessModifierOffset: -4
 FixNamespaceComments: 'true'
 AlignTrailingComments: 'true'
@@ -30,5 +32,3 @@ SpaceBeforeParens: Never
 BreakConstructorInitializers: BeforeComma
 IncludeBlocks: Regroup
 SortIncludes: 'false'
-UseTab: 'ForIndentation'
-TabWidth: 4

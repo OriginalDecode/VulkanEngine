@@ -3,6 +3,7 @@
 #include "VlkInstance.h"
 #include "VlkPhysicalDevice.h"
 #include "VlkDevice.h"
+#include "VlkSwapchain.h"
 
 #include "Utilities.h"
 #include "Window.h"
@@ -247,7 +248,8 @@ namespace Graphics
         };
 
         //result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
-        m_Swapchain = m_LogicalDevice->CreateSwapchain( swapchainCreateInfo );
+        m_Swapchain->Init( *m_LogicalDevice );
+        //m_Swapchain = m_LogicalDevice->CreateSwapchain( swapchainCreateInfo );
 
         
 		m_Format = swapchain_format;
