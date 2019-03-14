@@ -179,26 +179,7 @@ namespace Graphics
         VkColorSpaceKHR swapchainColorspace;
         swapchainColorspace = surface_formats.front().colorSpace;
 
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{
-            VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR, /*VkStructureType                  sType;*/
-            nullptr,                                     /*const void*                      pNext;*/
-            0,                                           /*VkSwapchainCreateFlagsKHR        flags;*/
-            surface,                                     /*VkSurfaceKHR                     surface;*/
-            surface_capabilities.minImageCount,          /*uint32_t                         minImageCount;*/
-            swapchain_format,                            /*VkFormat                         imageFormat;*/
-            swapchainColorspace,                         /*VkColorSpaceKHR                  imageColorSpace;*/
-            m_Extent,                                    /*VkExtent2D                       imageExtent;*/
-            1,                                           /*uint32_t                         imageArrayLayers;*/
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,         /*VkImageUsageFlags                imageUsage;*/
-            VK_SHARING_MODE_EXCLUSIVE,                   /*VkSharingMode                    imageSharingMode;*/
-            0,                                           /*uint32_t                         queueFamilyIndexCount;*/
-            nullptr,                                     /*const uint32_t*                  pQueueFamilyIndices;*/
-            surface_transform_flags,                     /*VkSurfaceTransformFlagBitsKHR    preTransform;*/
-            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,           /*VkCompositeAlphaFlagBitsKHR      compositeAlpha;*/
-            VK_PRESENT_MODE_FIFO_KHR,                    /*VkPresentModeKHR                 presentMode;*/
-            VK_TRUE,                                     /*VkBool32                         clipped;*/
-            nullptr                                      /*VkSwapchainKHR                   oldSwapchain;*/
-        };
+     
 
         //result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
         //m_Swapchain = m_LogicalDevice->CreateSwapchain( swapchainCreateInfo );
@@ -213,21 +194,7 @@ namespace Graphics
         vkGetSwapchainImagesKHR( m_Device, m_Swapchain, &imageCount, m_Images.data() );
     }
 
-    VkSurfaceKHR vkGraphicsDevice::CreateSurface( HWindow windowHandle )
-    {
-        VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.hwnd = windowHandle;
-        surfaceCreateInfo.hinstance = ::GetModuleHandle( nullptr );
-
-        VkSurfaceKHR surface = nullptr;
-        VkResult result = vkCreateWin32SurfaceKHR( m_Instance->get(), &surfaceCreateInfo, nullptr, &surface );
-        assert( result == VK_SUCCESS );
-
-        return surface;
-    }
-
-    void vkGraphicsDevice::CreateFramebuffers( const Window& window )
+	void vkGraphicsDevice::CreateFramebuffers( const Window& window )
     {
         m_FrameBuffers.resize( m_ImageViews.size() );
         for( size_t i = 0; i < m_ImageViews.size(); ++i )

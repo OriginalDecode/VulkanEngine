@@ -6,6 +6,11 @@ namespace Graphics
  {
   public:
   virtual ~IGfxDevice() {}
+
+
+
+
+
  };
 
 }; //namespace Graphics

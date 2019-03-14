@@ -1,6 +1,12 @@
 #include "VlkInstance.h"
-#include <vulkan/vulkan.h>
+
 #include <cassert>
+#include <vulkan/vulkan.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <vulkan/vulkan_win32.h>
+#endif
+
 #include <vector>
 
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
@@ -43,7 +49,8 @@ namespace Graphics
 		VkDebugReportCallbackCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.pfnCallback = &DebugReportCallback;
-		
+		createInfo.flags = flags;
+	
 		VkResult result = FCreateCallback(instance, &createInfo, nullptr, &debugCallback);
 		assert(result == VK_SUCCESS);
 	}
@@ -78,7 +85,6 @@ namespace Graphics
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;
 
 
-
 		VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &m_Instance);
 		assert(result == VK_SUCCESS && "Failed to create Vulkan instance!");
 
@@ -89,6 +95,20 @@ namespace Graphics
 	void VlkInstance::Release()
 	{
 		vkDestroyInstance(m_Instance, nullptr);
+	}
+
+	VkSurfaceKHR VlkInstance::CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo ) const
+	{
+		VkSurfaceKHR surface = nullptr;
+		VkResult result = vkCreateWin32SurfaceKHR( m_Instance, &createInfo, nullptr, &surface );
+		assert( result == VK_SUCCESS );
+
+		return surface;
+	}
+
+	void VlkInstance::DestroySurface( VkSurfaceKHR pSurface )
+	{
+		vkDestroySurfaceKHR( m_Instance, pSurface, nullptr );
 	}
 
 };

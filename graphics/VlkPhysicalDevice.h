@@ -4,6 +4,9 @@
 
 #include "IGfxObject.h"
 
+
+#include <vulkan/vulkan_core.h>
+
 LPE_DEFINE_HANDLE( VkPhysicalDevice );
 LPE_DEFINE_HANDLE( VkDevice );
 
@@ -11,6 +14,7 @@ struct VkDeviceCreateInfo;
 namespace Graphics
 {
     class VlkInstance;
+	class VlkSurface;
     class VlkPhysicalDevice
     {
     public:
@@ -23,6 +27,10 @@ namespace Graphics
 
 		VkDevice CreateDevice( const VkDeviceCreateInfo& createInfo ) const;
 
+		bool SurfaceCanPresent( VkSurfaceKHR pSurface ) const;
+		uint32 GetSurfacePresentModeCount( const VlkSurface& surface ) const;
+		void GetSurfacePresentModes( const VlkSurface& surface, uint32 modeCount, VkPresentModeKHR* presentModes ) const;
+		VkSurfaceCapabilitiesKHR GetSurfaceCapabilities( const VlkSurface& surface ) const;
     private:
         VkPhysicalDevice m_PhysicalDevice = nullptr;
         uint32 m_QueueFamilyIndex = 0;

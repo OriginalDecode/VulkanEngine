@@ -5,6 +5,8 @@
 #include <vulkan/vulkan_core.h>
 #include <memory>
 class Window;
+
+struct VkWin32SurfaceCreateInfoKHR;
 namespace Graphics
 {
     class VlkInstance;
@@ -22,9 +24,12 @@ namespace Graphics
         void Present();
         void DrawFrame();
 
+
+		VlkInstance& GetVlkInstance() { return *m_Instance; }
+		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
+
     private:
         void CreateSwapchain( const Window& window );
-        VkSurfaceKHR CreateSurface( HWindow windowHandle );
         void CreateFramebuffers( const Window& window );
         VkRenderPass CreateRenderPass();
         void CreateImageViews();

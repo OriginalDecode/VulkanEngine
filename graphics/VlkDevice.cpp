@@ -1,8 +1,11 @@
 #include "VlkDevice.h"
 #include "VlkPhysicalDevice.h"
 
+#include <Windows.h>
 #include <vulkan/vulkan_core.h>
 #include <cassert>
+
+
 namespace Graphics
 {
 	const char* debugLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
@@ -26,7 +29,12 @@ namespace Graphics
 		return swapchain;
 	}
 
-	void VlkDevice::Init(const VlkPhysicalDevice& physicalDevice)
+	void VlkDevice::DestroySwapchain( VkSwapchainKHR pSwapchain )
+	{
+		vkDestroySwapchainKHR( m_Device, pSwapchain, nullptr );
+	}
+
+	void VlkDevice::Init( const VlkPhysicalDevice& physicalDevice )
 	{
 		//queue create info
 		const float queue_priorities[] = { 1.f };

@@ -2,7 +2,9 @@
 #include <Core/Defines.h>
 
 LPE_DEFINE_HANDLE( VkInstance );
+LPE_DEFINE_HANDLE( VkSurfaceKHR );
 
+struct VkWin32SurfaceCreateInfoKHR;
 namespace Graphics
 {
     class VlkInstance
@@ -14,7 +16,9 @@ namespace Graphics
         void Init();
         void Release();
 
-        VkInstance get() const { return m_Instance; }
+
+		VkSurfaceKHR CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo ) const;
+		void DestroySurface( VkSurfaceKHR pSurface );
 
     private:
         VkInstance m_Instance = nullptr;

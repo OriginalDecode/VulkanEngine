@@ -19,12 +19,14 @@ namespace Graphics
 		bool Init(const Window& window);
 		void Present();
 
+		static vkGraphicsDevice& GetDevice() { return *m_Instance->m_Device; }
+
 	private:
 		static std::unique_ptr<GraphicsEngine> m_Instance;
+		std::unique_ptr<vkGraphicsDevice> m_Device;
 
 		void BeginFrame();
 
-		std::unique_ptr<vkGraphicsDevice> m_Device;
 
 	};
 
