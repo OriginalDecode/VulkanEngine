@@ -3,11 +3,51 @@
 #include <cassert>
 #include <vector>
 
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
+	VkDebugReportFlagsEXT /* flags */,
+	VkDebugReportObjectTypeEXT /* objectType */,
+	uint64_t /* object */,
+	size_t /* location */,
+	int32_t /* messageCode */,
+	const char* /* pLayerPrefix */,
+	const char* pMessage,
+	void* /* pUserData */)
+{
+	char temp[500] = { 0 };
+	sprintf_s(temp, "Warning : %s", pMessage);
+	assert(!temp);
+	//OutputDebugStringA(pMessage);
+	//OutputDebugStringA("\n");
+	return VK_FALSE;
+}
+
 namespace Graphics
 {
 	constexpr char* validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
 	constexpr char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface", "VK_EXT_debug_report" };
-	
+	VkDebugReportCallbackEXT debugCallback;
+
+	void SetupDebugCallback(VkInstance instance)
+	{
+		auto FCreateCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+		assert(FCreateCallback && "Failed to setup callback!");
+
+		if (!FCreateCallback)
+			return;
+
+		VkDebugReportFlagsEXT flags =
+			VK_DEBUG_REPORT_ERROR_BIT_EXT |
+			VK_DEBUG_REPORT_WARNING_BIT_EXT |
+			VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+
+		VkDebugReportCallbackCreateInfoEXT createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+		createInfo.pfnCallback = &DebugReportCallback;
+		
+		VkResult result = FCreateCallback(instance, &createInfo, nullptr, &debugCallback);
+		assert(result == VK_SUCCESS);
+	}
+
 	VlkInstance::~VlkInstance()
 	{
 		Release();
@@ -40,7 +80,10 @@ namespace Graphics
 
 
 		VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &m_Instance);
-		assert(result == VK_SUCCESS && "Failed to create vulkan instance!");
+		assert(result == VK_SUCCESS && "Failed to create Vulkan instance!");
+
+		SetupDebugCallback(m_Instance);
+
 	}
 
 	void VlkInstance::Release()

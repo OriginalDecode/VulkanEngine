@@ -23,8 +23,6 @@ namespace Graphics
         void DrawFrame();
 
     private:
-        void SetupDebugCallback();
-
         void CreateSwapchain( const Window& window );
         VkSurfaceKHR CreateSurface( HWindow windowHandle );
         void CreateFramebuffers( const Window& window );

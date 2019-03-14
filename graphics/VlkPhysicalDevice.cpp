@@ -28,7 +28,8 @@ namespace Graphics
             uint32 property_count = 0;
             vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, nullptr );
 
-            std::vector<VkQueueFamilyProperties> queue_properties{ property_count };
+            //std::vector<VkQueueFamilyProperties> queue_properties{ property_count };
+			m_QueueProperties.reserve(property_count);
             vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, queue_properties.data() );
 
             for( size_t i = 0; i < queue_properties.size(); ++i )

@@ -26,6 +26,7 @@ namespace Graphics
     private:
         VkPhysicalDevice m_PhysicalDevice = nullptr;
         uint32 m_QueueFamilyIndex = 0;
+		std::vector<VkQueueFamilyProperties> m_QueueProperties;
     };
 
 }; //namespace Graphics

@@ -1,3 +1,3 @@
 @echo off
 
-python buildscript.py -b=Engine.sln -v=m
+python buildscript.py --clean -c=vs2015 -b=Engine.sln -v=m

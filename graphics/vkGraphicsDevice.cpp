@@ -13,71 +13,24 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
-VkDebugReportCallbackEXT _debugCallback;
 VkClearValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
-    VkDebugReportFlagsEXT /* flags */,
-    VkDebugReportObjectTypeEXT /* objectType */,
-    uint64_t /* object */,
-    size_t /* location */,
-    int32_t /* messageCode */,
-    const char* /* pLayerPrefix */,
-    const char* pMessage,
-    void* /* pUserData */ )
-{
-    assert( "warning" );
-    OutputDebugStringA( pMessage );
-    OutputDebugStringA( "\n" );
-    return VK_FALSE;
-}
+
 
 namespace Graphics
 {
-    void vkGraphicsDevice::SetupDebugCallback()
-    {
-        VkInstance instance = m_Instance->get();
-        auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
-
-        if( !func )
-            return;
-
-        VkDebugReportFlagsEXT flags =
-            VK_DEBUG_REPORT_ERROR_BIT_EXT |
-            VK_DEBUG_REPORT_WARNING_BIT_EXT |
-            VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-
-        VkDebugReportCallbackCreateInfoEXT callbackCreateInfo{
-            VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, /* VkStructureType                 sType; */
-            nullptr,                                                 /* const void*                     pNext; */
-            flags,                                                   /* VkDebugReportFlagsEXT           flags; */
-            &DebugReportCallback,                                    /* PFN_vkDebugReportCallbackEXT    pfnCallback; */
-            nullptr                                                  /* void*                           pUserData;   */
-        };
-
-        VkResult result = func( instance, &callbackCreateInfo, nullptr /*allocator*/, &_debugCallback );
-        assert( result == VK_SUCCESS );
-    }
-
     vkGraphicsDevice::~vkGraphicsDevice()
     {
-        vkDestroySwapchainKHR( m_Device, m_Swapchain, nullptr );
-        vkDestroySurfaceKHR( m_Instance->get(), m_Backbuffer, nullptr );
+        vkDestroySurfaceKHR( m_Instance, m_Backbuffer, nullptr );
 
         for( auto fb : m_FrameBuffers )
-        {
             vkDestroyFramebuffer( m_Device, fb, nullptr );
-        }
 
         for( auto image : m_Images )
-        {
             vkDestroyImage( m_Device, image, nullptr );
-        }
 
         for( auto view : m_ImageViews )
-        {
             vkDestroyImageView( m_Device, view, nullptr );
-        }
 
         vkDestroySemaphore( m_Device, m_RendererFinished, nullptr );
         vkDestroySemaphore( m_Device, m_ImageAvailable, nullptr );
@@ -97,9 +50,9 @@ namespace Graphics
         m_LogicalDevice = std::make_unique<VlkDevice>();
         m_LogicalDevice->Init( *m_PhysicalDevice );
 
-        SetupDebugCallback();
+		m_Swapchain = std::make_unique<VlkSwapchain>();
+		m_Swapchain->Init(*m_LogicalDevice, *m_PhysicalDevice, window);
 
-        CreateSwapchain( window );
 
         m_RenderPass = CreateRenderPass();
         CreateImageViews();
@@ -248,7 +201,6 @@ namespace Graphics
         };
 
         //result = vkCreateSwapchainKHR( m_Device, &swapchainCreateInfo, nullptr /*allocator*/, &m_Swapchain );
-        m_Swapchain->Init( *m_LogicalDevice );
         //m_Swapchain = m_LogicalDevice->CreateSwapchain( swapchainCreateInfo );
 
         
