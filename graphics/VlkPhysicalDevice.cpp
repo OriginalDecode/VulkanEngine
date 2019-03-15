@@ -69,9 +69,12 @@ namespace Graphics
 		return true;
 	}
 
-	VkSurfaceCapabilitiesKHR VlkPhysicalDevice::GetSurfaceCapabilities( const VlkSurface& surface ) const
+	VkSurfaceCapabilitiesKHR VlkPhysicalDevice::GetSurfaceCapabilities( VkSurfaceKHR pSurface ) const
 	{
-		return surface.GetCapabilities( m_PhysicalDevice );
+		VkSurfaceCapabilitiesKHR capabilities = {};
+		VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR( m_PhysicalDevice, pSurface, &capabilities );
+		assert( result == VK_SUCCESS );
+		return capabilities;
 	}
 
 	uint32 VlkPhysicalDevice::GetSurfacePresentModeCount( const VlkSurface& surface ) const
@@ -79,9 +82,9 @@ namespace Graphics
 		return surface.GetPresentModeCount( m_PhysicalDevice );
 	}
 
-	void VlkPhysicalDevice::GetSurfacePresentModes( const VlkSurface& surface, uint32 modeCount, VkPresentModeKHR* presentModes ) const
-	{
-		surface.GetPresentModes( m_PhysicalDevice, modeCount, presentModes );
-	}
+	//void VlkPhysicalDevice::GetSurfacePresentModes( const VlkSurface& surface, uint32 modeCount, VkPresentModeKHR* presentModes ) const
+	//{
+	//	surface.GetPresentModes( m_PhysicalDevice, modeCount, presentModes );
+	//}
 
 }; //namespace Graphics

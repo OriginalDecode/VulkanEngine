@@ -7,7 +7,6 @@
 
 LPE_DEFINE_HANDLE( VkSurfaceKHR );
 LPE_DEFINE_HANDLE( VkPhysicalDevice );
-
 struct VkWin32SurfaceCreateInfoKHR;
 
 namespace Graphics
@@ -22,15 +21,23 @@ namespace Graphics
 		~VlkSurface();
 		void Release();
 
-		void Init( VkSurfaceKHR pSurface );
+		void Init( VkSurfaceKHR pSurface, const VlkPhysicalDevice& physicalDevice );
 
-		bool CanPresent( const VlkPhysicalDevice& physicalDevice )const;
+		bool CanPresent()const;
 
 		uint32 GetPresentModeCount(VkPhysicalDevice pPhysicalDevice) const;
+		VkSurfaceCapabilitiesKHR GetCapabilities( const VlkPhysicalDevice& physicalDevice ) const;
+
 		void GetPresentModes( VkPhysicalDevice pPhysicalDevice, uint32 modeCount, VkPresentModeKHR* presentModes ) const;
-		VkSurfaceCapabilitiesKHR GetCapabilities( VkPhysicalDevice pPhysicalDevice ) const;
+
+		uint32 GetFormatCount( VkPhysicalDevice pPhysicalDevice ) const;
+		void GetSurfaceFormat( VkPhysicalDevice pPhysicalDevice, VkSurfaceFormatKHR* formats );
 
 	private:
+		bool m_CanPresent = false;
 		VkSurfaceKHR m_Surface = nullptr;
+		
+
+
 	};
 }; // namespace Graphics
