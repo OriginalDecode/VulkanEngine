@@ -21,7 +21,7 @@ namespace Graphics
 		~VlkSwapchain();
 		void Release();
 
-		void Init( const VlkInstance& instance, const VlkDevice& device, const VlkPhysicalDevice& physicalDevice, const Window& window );
+		void Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window );
 
 	private:
 		void GetSurfaceCapabilities( VkSurfaceKHR surface, const VlkPhysicalDevice& physicalDevice, VkSurfaceCapabilitiesKHR* pCapabilities );

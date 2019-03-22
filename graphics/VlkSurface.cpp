@@ -19,11 +19,10 @@ namespace Graphics
 		GraphicsEngine::GetDevice().GetVlkInstance().DestroySurface( m_Surface );
 	}
 
-	void VlkSurface::Init( VkSurfaceKHR pSurface, const VlkPhysicalDevice& physicalDevice )
+	void VlkSurface::Init( VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice )
 	{
 		m_Surface = pSurface;
-
-		m_CanPresent = physicalDevice.SurfaceCanPresent( m_Surface );
+		physicalDevice->GetSurfaceInfo( pSurface, &m_CanPresent, &m_FormatCount, m_Formats, &m_PresentCount, m_PresentModes, &m_Capabilities );
 	}
 
 	bool VlkSurface::CanPresent() const
@@ -45,23 +44,20 @@ namespace Graphics
 		assert( result == VK_SUCCESS );
 	}
 
-	uint32 VlkSurface::GetFormatCount( VkPhysicalDevice pPhysicalDevice ) const
+	uint32 VlkSurface::GetFormatCount() const
 	{
-		uint32 formatCount = 0;
-		vkGetPhysicalDeviceSurfaceFormatsKHR( pPhysicalDevice, m_Surface, &formatCount, nullptr );
 
+		return m_FormatCount;
 	}
 
-	void VlkSurface::GetSurfaceFormat( VkPhysicalDevice pPhysicalDevice, VkSurfaceFormatKHR* formats )
+	VkSurfaceFormatKHR* VlkSurface::GetSurfaceFormat()
 	{
-		
-
-
+		return m_Formats;
 	}
 
-	VkSurfaceCapabilitiesKHR VlkSurface::GetCapabilities( const VlkPhysicalDevice& physicalDevice ) const
+	const VkSurfaceCapabilitiesKHR& VlkSurface::GetCapabilities() const
 	{
-		return physicalDevice.GetSurfaceCapabilities( m_Surface );
+		return m_Capabilities;
 	}
 
 }; // namespace Graphics

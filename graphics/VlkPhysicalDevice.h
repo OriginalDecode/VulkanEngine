@@ -36,12 +36,24 @@ namespace Graphics
 
 		VkDevice CreateDevice( const VkDeviceCreateInfo& createInfo ) const;
 
-		bool SurfaceCanPresent( VkSurfaceKHR pSurface ) const;
-		uint32 GetSurfacePresentModeCount( const VlkSurface& surface ) const;
-		//void GetSurfacePresentModes( VkSurfaceKHR pSurface, uint32 modeCount, VkPresentModeKHR* presentModes ) const;
-		VkSurfaceCapabilitiesKHR GetSurfaceCapabilities( VkSurfaceKHR pSurface ) const;
+
+		void GetSurfaceInfo(VkSurfaceKHR pSurface, bool* canPresent, 
+							uint32* formatCount, VkSurfaceFormatKHR* formats, 
+							uint32* presentCount, VkPresentModeKHR* presentModes, 
+							VkSurfaceCapabilitiesKHR* capabilities );
 
 	private:
+		bool SurfaceCanPresent( VkSurfaceKHR pSurface ) const;
+		uint32 GetSurfacePresentModeCount( VkSurfaceKHR pSurface ) const;
+		void GetSurfacePresentModes( VkSurfaceKHR pSurface, uint32 presentModeCount, VkPresentModeKHR* presentModes ) const;
+		void GetSurfaceFormats( VkSurfaceKHR pSurface, uint32 formatCount, VkSurfaceFormatKHR* formats ) const;
+		uint32 GetSurfaceFormatCount( VkSurfaceKHR pSurface ) const;
+		VkSurfaceCapabilitiesKHR GetSurfaceCapabilities( VkSurfaceKHR pSurface ) const;
+
+
+
+
+
 		VkPhysicalDevice m_PhysicalDevice = nullptr;
 		uint32 m_QueueFamilyIndex = 0;
 

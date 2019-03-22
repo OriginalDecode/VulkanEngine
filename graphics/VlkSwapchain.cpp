@@ -28,15 +28,14 @@ namespace Graphics
 		Release();
 	}
 
-	void VlkSwapchain::Init( const VlkInstance& instance, const VlkDevice& device, const VlkPhysicalDevice& physicalDevice, const Window& window )
+	void VlkSwapchain::Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window )
 	{
 		VkWin32SurfaceCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 		createInfo.hwnd = window.GetHandle();
 		createInfo.hinstance = GetModuleHandle( nullptr );
 
-		m_Surface = std::make_unique<VlkSurface>();
-		m_Surface->Init( instance.CreateSurface( createInfo ), physicalDevice );
+		m_Surface = instance->CreateSurface( createInfo, physicalDevice );
 
 		if( !m_Surface->CanPresent() )
 		{
@@ -44,32 +43,29 @@ namespace Graphics
 			return;
 		}
 
-		const uint32 presentModeCount = physicalDevice.GetSurfacePresentModeCount( *m_Surface );
-		std::vector<VkPresentModeKHR> presentModes{ presentModeCount };
-		physicalDevice.GetSurfacePresentModes( *m_Surface, presentModeCount, presentModes.data() );
 
-		VkSurfaceCapabilitiesKHR surfaceCapabilities = m_Surface->GetCapabilities( physicalDevice );
+		const VkSurfaceCapabilitiesKHR& capabilities = m_Surface->GetCapabilities();
 
-		uint32 swapchain_image_count = 2; //backbuffer count, atleast 2;
-		assert( swapchain_image_count < surfaceCapabilities.maxImageCount );
+		uint32 swapchain_image_count = 2;
+		assert( swapchain_image_count < capabilities.maxImageCount );
 
-		VkExtent2D extent = surfaceCapabilities.currentExtent;
+		VkExtent2D extent = capabilities.currentExtent;
 
 		
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		swapchainCreateInfo.surface = m_Surface->m_Surface;
-		swapchainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
+		swapchainCreateInfo.minImageCount = capabilities.minImageCount;
 		swapchainCreateInfo.imageFormat = VK_FORMAT_R8G8B8_UNORM;
-		swapchainCreateInfo.imageColorSpace = REPLACE_ME;
+		//swapchainCreateInfo.imageColorSpace = ;
 		swapchainCreateInfo.imageExtent = extent;
 		swapchainCreateInfo.imageArrayLayers = 1;
 
 		if( m_Surface->CanPresent() )
 		{
-			uint32_t queueIndices[] = { physicalDevice.GetQueueFamilyIndex(), physicalDevice.GetQueueFamilyIndex() };
-			swapchainCreateInfo.queueFamilyIndexCount = physicalDevice.GetQueueFamilyIndex();
+			uint32_t queueIndices[] = { physicalDevice->GetQueueFamilyIndex(), physicalDevice->GetQueueFamilyIndex() };
+			swapchainCreateInfo.queueFamilyIndexCount = physicalDevice->GetQueueFamilyIndex();
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		}
@@ -80,8 +76,8 @@ namespace Graphics
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		VkSurfaceTransformFlagBitsKHR transformFlags = surfaceCapabilities.currentTransform;
-		if( surfaceCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR )
+		VkSurfaceTransformFlagBitsKHR transformFlags = capabilities.currentTransform;
+		if( capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR )
 			transformFlags = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
 		swapchainCreateInfo.preTransform = transformFlags;
@@ -91,7 +87,8 @@ namespace Graphics
 		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
 		swapchainCreateInfo.clipped = VK_TRUE;
 
-		m_Swapchain = device.CreateSwapchain( swapchainCreateInfo );
+
+		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
 	}
 
 	void VlkSwapchain::GetSurfaceCapabilities( VkSurfaceKHR surface, const VlkPhysicalDevice& physicalDevice, VkSurfaceCapabilitiesKHR* pCapabilities )

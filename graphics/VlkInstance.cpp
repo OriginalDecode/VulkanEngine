@@ -1,5 +1,6 @@
 #include "VlkInstance.h"
-
+#include "VlkSurface.h"
+#include "VlkPhysicalDevice.h"
 #include <cassert>
 #include <vulkan/vulkan.h>
 #ifdef _WIN32
@@ -17,11 +18,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
 	int32_t /* messageCode */,
 	const char* /* pLayerPrefix */,
 	const char* pMessage,
-	void* /* pUserData */)
+	void* /* pUserData */ )
 {
 	char temp[500] = { 0 };
-	sprintf_s(temp, "Warning : %s", pMessage);
-	assert(!temp);
+	sprintf_s( temp, "Warning : %s", pMessage );
+	assert( !temp );
 	//OutputDebugStringA(pMessage);
 	//OutputDebugStringA("\n");
 	return VK_FALSE;
@@ -33,12 +34,12 @@ namespace Graphics
 	constexpr char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface", "VK_EXT_debug_report" };
 	VkDebugReportCallbackEXT debugCallback;
 
-	void SetupDebugCallback(VkInstance instance)
+	void SetupDebugCallback( VkInstance instance )
 	{
-		auto FCreateCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-		assert(FCreateCallback && "Failed to setup callback!");
+		auto FCreateCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
+		assert( FCreateCallback && "Failed to setup callback!" );
 
-		if (!FCreateCallback)
+		if( !FCreateCallback )
 			return;
 
 		VkDebugReportFlagsEXT flags =
@@ -50,9 +51,9 @@ namespace Graphics
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.pfnCallback = &DebugReportCallback;
 		createInfo.flags = flags;
-	
-		VkResult result = FCreateCallback(instance, &createInfo, nullptr, &debugCallback);
-		assert(result == VK_SUCCESS);
+
+		VkResult result = FCreateCallback( instance, &createInfo, nullptr, &debugCallback );
+		assert( result == VK_SUCCESS );
 	}
 
 	VlkInstance::~VlkInstance()
@@ -66,35 +67,31 @@ namespace Graphics
 
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appInfo.pApplicationName = "Skold Engine";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.applicationVersion = VK_MAKE_VERSION( 1, 0, 0 );
 		appInfo.pEngineName = "Skold Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.engineVersion = VK_MAKE_VERSION( 1, 0, 0 );
 		appInfo.apiVersion = VK_API_VERSION_1_1;
-
-
 
 		VkInstanceCreateInfo instanceCreateInfo = {};
 
 		instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		instanceCreateInfo.pApplicationInfo = 0;
 
-		instanceCreateInfo.enabledLayerCount = ARRSIZE(validationLayers);
+		instanceCreateInfo.enabledLayerCount = ARRSIZE( validationLayers );
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers;
 
-		instanceCreateInfo.enabledExtensionCount = ARRSIZE(extentions);
+		instanceCreateInfo.enabledExtensionCount = ARRSIZE( extentions );
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;
 
+		VkResult result = vkCreateInstance( &instanceCreateInfo, nullptr /*allocator*/, &m_Instance );
+		assert( result == VK_SUCCESS && "Failed to create Vulkan instance!" );
 
-		VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &m_Instance);
-		assert(result == VK_SUCCESS && "Failed to create Vulkan instance!");
-
-		SetupDebugCallback(m_Instance);
-
+		SetupDebugCallback( m_Instance );
 	}
 
 	void VlkInstance::Release()
 	{
-		vkDestroyInstance(m_Instance, nullptr);
+		vkDestroyInstance( m_Instance, nullptr );
 	}
 
 	VkSurfaceKHR VlkInstance::CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo ) const
@@ -106,9 +103,16 @@ namespace Graphics
 		return surface;
 	}
 
+	upVlkSurface VlkInstance::CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo, VlkPhysicalDevice* physicalDevice ) const
+	{
+		upVlkSurface surface = std::make_unique<VlkSurface>();
+		surface->Init( CreateSurface( createInfo ), physicalDevice );
+		return surface;
+	}
+
 	void VlkInstance::DestroySurface( VkSurfaceKHR pSurface )
 	{
 		vkDestroySurfaceKHR( m_Instance, pSurface, nullptr );
 	}
 
-};
+}; // namespace Graphics

@@ -57,17 +57,7 @@ namespace Graphics
 		return device;
 	}
 
-	bool VlkPhysicalDevice::SurfaceCanPresent( VkSurfaceKHR pSurface ) const
-	{
-		VkBool32 present_supported = VK_FALSE;
-		VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR( m_PhysicalDevice, m_QueueFamilyIndex, pSurface, &present_supported );
-		if( result != VK_SUCCESS )
-		{
-			assert( !"Surface does not support presenting!" );
-			return false;
-		}
-		return true;
-	}
+	
 
 	VkSurfaceCapabilitiesKHR VlkPhysicalDevice::GetSurfaceCapabilities( VkSurfaceKHR pSurface ) const
 	{
@@ -77,14 +67,69 @@ namespace Graphics
 		return capabilities;
 	}
 
-	uint32 VlkPhysicalDevice::GetSurfacePresentModeCount( const VlkSurface& surface ) const
+	bool VlkPhysicalDevice::SurfaceCanPresent( VkSurfaceKHR pSurface ) const
 	{
-		return surface.GetPresentModeCount( m_PhysicalDevice );
+		VkBool32 present_supported = VK_FALSE;
+		VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR( m_PhysicalDevice, m_QueueFamilyIndex, pSurface, &present_supported );
+		assert( result == VK_SUCCESS && "Failed to get present_supported!" );
+		return present_supported != VK_FALSE;
 	}
 
-	//void VlkPhysicalDevice::GetSurfacePresentModes( const VlkSurface& surface, uint32 modeCount, VkPresentModeKHR* presentModes ) const
-	//{
-	//	surface.GetPresentModes( m_PhysicalDevice, modeCount, presentModes );
-	//}
+	void VlkPhysicalDevice::GetSurfaceInfo( VkSurfaceKHR pSurface, bool* canPresent, 
+											uint32* formatCount, VkSurfaceFormatKHR* formats, 
+											uint32* presentCount, VkPresentModeKHR* presentModes, 
+											VkSurfaceCapabilitiesKHR* capabilities )
+	{
+
+		if(canPresent)
+		{
+			*canPresent = SurfaceCanPresent( pSurface );
+		}
+
+		if (formatCount)
+		{
+			*formatCount = GetSurfaceFormatCount( pSurface );
+			if (formats)
+			{
+				GetSurfaceFormats( pSurface, *formatCount, formats );
+			}
+		}
+
+		if (presentCount)
+		{
+			*presentCount = GetSurfacePresentModeCount( pSurface );
+			if (presentModes)
+			{
+				GetSurfacePresentModes( pSurface, *presentCount, presentModes );
+			}
+		}
+
+		*capabilities = GetSurfaceCapabilities( pSurface );
+
+	}
+
+	uint32 VlkPhysicalDevice::GetSurfacePresentModeCount( VkSurfaceKHR pSurface ) const
+	{
+		uint32 presentModeCount = 0;
+		vkGetPhysicalDeviceSurfacePresentModesKHR( m_PhysicalDevice, pSurface, &presentModeCount, nullptr );
+		return presentModeCount;
+	}
+
+	void VlkPhysicalDevice::GetSurfacePresentModes( VkSurfaceKHR pSurface, uint32 presentModeCount, VkPresentModeKHR* presentModes ) const
+	{
+		vkGetPhysicalDeviceSurfacePresentModesKHR( m_PhysicalDevice, pSurface, &presentModeCount, presentModes );
+	}
+
+	void VlkPhysicalDevice::GetSurfaceFormats( VkSurfaceKHR pSurface, uint32 formatCount, VkSurfaceFormatKHR* formats ) const
+	{
+		vkGetPhysicalDeviceSurfaceFormatsKHR( m_PhysicalDevice, pSurface, &formatCount, formats );
+	}
+
+	uint32 VlkPhysicalDevice::GetSurfaceFormatCount( VkSurfaceKHR pSurface ) const
+	{
+		uint32 formatCount = 0;
+		vkGetPhysicalDeviceSurfaceFormatsKHR( m_PhysicalDevice, pSurface, &formatCount, nullptr );
+		return formatCount;
+	}
 
 }; //namespace Graphics
