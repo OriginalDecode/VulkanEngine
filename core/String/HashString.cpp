@@ -23,8 +23,17 @@ namespace Core
         return "no string in final"; //If hashserver gets made. Use that to query
 #endif
     }
+	
+	HashString& HashString::operator=( const HashString& str )
+	{
+		m_Hash = str.m_Hash;
+#ifdef _DEBUG
+		m_DebugString = str.m_DebugString;
+#endif
+		return *this;
+	}
 
-    bool HashString::operator==( uint64 hash ) const
+	bool HashString::operator==( uint64 hash ) const
     {
         return m_Hash == hash;
     }

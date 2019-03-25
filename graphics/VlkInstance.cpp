@@ -21,11 +21,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
 	const char* pMessage,
 	void* /* pUserData */ )
 {
-	char temp[500] = { 0 };
-	sprintf_s( temp, "Warning : %s", pMessage );
-	assert( !temp );
-	//OutputDebugStringA(pMessage);
-	//OutputDebugStringA("\n");
+	/*char temp[USHRT_MAX] = { 0 };
+	sprintf_s( temp, "Warning : %s", pMessage );*/
+	OutputDebugStringA(pMessage);
+	OutputDebugStringA("\n");
+	//assert( false && temp );
 	return VK_FALSE;
 }
 

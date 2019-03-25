@@ -28,7 +28,7 @@ namespace Graphics
 			for( size_t i = 0; i < m_QueueProperties.size(); ++i )
 			{
 				const VkQueueFamilyProperties& property = m_QueueProperties[i];
-				if( property.queueFlags & VK_QUEUE_GRAPHICS_BIT )
+				if( property.queueCount > 0 && property.queueFlags & VK_QUEUE_GRAPHICS_BIT )
 				{
 					if( !m_PhysicalDevice )
 						m_PhysicalDevice = device;
@@ -51,8 +51,6 @@ namespace Graphics
 		assert( device );
 		return device;
 	}
-
-	
 
 	VkSurfaceCapabilitiesKHR VlkPhysicalDevice::GetSurfaceCapabilities( VkSurfaceKHR pSurface ) const
 	{

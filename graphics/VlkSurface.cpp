@@ -45,9 +45,9 @@ namespace Graphics
 		return m_FormatCount;
 	}
 
-	VkSurfaceFormatKHR* VlkSurface::GetSurfaceFormat()
+	const std::vector<VkSurfaceFormatKHR>& VlkSurface::GetSurfaceFormats() const
 	{
-		return m_Formats.data();
+		return m_Formats;
 	}
 
 	const VkSurfaceCapabilitiesKHR& VlkSurface::GetCapabilities() const

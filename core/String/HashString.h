@@ -8,7 +8,7 @@ namespace Core
         HashString( const HashString& str );
         HashString( const char* str );
 
-        const char* debug_str() const;
+		const char* debug_str() const;
 
         HashString& operator=( const HashString& str );
 

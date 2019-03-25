@@ -55,20 +55,40 @@ namespace Graphics
 		VkExtent2D extent = capabilities.currentExtent;
 
 		
+		const std::vector<VkSurfaceFormatKHR>& formats = m_Surface->GetSurfaceFormats();
+		VkSurfaceFormatKHR format = formats[0];
+		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+		{
+			format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		}
+		else
+		{
+			for (const auto& availableFormat : formats)
+			{
+				if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				{
+					format = availableFormat;
+				}
+			}
+		}
+
+
+
+
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		swapchainCreateInfo.surface = m_Surface->m_Surface;
 		swapchainCreateInfo.minImageCount = capabilities.minImageCount;
-		swapchainCreateInfo.imageFormat = VK_FORMAT_R8G8B8_UNORM;
-		//swapchainCreateInfo.imageColorSpace = ;
+		swapchainCreateInfo.imageFormat = format.format;
+		swapchainCreateInfo.imageColorSpace = format.colorSpace;
 		swapchainCreateInfo.imageExtent = extent;
 		swapchainCreateInfo.imageArrayLayers = 1;
 
 		if( m_Surface->CanPresent() )
 		{
 			uint32_t queueIndices[] = { physicalDevice->GetQueueFamilyIndex(), physicalDevice->GetQueueFamilyIndex() };
-			swapchainCreateInfo.queueFamilyIndexCount = physicalDevice->GetQueueFamilyIndex();
+			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE(queueIndices);
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		}
