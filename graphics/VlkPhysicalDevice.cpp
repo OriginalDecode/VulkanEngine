@@ -8,27 +8,22 @@
 
 namespace Graphics
 {
-	VlkPhysicalDevice::~VlkPhysicalDevice()
-	{
-	}
 
-	void VlkPhysicalDevice::Init( const VlkInstance& instance )
-	{
-		uint32 device_count = 0;
-		VkResult result = vkEnumeratePhysicalDevices( instance.get(), &device_count, nullptr );
-		assert( result == VK_SUCCESS && "Failed to enumerate device!" );
+	VlkPhysicalDevice::VlkPhysicalDevice() = default;
+	VlkPhysicalDevice::~VlkPhysicalDevice() = default;
 
-		std::vector<VkPhysicalDevice> devices{ device_count };
-		result = vkEnumeratePhysicalDevices( instance.get(), &device_count, devices.data() );
-		assert( result == VK_SUCCESS && "Failed to enumerate device!" );
+	void VlkPhysicalDevice::Init( VlkInstance* instance )
+	{
+		std::vector<VkPhysicalDevice> devices;
+		instance->GetPhysicalDevices(devices);
 
 		for( auto device : devices )
 		{
 			uint32 property_count = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, nullptr );
 
-			m_QueueProperties.reserve( property_count );
-			vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, m_QueueProperties.data() );
+			m_QueueProperties.resize(property_count);
+			vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, m_QueueProperties.data());
 
 			for( size_t i = 0; i < m_QueueProperties.size(); ++i )
 			{
@@ -76,22 +71,21 @@ namespace Graphics
 	}
 
 	void VlkPhysicalDevice::GetSurfaceInfo( VkSurfaceKHR pSurface, bool* canPresent, 
-											uint32* formatCount, VkSurfaceFormatKHR* formats, 
-											uint32* presentCount, VkPresentModeKHR* presentModes, 
+											uint32* formatCount, std::vector<VkSurfaceFormatKHR>* formats, 
+											uint32* presentCount, std::vector<VkPresentModeKHR>* presentModes, 
 											VkSurfaceCapabilitiesKHR* capabilities )
 	{
 
 		if(canPresent)
-		{
 			*canPresent = SurfaceCanPresent( pSurface );
-		}
 
 		if (formatCount)
 		{
 			*formatCount = GetSurfaceFormatCount( pSurface );
 			if (formats)
 			{
-				GetSurfaceFormats( pSurface, *formatCount, formats );
+				formats->resize(*formatCount);
+				GetSurfaceFormats( pSurface, *formatCount, formats->data() );
 			}
 		}
 
@@ -100,11 +94,13 @@ namespace Graphics
 			*presentCount = GetSurfacePresentModeCount( pSurface );
 			if (presentModes)
 			{
-				GetSurfacePresentModes( pSurface, *presentCount, presentModes );
+				presentModes->resize(*presentCount);
+				GetSurfacePresentModes( pSurface, *presentCount, presentModes->data() );
 			}
 		}
 
-		*capabilities = GetSurfaceCapabilities( pSurface );
+		if(capabilities)
+			*capabilities = GetSurfaceCapabilities( pSurface );
 
 	}
 

@@ -18,7 +18,7 @@ namespace Graphics
 	{
 		friend class VlkSwapchain;
 	public:
-		VlkSurface() = default;
+		VlkSurface();
 		~VlkSurface();
 		void Release();
 
@@ -29,7 +29,6 @@ namespace Graphics
 		uint32 GetPresentModeCount(VkPhysicalDevice pPhysicalDevice) const;
 		const VkSurfaceCapabilitiesKHR& GetCapabilities() const;
 
-		void GetPresentModes( VkPhysicalDevice pPhysicalDevice, uint32 modeCount, VkPresentModeKHR* presentModes ) const;
 
 		uint32 GetFormatCount( ) const;
 		VkSurfaceFormatKHR* GetSurfaceFormat();
@@ -41,10 +40,10 @@ namespace Graphics
 		VkSurfaceCapabilitiesKHR m_Capabilities;
 
 		uint32 m_FormatCount = 0;
-		VkSurfaceFormatKHR* m_Formats = nullptr;
+		std::vector<VkSurfaceFormatKHR> m_Formats;
 		
 		uint32 m_PresentCount = 0;
-		VkPresentModeKHR* m_PresentModes = nullptr;
+		std::vector<VkPresentModeKHR> m_PresentModes;
 
 	};
 }; // namespace Graphics

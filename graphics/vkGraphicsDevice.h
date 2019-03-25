@@ -1,12 +1,12 @@
 #pragma once
+
 #include "Core/utilities/utilities.h"
 #include "Core/Defines.h"
-#include <vector>
-#include <vulkan/vulkan_core.h>
-#include <memory>
-class Window;
 
-struct VkWin32SurfaceCreateInfoKHR;
+#include <memory>
+
+class Window;
+//struct VkWin32SurfaceCreateInfoKHR;
 namespace Graphics
 {
     class VlkInstance;
@@ -16,7 +16,7 @@ namespace Graphics
     class vkGraphicsDevice
     {
     public:
-        vkGraphicsDevice() = default;
+        vkGraphicsDevice();
         ~vkGraphicsDevice();
 
         bool Init( const Window& window );
@@ -29,25 +29,18 @@ namespace Graphics
 		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
 
     private:
-        void CreateSwapchain( const Window& window );
-        void CreateFramebuffers( const Window& window );
-        VkRenderPass CreateRenderPass();
-        void CreateImageViews();
-        void CreateCommandPool();
-        void CreateCommandBuffers();
-        void CreateSemaphores();
-
+  
         std::unique_ptr<VlkInstance> m_Instance;
         std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
         std::unique_ptr<VlkDevice> m_LogicalDevice;
         std::unique_ptr<VlkSwapchain> m_Swapchain;
 
-        std::vector<VkImage> m_Images;
-        std::vector<VkImageView> m_ImageViews;
-        std::vector<VkFramebuffer> m_FrameBuffers;
-        std::vector<VkCommandBuffer> m_CommandBuffers;
+        //std::vector<VkImage> m_Images;
+        //std::vector<VkImageView> m_ImageViews;
+        //std::vector<VkFramebuffer> m_FrameBuffers;
+        //std::vector<VkCommandBuffer> m_CommandBuffers;
 
-        uint32 m_Format;
+       /* uint32 m_Format;
         VkSurfaceKHR m_Backbuffer = nullptr;
 
         VkRenderPass m_RenderPass = nullptr;
@@ -56,7 +49,7 @@ namespace Graphics
         VkSemaphore m_RendererFinished = nullptr;
         VkSemaphore m_ImageAvailable = nullptr;
 
-        VkExtent2D m_Extent;
+        VkExtent2D m_Extent;*/
     };
 
 }; // namespace Graphics

@@ -17,16 +17,19 @@
 
 namespace Graphics
 {
+
+	VlkSwapchain::VlkSwapchain() = default;
+	VlkSwapchain::~VlkSwapchain() 
+	{
+		Release();
+	}
+
 	void VlkSwapchain::Release()
 	{
 		VlkDevice& device = GraphicsEngine::GetDevice().GetVlkDevice();
 		device.DestroySwapchain( m_Swapchain );
 	}
 
-	VlkSwapchain::~VlkSwapchain()
-	{
-		Release();
-	}
 
 	void VlkSwapchain::Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window )
 	{
@@ -91,7 +94,7 @@ namespace Graphics
 		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
 	}
 
-	void VlkSwapchain::GetSurfaceCapabilities( VkSurfaceKHR surface, const VlkPhysicalDevice& physicalDevice, VkSurfaceCapabilitiesKHR* pCapabilities )
+	void VlkSwapchain::GetSurfaceCapabilities( VkSurfaceKHR /*surface*/, const VlkPhysicalDevice& /*physicalDevice*/, VkSurfaceCapabilitiesKHR* /*pCapabilities */)
 	{
 
 		//VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR( surface, 0, pCapabilities );

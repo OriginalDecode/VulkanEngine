@@ -19,7 +19,7 @@ namespace Graphics
         VlkDevice() = default;
         ~VlkDevice();
 
-        void Init( const VlkPhysicalDevice& physicalDevice );
+        void Init( VlkPhysicalDevice* physicalDevice );
 
         VkDevice GetDevice() const { return m_Device; }
         VkQueue GetQueue() const { return m_Queue; }

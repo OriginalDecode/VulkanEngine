@@ -1,9 +1,10 @@
 #pragma once
-#include <Core/Defines.h>
+#include "Core/Defines.h"
 #include "GraphicsDecl.h"
+#include <vector>
 LPE_DEFINE_HANDLE( VkInstance );
 LPE_DEFINE_HANDLE( VkSurfaceKHR );
-
+LPE_DEFINE_HANDLE(VkPhysicalDevice)
 struct VkWin32SurfaceCreateInfoKHR;
 namespace Graphics
 {
@@ -19,6 +20,9 @@ namespace Graphics
 		VkSurfaceKHR CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo ) const;
 		upVlkSurface CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo, VlkPhysicalDevice* physicalDevice ) const;
 		void DestroySurface( VkSurfaceKHR pSurface );
+
+
+		void GetPhysicalDevices(std::vector<VkPhysicalDevice>& deviceList);
 
 	private:
 		VkInstance m_Instance = nullptr;

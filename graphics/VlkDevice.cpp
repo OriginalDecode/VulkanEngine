@@ -34,13 +34,13 @@ namespace Graphics
 		vkDestroySwapchainKHR( m_Device, pSwapchain, nullptr );
 	}
 
-	void VlkDevice::Init( const VlkPhysicalDevice& physicalDevice )
+	void VlkDevice::Init( VlkPhysicalDevice* physicalDevice )
 	{
 		//queue create info
 		const float queue_priorities[] = { 1.f };
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = physicalDevice.GetQueueFamilyIndex();
+		queueCreateInfo.queueFamilyIndex = physicalDevice->GetQueueFamilyIndex();
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = queue_priorities;
 
@@ -61,8 +61,8 @@ namespace Graphics
 		createInfo.ppEnabledExtensionNames = deviceExt;
 		createInfo.pEnabledFeatures = &enabled_features;
 
-		m_Device = physicalDevice.CreateDevice(createInfo);
+		m_Device = physicalDevice->CreateDevice(createInfo);
 
-		vkGetDeviceQueue(m_Device, physicalDevice.GetQueueFamilyIndex(), 0, &m_Queue);
+		vkGetDeviceQueue(m_Device, physicalDevice->GetQueueFamilyIndex(), 0, &m_Queue);
 	}
 }; //namespace Graphics

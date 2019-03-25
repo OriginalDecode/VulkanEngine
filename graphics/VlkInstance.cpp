@@ -1,6 +1,7 @@
 #include "VlkInstance.h"
 #include "VlkSurface.h"
 #include "VlkPhysicalDevice.h"
+
 #include <cassert>
 #include <vulkan/vulkan.h>
 #ifdef _WIN32
@@ -113,6 +114,18 @@ namespace Graphics
 	void VlkInstance::DestroySurface( VkSurfaceKHR pSurface )
 	{
 		vkDestroySurfaceKHR( m_Instance, pSurface, nullptr );
+	}
+
+	void VlkInstance::GetPhysicalDevices(std::vector<VkPhysicalDevice>& deviceList)
+	{
+		uint32 device_count = 0;
+		VkResult result = vkEnumeratePhysicalDevices(m_Instance, &device_count, nullptr);
+		assert(result == VK_SUCCESS && "Failed to enumerate device!");
+
+		deviceList.resize(device_count);
+		result = vkEnumeratePhysicalDevices(m_Instance, &device_count, deviceList.data());
+		assert(result == VK_SUCCESS && "Failed to enumerate device!");
+
 	}
 
 }; // namespace Graphics

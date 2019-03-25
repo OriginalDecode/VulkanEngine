@@ -9,6 +9,7 @@
 
 namespace Graphics
 {
+	VlkSurface::VlkSurface() = default;
 	VlkSurface::~VlkSurface()
 	{
 		Release();
@@ -22,7 +23,7 @@ namespace Graphics
 	void VlkSurface::Init( VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice )
 	{
 		m_Surface = pSurface;
-		physicalDevice->GetSurfaceInfo( pSurface, &m_CanPresent, &m_FormatCount, m_Formats, &m_PresentCount, m_PresentModes, &m_Capabilities );
+		physicalDevice->GetSurfaceInfo( pSurface, &m_CanPresent, &m_FormatCount, &m_Formats, &m_PresentCount, &m_PresentModes, &m_Capabilities );
 	}
 
 	bool VlkSurface::CanPresent() const
@@ -38,12 +39,6 @@ namespace Graphics
 		return out;
 	}
 
-	void VlkSurface::GetPresentModes( VkPhysicalDevice pPhysicalDevice, uint32 modeCount, VkPresentModeKHR* presentModes ) const
-	{
-		VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR( pPhysicalDevice, m_Surface, &modeCount, presentModes );
-		assert( result == VK_SUCCESS );
-	}
-
 	uint32 VlkSurface::GetFormatCount() const
 	{
 
@@ -52,7 +47,7 @@ namespace Graphics
 
 	VkSurfaceFormatKHR* VlkSurface::GetSurfaceFormat()
 	{
-		return m_Formats;
+		return m_Formats.data();
 	}
 
 	const VkSurfaceCapabilitiesKHR& VlkSurface::GetCapabilities() const

@@ -26,10 +26,10 @@ namespace Graphics
 	class VlkPhysicalDevice
 	{
 	public:
-		VlkPhysicalDevice() = default;
+		VlkPhysicalDevice();
 		~VlkPhysicalDevice();
 
-		void Init( const VlkInstance& instance );
+		void Init( VlkInstance* instance );
 
 		uint32 GetQueueFamilyIndex() const { return m_QueueFamilyIndex; }
 
@@ -38,8 +38,8 @@ namespace Graphics
 
 
 		void GetSurfaceInfo(VkSurfaceKHR pSurface, bool* canPresent, 
-							uint32* formatCount, VkSurfaceFormatKHR* formats, 
-							uint32* presentCount, VkPresentModeKHR* presentModes, 
+							uint32* formatCount, std::vector<VkSurfaceFormatKHR>* formats, 
+							uint32* presentCount, std::vector<VkPresentModeKHR>* presentModes, 
 							VkSurfaceCapabilitiesKHR* capabilities );
 
 	private:

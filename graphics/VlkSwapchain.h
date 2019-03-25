@@ -17,7 +17,7 @@ namespace Graphics
 	class VlkSwapchain 
 	{
 	public:
-		VlkSwapchain() = default;
+		VlkSwapchain();
 		~VlkSwapchain();
 		void Release();
 
