@@ -33,7 +33,7 @@ namespace Graphics
 {
 	constexpr char* validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
 	constexpr char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface", "VK_EXT_debug_report" };
-	VkDebugReportCallbackEXT debugCallback;
+	VkDebugReportCallbackEXT debugCallback = nullptr;
 
 	void SetupDebugCallback( VkInstance instance )
 	{
@@ -92,6 +92,9 @@ namespace Graphics
 
 	void VlkInstance::Release()
 	{
+		auto destoryer = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr( m_Instance, "vkDestroyDebugReportCallbackEXT" );
+		destoryer( m_Instance, debugCallback, nullptr );
+
 		vkDestroyInstance( m_Instance, nullptr );
 	}
 

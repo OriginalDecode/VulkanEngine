@@ -5,6 +5,7 @@
 LPE_DEFINE_HANDLE( VkSwapchainKHR );
 LPE_DEFINE_HANDLE( VkSurfaceKHR );
 struct VkSurfaceCapabilitiesKHR;
+struct VkSurfaceFormatKHR;
 
 class Window;
 namespace Graphics
@@ -24,7 +25,6 @@ namespace Graphics
 		void Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window );
 
 	private:
-		void GetSurfaceCapabilities( VkSurfaceKHR surface, const VlkPhysicalDevice& physicalDevice, VkSurfaceCapabilitiesKHR* pCapabilities );
 
 		std::unique_ptr<VlkSurface> m_Surface;
 		VkSwapchainKHR m_Swapchain;

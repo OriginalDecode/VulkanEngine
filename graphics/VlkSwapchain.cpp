@@ -18,6 +18,26 @@
 namespace Graphics
 {
 
+	VkSurfaceFormatKHR GetFormat( const std::vector<VkSurfaceFormatKHR>& formats )
+	{
+		VkSurfaceFormatKHR format = formats[0];
+		if( formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED )
+		{
+			format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		}
+		else
+		{
+			for( const auto& availableFormat : formats )
+			{
+				if( availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+				{
+					format = availableFormat;
+				}
+			}
+		}
+		return format;
+	}
+
 	VlkSwapchain::VlkSwapchain() = default;
 	VlkSwapchain::~VlkSwapchain() 
 	{
@@ -56,26 +76,7 @@ namespace Graphics
 		VkExtent2D extent = capabilities.currentExtent;
 
 		
-		const std::vector<VkSurfaceFormatKHR>& formats = m_Surface->GetSurfaceFormats();
-		VkSurfaceFormatKHR format = formats[0];
-		if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
-		{
-			format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-		}
-		else
-		{
-			for (const auto& availableFormat : formats)
-			{
-				if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-				{
-					format = availableFormat;
-				}
-			}
-		}
-
-
-
-
+		VkSurfaceFormatKHR format = GetFormat( m_Surface->GetSurfaceFormats() );
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -115,10 +116,6 @@ namespace Graphics
 		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
 	}
 
-	void VlkSwapchain::GetSurfaceCapabilities( VkSurfaceKHR /*surface*/, const VlkPhysicalDevice& /*physicalDevice*/, VkSurfaceCapabilitiesKHR* /*pCapabilities */)
-	{
 
-		//VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR( surface, 0, pCapabilities );
-	}
 
 }; //namespace Graphics
