@@ -25,19 +25,13 @@ namespace Graphics
 			m_QueueProperties.resize(property_count);
 			vkGetPhysicalDeviceQueueFamilyProperties( device, &property_count, m_QueueProperties.data());
 
-			for( size_t i = 0; i < m_QueueProperties.size(); ++i )
+			QueueProperties queueProp = FindFamilyIndices( nullptr );
+			if (queueProp.queueIndex > -1)
 			{
-				const VkQueueFamilyProperties& property = m_QueueProperties[i];
-				if( property.queueCount > 0 && property.queueFlags & VK_QUEUE_GRAPHICS_BIT )
-				{
-					if( !m_PhysicalDevice )
-						m_PhysicalDevice = device;
-
-					m_QueueFamilyIndex = (uint32)i;
-
-					break;
-				}
+				m_PhysicalDevice = device;
+				break;
 			}
+
 		}
 
 		assert( m_PhysicalDevice );
@@ -100,6 +94,27 @@ namespace Graphics
 		if(capabilities)
 			*capabilities = GetSurfaceCapabilities( pSurface );
 
+	}
+
+	QueueProperties VlkPhysicalDevice::FindFamilyIndices( VlkSurface* pSurface )
+	{
+		QueueProperties properties = { };
+
+		for( size_t i = 0; i < m_QueueProperties.size(); ++i )
+		{
+			const VkQueueFamilyProperties& property = m_QueueProperties[i];
+			if (pSurface && property.queueCount > 0 && pSurface->CanPresent())
+			{
+				properties.familyIndex = (int32)i;
+			}
+		
+			if( property.queueCount > 0 && property.queueFlags & VK_QUEUE_GRAPHICS_BIT )
+			{
+				properties.queueIndex = (int32)i;
+				break;
+			}
+		}
+		return properties;
 	}
 
 	uint32 VlkPhysicalDevice::GetSurfacePresentModeCount( VkSurfaceKHR pSurface ) const

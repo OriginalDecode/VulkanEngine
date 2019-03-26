@@ -18,8 +18,8 @@ namespace Graphics
 
 	struct QueueProperties
 	{
-		uint32 familyIndex = 0;
-		uint32 presentFamily = 0;
+		int32 queueIndex = -1;
+		int32 familyIndex = -1;
 	};
 
 
@@ -42,6 +42,8 @@ namespace Graphics
 							uint32* presentCount, std::vector<VkPresentModeKHR>* presentModes, 
 							VkSurfaceCapabilitiesKHR* capabilities );
 
+		QueueProperties FindFamilyIndices( VlkSurface* pSurface );
+
 	private:
 		bool SurfaceCanPresent( VkSurfaceKHR pSurface ) const;
 		uint32 GetSurfacePresentModeCount( VkSurfaceKHR pSurface ) const;
@@ -56,7 +58,7 @@ namespace Graphics
 
 		VkPhysicalDevice m_PhysicalDevice = nullptr;
 		uint32 m_QueueFamilyIndex = 0;
-
+		uint32 m_PresentFamily = 0;
 
 		std::vector<VkQueueFamilyProperties> m_QueueProperties;
 	};

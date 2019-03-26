@@ -39,6 +39,7 @@ namespace Graphics
 		createInfo.hinstance = GetModuleHandle( nullptr );
 
 		m_Surface = instance->CreateSurface( createInfo, physicalDevice );
+		QueueProperties queueProp = physicalDevice->FindFamilyIndices( m_Surface.get() );
 
 		if( !m_Surface->CanPresent() )
 		{
@@ -85,9 +86,9 @@ namespace Graphics
 		swapchainCreateInfo.imageExtent = extent;
 		swapchainCreateInfo.imageArrayLayers = 1;
 
-		if( m_Surface->CanPresent() )
+		if( queueProp.queueIndex != queueProp.familyIndex )
 		{
-			uint32_t queueIndices[] = { physicalDevice->GetQueueFamilyIndex(), physicalDevice->GetQueueFamilyIndex() };
+			uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
 			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE(queueIndices);
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
