@@ -34,6 +34,17 @@ namespace Graphics
 		vkDestroySwapchainKHR( m_Device, pSwapchain, nullptr );
 	}
 
+	void VlkDevice::GetSwapchainImages( VkSwapchainKHR* pSwapchain, std::vector<VkImage>* scImages )
+	{
+		uint32 imageCount = 0;
+		VkResult result = vkGetSwapchainImagesKHR( m_Device, *pSwapchain, &imageCount, nullptr );
+		assert( result == VK_SUCCESS && "failed to get imagecount" );
+		scImages->resize( imageCount );
+		result = vkGetSwapchainImagesKHR( m_Device, *pSwapchain, &imageCount, scImages->data() );
+		assert( result == VK_SUCCESS && "failed to get swapchainimages" );
+		
+	}
+
 	void VlkDevice::Init( VlkPhysicalDevice* physicalDevice )
 	{
 		//queue create info
@@ -64,5 +75,6 @@ namespace Graphics
 		m_Device = physicalDevice->CreateDevice(createInfo);
 
 		vkGetDeviceQueue(m_Device, physicalDevice->GetQueueFamilyIndex(), 0, &m_Queue);
+
 	}
 }; //namespace Graphics

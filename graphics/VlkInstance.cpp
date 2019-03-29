@@ -29,6 +29,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
 	return VK_FALSE;
 }
 
+#define VK_GET_FNC_POINTER( function, instance ) ( PFN_##function ) vkGetInstanceProcAddr( instance, #function )
+
 namespace Graphics
 {
 	constexpr char* validationLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
@@ -37,7 +39,7 @@ namespace Graphics
 
 	void SetupDebugCallback( VkInstance instance )
 	{
-		auto FCreateCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr( instance, "vkCreateDebugReportCallbackEXT" );
+		auto FCreateCallback = VK_GET_FNC_POINTER( vkCreateDebugReportCallbackEXT, instance );
 		assert( FCreateCallback && "Failed to setup callback!" );
 
 		if( !FCreateCallback )
@@ -76,13 +78,14 @@ namespace Graphics
 		VkInstanceCreateInfo instanceCreateInfo = {};
 
 		instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		instanceCreateInfo.pApplicationInfo = 0;
+		instanceCreateInfo.pApplicationInfo = &appInfo;
 
 		instanceCreateInfo.enabledLayerCount = ARRSIZE( validationLayers );
 		instanceCreateInfo.ppEnabledLayerNames = validationLayers;
 
 		instanceCreateInfo.enabledExtensionCount = ARRSIZE( extentions );
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;
+
 
 		VkResult result = vkCreateInstance( &instanceCreateInfo, nullptr /*allocator*/, &m_Instance );
 		assert( result == VK_SUCCESS && "Failed to create Vulkan instance!" );
@@ -92,7 +95,7 @@ namespace Graphics
 
 	void VlkInstance::Release()
 	{
-		auto destoryer = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr( m_Instance, "vkDestroyDebugReportCallbackEXT" );
+		auto destoryer = VK_GET_FNC_POINTER( vkDestroyDebugReportCallbackEXT, m_Instance );
 		destoryer( m_Instance, debugCallback, nullptr );
 
 		vkDestroyInstance( m_Instance, nullptr );

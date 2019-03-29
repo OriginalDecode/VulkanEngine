@@ -114,6 +114,10 @@ namespace Graphics
 
 
 		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
+
+		device->GetSwapchainImages( &m_Swapchain, &m_Images );
+
+
 	}
 
 
