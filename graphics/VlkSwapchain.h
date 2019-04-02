@@ -28,7 +28,11 @@ namespace Graphics
 		void Release();
 
 		void Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window );
+		size_t GetNofImages() const { return m_Images.size(); }
 
+		std::vector<VkImage>& GetImageList() { return m_Images; }
+		std::vector<VkImageView>& GetImageViewList() { return m_ImageViews; }
+		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
 	private:
 		std::unique_ptr<VlkSurface> m_Surface;
 		VkSwapchainKHR m_Swapchain;

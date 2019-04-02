@@ -13,32 +13,43 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
-VkClearValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
-
-
+VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
 	vkGraphicsDevice::vkGraphicsDevice() = default;
 
-
 	vkGraphicsDevice::~vkGraphicsDevice() = default;
 
-	bool vkGraphicsDevice::Init(const Window& window)
+	bool vkGraphicsDevice::Init( const Window& window )
 	{
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
 
 		m_PhysicalDevice = std::make_unique<VlkPhysicalDevice>();
-		m_PhysicalDevice->Init(m_Instance.get());
+		m_PhysicalDevice->Init( m_Instance.get() );
 
 		m_LogicalDevice = std::make_unique<VlkDevice>();
-		m_LogicalDevice->Init(m_PhysicalDevice.get());
+		m_LogicalDevice->Init( m_PhysicalDevice.get() );
 
 		m_Swapchain = std::make_unique<VlkSwapchain>();
-		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
+		m_Swapchain->Init( m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window );
 
+		VkCommandPoolCreateInfo poolCreateInfo = {};
+		poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolCreateInfo.queueFamilyIndex = m_PhysicalDevice->GetQueueFamilyIndex();
+		if( vkCreateCommandPool( m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool ) != VK_SUCCESS )
+			assert( !"failed to create commandpool!" );
+
+		VkCommandBufferAllocateInfo cmdBufAllocInfo = {};
+		cmdBufAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		cmdBufAllocInfo.commandPool = m_CmdPool;
+		cmdBufAllocInfo.commandBufferCount = (uint32)m_Swapchain->GetNofImages();
+		cmdBufAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		m_CmdBuffers.resize( m_Swapchain->GetNofImages() );
+		if( vkAllocateCommandBuffers( m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data() ) != VK_SUCCESS )
+			assert( !"Failed to create command buffer!" );
 
 		return true;
 	}
@@ -49,16 +60,79 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame()
 	{
-		VkPipelineLayout layout;
+
+		VkCommandBufferBeginInfo cmdInfo = {};
+		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		VkClearValue clearValue = {};
+		clearValue.color = _clearColor;
+
+		VkImageSubresourceRange imageRange = {};
+		imageRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageRange.levelCount = 1;
+		imageRange.layerCount = 1;
+
+		for( size_t i = 0; i < m_CmdBuffers.size(); ++i )
+		{
+			if( vkBeginCommandBuffer( m_CmdBuffers[i], &cmdInfo ) != VK_SUCCESS )
+				assert( !"Failed to begin commandbuffer!" );
+
+			std::vector<VkImage>& images = m_Swapchain->GetImageList();
+
+			vkCmdClearColorImage( m_CmdBuffers[i], images.front(), VK_IMAGE_LAYOUT_GENERAL, &_clearColor, 1, &imageRange );
+
+			vkEndCommandBuffer( m_CmdBuffers[i] );
+		}
+
+
+		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, NULL, NULL, &m_Index ) != VK_SUCCESS )
+			assert( !"Failed to acquire next image!" );
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CmdBuffers[m_Index];
+
+		if( vkQueueSubmit( m_LogicalDevice->GetQueue(), 1, &submitInfo, nullptr ) != VK_SUCCESS )
+			assert( !"Failed to submit the queue!" );
+
+		VkSwapchainKHR swapchain = m_Swapchain->GetSwapchain();
+
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapchain;
+		presentInfo.pImageIndices = &m_Index;
+
+		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
+			assert( !"Failed to present!" );
+
+
+
+
+
+
+
+		/*VkRenderPass renderPass = nullptr;
 		VkPipeline pipeline = nullptr;
+		VkCommandBuffer cmd = nullptr;
+
+		VkPipelineLayout layout = nullptr;
+
 		VkCommandBufferBeginInfo cmdInfo = {};
 		VkRenderPassBeginInfo passInfo = {};
-		VkCommandBuffer cmd;
+
 		vkBeginCommandBuffer( cmd, &cmdInfo );
+
 		vkCmdBeginRenderPass( cmd, &passInfo, VK_SUBPASS_CONTENTS_INLINE );
+
 		vkCmdBindPipeline( cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline );
+
 		vkCmdBindDescriptorSets( cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, 0, 0, nullptr );
+
 		VkViewport viewport;
+
 		vkCmdSetViewport( cmd, 0, 1, &viewport );
 
 		vkCmdDraw( cmd, 3, 1, 0, 0 );
@@ -69,8 +143,7 @@ namespace Graphics
 		vkQueueSubmit( nullptr, 1, &submitInfo, nullptr );
 
 		VkPresentInfoKHR presentInfo = {};
-		vkQueuePresentKHR( nullptr, &presentInfo );
-
+		vkQueuePresentKHR( nullptr, &presentInfo );*/
 	}
-	
+
 }; //namespace Graphics

@@ -4,9 +4,13 @@
 #include "Core/Defines.h"
 
 #include <memory>
-
+#include <vector>
 class Window;
 //struct VkWin32SurfaceCreateInfoKHR;
+
+LPE_DEFINE_HANDLE(VkCommandPool);
+LPE_DEFINE_HANDLE(VkCommandBuffer);
+
 namespace Graphics
 {
     class VlkInstance;
@@ -34,6 +38,11 @@ namespace Graphics
         std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
         std::unique_ptr<VlkDevice> m_LogicalDevice;
         std::unique_ptr<VlkSwapchain> m_Swapchain;
+
+		std::vector<VkCommandBuffer> m_CmdBuffers;
+		VkCommandPool m_CmdPool = nullptr;
+
+		uint32 m_Index = 0;
 
     };
 
