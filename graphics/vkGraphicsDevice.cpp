@@ -15,6 +15,10 @@
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
+VkRenderPass _renderPass = nullptr;
+
+std::vector<VkFramebuffer> m_FrameBuffers;
+
 namespace Graphics
 {
 	vkGraphicsDevice::vkGraphicsDevice() = default;
@@ -51,6 +55,75 @@ namespace Graphics
 		if( vkAllocateCommandBuffers( m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data() ) != VK_SUCCESS )
 			assert( !"Failed to create command buffer!" );
 
+		VkAttachmentReference attRef = {};
+		attRef.attachment = 0;
+		attRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpassDesc = {};
+		subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpassDesc.colorAttachmentCount = 1;
+		subpassDesc.pColorAttachments = &attRef;
+
+		VkFormat format = m_Swapchain->GetFormat().format;
+
+		VkAttachmentDescription attDesc = {};
+		attDesc.format = format;
+		attDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attDesc.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkRenderPassCreateInfo rpInfo = {};
+		rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		rpInfo.attachmentCount = 1;
+		rpInfo.pAttachments = &attDesc;
+		rpInfo.subpassCount = 1;
+		rpInfo.pSubpasses = &subpassDesc;
+
+		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass ) != VK_SUCCESS )
+			assert( !"Failed to create render pass!" );
+
+		m_FrameBuffers.resize( m_Swapchain->GetNofImages() );
+		auto& list = m_Swapchain->GetImageList();
+		auto& viewList = m_Swapchain->GetImageViewList();
+		for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
+		{
+			VkImageViewCreateInfo vcInfo = {};
+			vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			vcInfo.image = list[i];
+			vcInfo.format = format;
+			vcInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			vcInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY,
+								  VK_COMPONENT_SWIZZLE_IDENTITY,
+								  VK_COMPONENT_SWIZZLE_IDENTITY,
+								  VK_COMPONENT_SWIZZLE_IDENTITY };
+			VkImageSubresourceRange& srr = vcInfo.subresourceRange;
+			srr.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			srr.baseMipLevel = 0;
+			srr.levelCount = 1;
+			srr.baseArrayLayer = 0;
+			srr.layerCount = 1;
+
+			if( vkCreateImageView( m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &viewList[i] ) != VK_SUCCESS )
+				assert( !"Failed to create imageview!" );
+
+
+			VkFramebufferCreateInfo fbInfo = {};
+			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			fbInfo.renderPass = _renderPass;
+			fbInfo.attachmentCount = 1;
+			fbInfo.pAttachments = &viewList[i];
+			fbInfo.width = window.GetSize().m_Width;
+			fbInfo.height = window.GetSize().m_Height;
+			fbInfo.layers = 1;
+			
+			if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
+				assert( !"Failed to create framebuffer!" );
+
+
+		}
+
 		return true;
 	}
 
@@ -85,7 +158,6 @@ namespace Graphics
 			vkEndCommandBuffer( m_CmdBuffers[i] );
 		}
 
-
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, NULL, NULL, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
@@ -107,12 +179,6 @@ namespace Graphics
 
 		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
 			assert( !"Failed to present!" );
-
-
-
-
-
-
 
 		/*VkRenderPass renderPass = nullptr;
 		VkPipeline pipeline = nullptr;

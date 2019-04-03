@@ -23,6 +23,7 @@ namespace Graphics
 	class VlkSwapchain
 	{
 	public:
+		VkSurfaceFormatKHR GetFormat( );
 		VlkSwapchain();
 		~VlkSwapchain();
 		void Release();
@@ -33,7 +34,9 @@ namespace Graphics
 		std::vector<VkImage>& GetImageList() { return m_Images; }
 		std::vector<VkImageView>& GetImageViewList() { return m_ImageViews; }
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
+
 	private:
+
 		std::unique_ptr<VlkSurface> m_Surface;
 		VkSwapchainKHR m_Swapchain;
 		std::vector<VkImage> m_Images;

@@ -37,6 +37,11 @@ namespace Graphics
 		}
 		return format;
 	}
+		
+	VkSurfaceFormatKHR VlkSwapchain::GetFormat()
+	{
+		return Graphics::GetFormat( m_Surface->GetSurfaceFormats() );
+	}
 
 	VlkSwapchain::VlkSwapchain() = default;
 	VlkSwapchain::~VlkSwapchain() 
@@ -76,7 +81,7 @@ namespace Graphics
 		VkExtent2D extent = capabilities.currentExtent;
 
 		
-		VkSurfaceFormatKHR format = GetFormat( m_Surface->GetSurfaceFormats() );
+		VkSurfaceFormatKHR format = Graphics::GetFormat( m_Surface->GetSurfaceFormats() );
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -116,6 +121,7 @@ namespace Graphics
 		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
 
 		device->GetSwapchainImages( &m_Swapchain, &m_Images );
+		m_ImageViews.resize( m_Images.size() );
 
 
 	}
