@@ -13,12 +13,17 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
+#include "Core/File.h"
+
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
 VkRenderPass _renderPass = nullptr;
 
 std::vector<VkFramebuffer> m_FrameBuffers;
-
+VkShaderModule vertModule = nullptr;
+VkShaderModule fragModule = nullptr;
+VkPipeline _pipeline = nullptr;
+Window::Size _size;
 namespace Graphics
 {
 	vkGraphicsDevice::vkGraphicsDevice() = default;
@@ -27,7 +32,7 @@ namespace Graphics
 
 	bool vkGraphicsDevice::Init( const Window& window )
 	{
-
+		_size = window.GetSize();
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
 
@@ -73,6 +78,7 @@ namespace Graphics
 		attDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attDesc.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		attDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		
 
 		VkRenderPassCreateInfo rpInfo = {};
 		rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -114,13 +120,126 @@ namespace Graphics
 			fbInfo.renderPass = _renderPass;
 			fbInfo.attachmentCount = 1;
 			fbInfo.pAttachments = &viewList[i];
-			fbInfo.width = window.GetSize().m_Width;
-			fbInfo.height = window.GetSize().m_Height;
+			fbInfo.width = (uint32)window.GetSize().m_Width;
+			fbInfo.height = (uint32)window.GetSize().m_Height;
 			fbInfo.layers = 1;
 			
 			if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
 				assert( !"Failed to create framebuffer!" );
 
+
+			//int byteSize = 0;
+			//char* shader = nullptr;
+
+			Core::File frag("Shaders/fs.spv"); //the file type should probably take read flags or write flags?
+			VkShaderModuleCreateInfo fscInfo = {};
+			fscInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			fscInfo.codeSize = frag.GetFileSize();
+			fscInfo.pCode = (const uint32_t*)frag.GetBuffer();
+
+			if (vkCreateShaderModule(m_LogicalDevice->GetDevice(), &fscInfo, nullptr, &fragModule) != VK_SUCCESS)
+				assert(!"Failed to create shader module!");
+
+
+
+
+			Core::File vert("Shaders/vs.spv"); //the file type should probably take read flags or write flags?
+			VkShaderModuleCreateInfo vscInfo = {};
+			vscInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			vscInfo.codeSize = vert.GetFileSize();
+			vscInfo.pCode = (const uint32_t*)vert.GetBuffer();
+
+			if (vkCreateShaderModule(m_LogicalDevice->GetDevice(), &vscInfo, nullptr, &vertModule) != VK_SUCCESS)
+				assert(!"Failed to create shader module!");
+
+			VkPipelineShaderStageCreateInfo ssci[2] = {};
+
+			ssci[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			ssci[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+			ssci[0].module = vertModule;
+			ssci[0].pName = "main";
+			ssci[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			ssci[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			ssci[1].module = fragModule;
+			ssci[1].pName = "main";
+
+			VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
+			pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+			pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+			VkViewport vp = {};
+			vp.x = 0.0f;
+			vp.y = 0.0f;
+			vp.width = window.GetSize().m_Width;
+			vp.height = window.GetSize().m_Height;
+			vp.minDepth = 0.0f;
+			vp.maxDepth = 1.0f;
+
+			VkRect2D scissor = { 0 };
+			scissor.extent.width = (uint32)window.GetSize().m_Width;
+			scissor.extent.height = (uint32)window.GetSize().m_Height;
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+
+			VkPipelineViewportStateCreateInfo vpCreateInfo = {};
+			vpCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+			vpCreateInfo.viewportCount = 1;
+			vpCreateInfo.scissorCount = 1;
+			vpCreateInfo.pScissors = &scissor;
+			vpCreateInfo.pViewports = &vp;
+
+			VkPipelineDepthStencilStateCreateInfo dsInfo = {};
+			dsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			dsInfo.depthTestEnable = VK_TRUE;
+			dsInfo.depthWriteEnable = VK_TRUE;
+			dsInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+			dsInfo.depthBoundsTestEnable = VK_FALSE;
+			dsInfo.minDepthBounds = 0.f;
+			dsInfo.maxDepthBounds = 1.f;
+			dsInfo.stencilTestEnable = VK_FALSE;
+			dsInfo.front = {};
+			dsInfo.back = {};
+
+			VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
+			rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+			rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+			rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+			rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			rastCreateInfo.lineWidth = 1.0f;
+
+			VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
+			pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+			pipelineMSCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+			VkPipelineColorBlendAttachmentState blendAttachState = {};
+			blendAttachState.colorWriteMask = 0xf;
+
+			VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
+			blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+			blendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+			blendCreateInfo.attachmentCount = 1;
+			blendCreateInfo.pAttachments = &blendAttachState;
+
+			
+
+			VkGraphicsPipelineCreateInfo pipelineInfo = {};
+			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+			pipelineInfo.stageCount = ARRSIZE(ssci);
+			pipelineInfo.pStages = &ssci[0];
+			pipelineInfo.pVertexInputState = &vertexInputInfo;
+			pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
+			pipelineInfo.pViewportState = &vpCreateInfo;
+			pipelineInfo.pDepthStencilState = &dsInfo;
+			pipelineInfo.pRasterizationState = &rastCreateInfo;
+			pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
+			pipelineInfo.pColorBlendState = &blendCreateInfo;
+			pipelineInfo.renderPass = _renderPass;
+			pipelineInfo.basePipelineIndex = -1;
+
+			if (vkCreateGraphicsPipelines(m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &_pipeline) != VK_SUCCESS)
+				assert(!"Failed to create pipeline!");
 
 		}
 
@@ -146,14 +265,48 @@ namespace Graphics
 		imageRange.levelCount = 1;
 		imageRange.layerCount = 1;
 
+		VkRenderPassBeginInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _renderPass;
+		renderPassInfo.renderArea.offset.x = 0;
+		renderPassInfo.renderArea.offset.y = 0;
+		renderPassInfo.renderArea.extent.width = (uint32)_size.m_Width;
+		renderPassInfo.renderArea.extent.height = (uint32)_size.m_Height;
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearValue;
+
+		VkViewport viewport = { 0 };
+		viewport.height = _size.m_Height;
+		viewport.width = _size.m_Width;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = { 0 };
+		scissor.extent.width = (uint32)_size.m_Width;
+		scissor.extent.height = (uint32)_size.m_Height;
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+
 		for( size_t i = 0; i < m_CmdBuffers.size(); ++i )
 		{
 			if( vkBeginCommandBuffer( m_CmdBuffers[i], &cmdInfo ) != VK_SUCCESS )
 				assert( !"Failed to begin commandbuffer!" );
 
 			std::vector<VkImage>& images = m_Swapchain->GetImageList();
+			vkCmdClearColorImage(m_CmdBuffers[i], images.front(), VK_IMAGE_LAYOUT_GENERAL, &_clearColor, 1, &imageRange);
 
-			vkCmdClearColorImage( m_CmdBuffers[i], images.front(), VK_IMAGE_LAYOUT_GENERAL, &_clearColor, 1, &imageRange );
+			renderPassInfo.framebuffer = m_FrameBuffers[i];
+			vkCmdBeginRenderPass(m_CmdBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(m_CmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+
+			vkCmdSetViewport(m_CmdBuffers[i], 0, 1, &viewport);
+
+			vkCmdSetScissor(m_CmdBuffers[i], 0, 1, &scissor);
+			vkCmdDraw(m_CmdBuffers[i], 3, 1, 0, 0);
+
+			vkCmdEndRenderPass(m_CmdBuffers[i]);
+
+	
 
 			vkEndCommandBuffer( m_CmdBuffers[i] );
 		}
@@ -180,36 +333,6 @@ namespace Graphics
 		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
 			assert( !"Failed to present!" );
 
-		/*VkRenderPass renderPass = nullptr;
-		VkPipeline pipeline = nullptr;
-		VkCommandBuffer cmd = nullptr;
-
-		VkPipelineLayout layout = nullptr;
-
-		VkCommandBufferBeginInfo cmdInfo = {};
-		VkRenderPassBeginInfo passInfo = {};
-
-		vkBeginCommandBuffer( cmd, &cmdInfo );
-
-		vkCmdBeginRenderPass( cmd, &passInfo, VK_SUBPASS_CONTENTS_INLINE );
-
-		vkCmdBindPipeline( cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline );
-
-		vkCmdBindDescriptorSets( cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, 0, 0, nullptr );
-
-		VkViewport viewport;
-
-		vkCmdSetViewport( cmd, 0, 1, &viewport );
-
-		vkCmdDraw( cmd, 3, 1, 0, 0 );
-		vkCmdEndRenderPass( cmd );
-		vkEndCommandBuffer( cmd );
-
-		VkSubmitInfo submitInfo = {};
-		vkQueueSubmit( nullptr, 1, &submitInfo, nullptr );
-
-		VkPresentInfoKHR presentInfo = {};
-		vkQueuePresentKHR( nullptr, &presentInfo );*/
 	}
 
 }; //namespace Graphics

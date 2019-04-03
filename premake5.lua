@@ -11,6 +11,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.setPlatform("Windows")
     platforms { "Windows", "Linux" }
     configurations { "Debug" , "Release" }
+    debugdir "%{wks.location}/bin/Resources"
     -- language "C++"
     cppdialect "C++14"
     -- flags { "C++14" }
@@ -73,7 +74,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
 
     workspace "*"
         filter "platforms:Windows"
-            defines { "_WIN32" }
+            defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
             
         filter "platforms:Linux"
             defines { "_GCC_" }
