@@ -9,6 +9,9 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
     -- fnc.setPlatform("Windows")
+
+
+    
     platforms { "Windows", "Linux" }
     configurations { "Debug" , "Release" }
     debugdir "%{wks.location}/bin/Resources"
@@ -20,10 +23,15 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     architecture "x64"
     includedirs { ".\\" }
     -- libdirs { "" }
-    flags { "FatalCompileWarnings" }
+    flags { "FatalWarnings" }
     warnings "Extra"
     location "build"
-    
+
+    filter "platforms:Windows"
+        defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
+            
+    filter "platforms:Linux"
+        defines { "_GCC_" }
     
     objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
 
@@ -72,9 +80,4 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
 
         files { "core/**.cpp", "core/**.h" }
 
-    workspace "*"
-        filter "platforms:Windows"
-            defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
-            
-        filter "platforms:Linux"
-            defines { "_GCC_" }
+    

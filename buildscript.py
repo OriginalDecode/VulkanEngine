@@ -45,10 +45,10 @@ def green(str):
     return "\033[1;32;40m"+str+"\033[0;37;40m"
 
 def yellow(str):
-    print("\033[1;33;40m"+str+"\033[0;37;40m")
+    return "\033[1;33;40m"+str+"\033[0;37;40m"
 
 def white(str):
-    print("\033[1;37;40m"+str+"\033[0;37;40m")
+    return "\033[1;37;40m"+str+"\033[0;37;40m"
 
 def appendToList(list, dirName, fileType):
     listOfFiles = glob.glob(dirName + "/*/" + fileType)
@@ -126,22 +126,29 @@ if args.config != None:
 #build
 # ____________________________________________________________
 def buildWindows(buildConfig):
-    
+    print(system)
+
     if buildConfig == None:
         buildConfig="Debug"
     
+    print(buildConfig)
+
     verbosity = args.verbosity
+    
     if args.verbosity == None:
         verbosity = "n"
 
     os.system("msbuild " + "build/" + args.build + 
         " /p:GenerateFullPaths=true" +
         " /p:Configuration=" + buildConfig + 
+        " /p:Platform=Windows" +
         " /t:build" +
         " -v:" + verbosity
         )
 
 def buildLinux(buildConfig):
+    print(system)
+
     if buildConfig == None:
         buildConfig = "debug_" + system.lower()
 
@@ -154,7 +161,6 @@ def canBuild():
 
 if canBuild():
     print(white("===Starting build==="))
-    print(system)
     buildConfig = args.buildConfig 
 
     if system == "Windows":
