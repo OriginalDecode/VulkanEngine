@@ -117,9 +117,9 @@ def configure(command):
 if args.config != None:
     print(white("===Starting configure==="))
     if system == "Windows":
-        configure("premake5")
+        configure("premake5 --platform=windows")
     elif system == "Linux":
-        configure("./premake5")
+        configure("./premake5 --platform=linux")
     print(green("===Configure done==="))
 
 

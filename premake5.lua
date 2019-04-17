@@ -2,6 +2,16 @@
 -- local fnc = require "test"
 require "lua"
 
+newoption {
+    trigger = "platform",
+    value = "Platform",
+    description = "Set platform",
+    allowed = {
+        { "windows", "Windows" },
+        { "linux", "Linux" }
+    }
+}
+
 --beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
 workspace "Engine" --this is the solution name in a vs project if no filename specified
 
@@ -9,11 +19,9 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
     -- fnc.setPlatform("Windows")
-
-
-    
-    platforms { "Windows", "Linux" }
     configurations { "Debug" , "Release" }
+    platforms { _OPTIONS["platform"] }
+    
     debugdir "%{wks.location}/bin/Resources"
     -- language "C++"
     cppdialect "C++14"
