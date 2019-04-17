@@ -41,5 +41,12 @@
 *.db
 *.ipch
 **/build/**
+**/.vscode/**
+**/.vs/**
+*.pdb
+*.tlog
+*.idb
+*.log
+*.lastbuildstate
 
 Makefile
