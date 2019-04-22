@@ -21,8 +21,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.setPlatform("Windows")
     configurations { "Debug" , "Release" }
     platforms { _OPTIONS["platform"] }
-    
-    debugdir "%{wks.location}/bin/Resources"
+    debugdir "%{wks.location}/../bin/Resources"
     -- language "C++"
     cppdialect "C++14"
     -- flags { "C++14" }
@@ -33,7 +32,8 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- libdirs { "" }
     flags { "FatalWarnings" }
     warnings "Extra"
-    location "build"
+
+    objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
 
     filter "platforms:Windows"
         defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
@@ -41,13 +41,11 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     filter "platforms:Linux"
         defines { "_GCC_" }
     
-    objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
-
     filter "kind:StaticLib"
         targetdir "%{wks.location}/lib/%{cfg.buildcfg}"
 
     filter "kind:WindowedApp"
-        targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
+        targetdir "%{wks.location}/../bin"
 
 
     filter "configurations:Debug"
@@ -60,7 +58,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
 
     
     project "Executable" --project name
-        targetname("engine")
+        targetname "%{wks.name}_%{cfg.buildcfg}"
         kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
         location ("./executable")
         

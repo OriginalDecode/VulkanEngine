@@ -51,8 +51,7 @@ def white(str):
     return "\033[1;37;40m"+str+"\033[0;37;40m"
 
 def appendToList(list, dirName, fileType):
-    listOfFiles = glob.glob(dirName + "/*/" + fileType)
-    
+    listOfFiles = glob.glob(dirName + fileType)
     for entry in listOfFiles:
         fullPath = os.path.join(dirName, entry)
         if os.path.isdir(fullPath):
@@ -60,18 +59,6 @@ def appendToList(list, dirName, fileType):
         else:
             list.append(fullPath)
     
-
-def getListOfFiles(dirName):
-    # listOfFiles = glob.glob(dirName + "/*/*.vcxproj*")
-    
-    allFiles = list()
-    
-    appendToList(allFiles, dirName, "*.vcxproj*")
-    appendToList(allFiles, dirName, "*Makefile*")
-        
-    return allFiles
-
-
 #clean the build. Removes all files. .pdb, .exe, .vcxproj etc...
 # ____________________________________________________________
 def rmTreeErr(*args):
@@ -80,48 +67,51 @@ def rmTreeErr(*args):
     print(func)
     print(path)
 
-if args.clean == True:
-    print(white("===Starting cleanup==="))
-    buildFolder = workingDir + "/build";
+def clean():
+    if args.clean == True:
+        print(white("===Starting cleanup==="))
+        buildFolder = workingDir + "/../bin";
 
-    if os.path.isdir(buildFolder):
-        shutil.rmtree(buildFolder, onerror=rmTreeErr)
-    else:
-        print(white("No build folder."))
+        files = list()
+        appendToList(files, buildFolder, "/Engine_*.*")
+        appendToList(files, workingDir, "/*/*.vcxproj*")
+        appendToList(files, workingDir, "/*/*Makefile*")
 
-    files = getListOfFiles(workingDir)
+        if os.path.isdir(buildFolder):
+            print(white("Removing obj files (pdb, ilk, obj, idb)"))
+            shutil.rmtree(workingDir + "/obj/", onerror=rmTreeErr)
 
-    if len(files) > 0:
-        for f in files:
-            try:
-                os.remove(f)
-                print("Removed : " + red(f))
-            except:
-                print(red("There was an error removing " + f))
+        if len(files) > 0:
+            for f in files:
+                try:
+                    os.remove(f)
+                    print("Removed : " + red(f))
+                except:
+                    print(red("There was an error removing " + f))
 
-    else:
-        print(white("No files to remove."))
-    
-    print(green("===Clean finished==="))
+        else:
+            print(white("No files to remove."))
+
+        print(green("===Clean finished==="))
 
 
 ## configure the build
 # ____________________________________________________________
-def configure(command):
+
+def sysCall(command):
     if args.file == None:
         os.system(command + " " + args.config)
     else:
         os.system(command + " " + args.file + " " + args.config)
 
-
-if args.config != None:
-    print(white("===Starting configure==="))
-    if system == "Windows":
-        configure("premake5 --platform=windows")
-    elif system == "Linux":
-        configure("./premake5 --platform=linux")
-    print(green("===Configure done==="))
-
+def configure():
+    if args.config != None:
+        print(white("===Starting configure==="))
+        if system == "Windows":
+            sysCall("premake5 --platform=windows")
+        elif system == "Linux":
+            sysCall("./premake5 --platform=linux")
+        print(green("===Configure done==="))
 
 #build
 # ____________________________________________________________
@@ -138,7 +128,7 @@ def buildWindows(buildConfig):
     if args.verbosity == None:
         verbosity = "n"
 
-    os.system("msbuild " + "build/" + args.build + 
+    os.system("msbuild " + args.build + 
         " /p:GenerateFullPaths=true" +
         " /p:Configuration=" + buildConfig + 
         " /p:Platform=Windows" +
@@ -159,13 +149,23 @@ def buildLinux(buildConfig):
 def canBuild():
     return args.build != None and args.build != False
 
-if canBuild():
-    print(white("===Starting build==="))
-    buildConfig = args.buildConfig 
+def build():
+    if canBuild():
+        print(white("===Starting build==="))
+        buildConfig = args.buildConfig 
 
-    if system == "Windows":
-        buildWindows(buildConfig)
-    elif system == "Linux":
-        buildLinux(buildConfig)
+        if system == "Windows":
+            buildWindows(buildConfig)
+        elif system == "Linux":
+            buildLinux(buildConfig)
 
-    print(green("===Finished build==="))
+        print(green("===Finished build==="))
+
+
+def main():
+    clean()
+    configure()
+    build()
+
+if __name__ == '__main__':
+    main()
