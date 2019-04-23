@@ -48,5 +48,6 @@
 *.idb
 *.log
 *.lastbuildstate
+*.opendb
 
 Makefile
