@@ -128,7 +128,7 @@ namespace Graphics
 			//int byteSize = 0;
 			//char* shader = nullptr;
 
-			Core::File frag( "Shaders/fs.spv" ); //the file type should probably take read flags or write flags?
+			Core::File frag( "Data/Shaders/frag.frag" ); //the file type should probably take read flags or write flags?
 			VkShaderModuleCreateInfo fscInfo = {};
 			fscInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			fscInfo.codeSize = frag.GetSize();
@@ -137,7 +137,7 @@ namespace Graphics
 			if( vkCreateShaderModule( m_LogicalDevice->GetDevice(), &fscInfo, nullptr, &fragModule ) != VK_SUCCESS )
 				assert( !"Failed to create shader module!" );
 
-			Core::File vert( "Shaders/vs.spv" ); //the file type should probably take read flags or write flags?
+			Core::File vert( "Data/shaders/vertex.vert" ); //the file type should probably take read flags or write flags?
 			VkShaderModuleCreateInfo vscInfo = {};
 			vscInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			vscInfo.codeSize = vert.GetSize();
