@@ -91,7 +91,7 @@ Window::Window( CreateInfo info )
 #else
 
 #endif
-
+	m_Instance = info.m_InstanceHandle;
     ShowWindow();
 }
 

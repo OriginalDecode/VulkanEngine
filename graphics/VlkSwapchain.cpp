@@ -60,8 +60,8 @@ namespace Graphics
 	{
 		VkWin32SurfaceCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hwnd = window.GetHandle();
-		createInfo.hinstance = GetModuleHandle( nullptr );
+		createInfo.hwnd = static_cast<HWND>(window.GetHandle());
+		createInfo.hinstance = ::GetModuleHandle(nullptr);
 
 		m_Surface = instance->CreateSurface( createInfo, physicalDevice );
 		QueueProperties queueProp = physicalDevice->FindFamilyIndices( m_Surface.get() );

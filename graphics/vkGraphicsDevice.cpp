@@ -23,6 +23,8 @@ std::vector<VkFramebuffer> m_FrameBuffers;
 VkShaderModule vertModule = nullptr;
 VkShaderModule fragModule = nullptr;
 VkPipeline _pipeline = nullptr;
+VkPipelineLayout _pipelineLayout = nullptr;
+
 Window::Size _size;
 namespace Graphics
 {
@@ -32,7 +34,7 @@ namespace Graphics
 
 	bool vkGraphicsDevice::Init( const Window& window )
 	{
-		_size = window.GetSize();
+		_size = window.GetInnerSize();
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
 
@@ -47,8 +49,11 @@ namespace Graphics
 
 		VkCommandPoolCreateInfo poolCreateInfo = {};
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolCreateInfo.pNext = nullptr;
+		poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		poolCreateInfo.queueFamilyIndex = m_PhysicalDevice->GetQueueFamilyIndex();
-		if( vkCreateCommandPool( m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool ) != VK_SUCCESS )
+
+		if( vkCreateCommandPool( m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool) != VK_SUCCESS )
 			assert( !"failed to create commandpool!" );
 
 		VkCommandBufferAllocateInfo cmdBufAllocInfo = {};
@@ -73,9 +78,14 @@ namespace Graphics
 
 		VkAttachmentDescription attDesc = {};
 		attDesc.format = format;
+		attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+
 		attDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
 		attDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
 		attDesc.initialLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		attDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
@@ -86,8 +96,15 @@ namespace Graphics
 		rpInfo.subpassCount = 1;
 		rpInfo.pSubpasses = &subpassDesc;
 
-		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass ) != VK_SUCCESS )
-			assert( !"Failed to create render pass!" );
+		VkResult result = vkCreateRenderPass(m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass);
+
+		if (result != VK_SUCCESS)
+		{
+			int apa;
+			apa = 5;
+		}
+
+			//assert( !"Failed to create render pass!" );
 
 		m_FrameBuffers.resize( m_Swapchain->GetNofImages() );
 		auto& list = m_Swapchain->GetImageList();
@@ -118,8 +135,8 @@ namespace Graphics
 			fbInfo.renderPass = _renderPass;
 			fbInfo.attachmentCount = 1;
 			fbInfo.pAttachments = &viewList[i];
-			fbInfo.width = (uint32)window.GetSize().m_Width;
-			fbInfo.height = (uint32)window.GetSize().m_Height;
+			fbInfo.width = (uint32)_size.m_Width;
+			fbInfo.height = (uint32)_size.m_Height;
 			fbInfo.layers = 1;
 
 			if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
@@ -146,34 +163,47 @@ namespace Graphics
 			if( vkCreateShaderModule( m_LogicalDevice->GetDevice(), &vscInfo, nullptr, &vertModule ) != VK_SUCCESS )
 				assert( !"Failed to create shader module!" );
 
-			VkPipelineShaderStageCreateInfo ssci[2] = {};
 
-			ssci[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			ssci[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-			ssci[0].module = vertModule;
-			ssci[0].pName = "main";
-			ssci[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			ssci[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			ssci[1].module = fragModule;
-			ssci[1].pName = "main";
+
+			VkPipelineShaderStageCreateInfo vertexStageInfo = {};
+			vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+			vertexStageInfo.module = vertModule;
+			vertexStageInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo fragStageInfo = {};
+			fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			fragStageInfo.module = fragModule;
+			fragStageInfo.pName = "main";
+
+			VkPipelineShaderStageCreateInfo ssci[] = { vertexStageInfo, fragStageInfo };
 
 			VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			vertexInputInfo.vertexBindingDescriptionCount = 0;
+			vertexInputInfo.pVertexBindingDescriptions = nullptr;
+			vertexInputInfo.vertexAttributeDescriptionCount = 0;
+			vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+
+
 			VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 			pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 			pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+			pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
 			VkViewport vp = {};
 			vp.x = 0.0f;
 			vp.y = 0.0f;
-			vp.width = window.GetSize().m_Width;
-			vp.height = window.GetSize().m_Height;
+			vp.width = _size.m_Width;
+			vp.height = _size.m_Height;
 			vp.minDepth = 0.0f;
 			vp.maxDepth = 1.0f;
 
-			VkRect2D scissor = { 0 };
-			scissor.extent.width = (uint32)window.GetSize().m_Width;
-			scissor.extent.height = (uint32)window.GetSize().m_Height;
+			VkRect2D scissor = {};
+			scissor.extent.width = (uint32)_size.m_Width;
+			scissor.extent.height = (uint32)_size.m_Height;
 			scissor.offset.x = 0;
 			scissor.offset.y = 0;
 
@@ -184,53 +214,68 @@ namespace Graphics
 			vpCreateInfo.pScissors = &scissor;
 			vpCreateInfo.pViewports = &vp;
 
-			VkPipelineDepthStencilStateCreateInfo dsInfo = {};
-			dsInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-			dsInfo.depthTestEnable = VK_TRUE;
-			dsInfo.depthWriteEnable = VK_TRUE;
-			dsInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-			dsInfo.depthBoundsTestEnable = VK_FALSE;
-			dsInfo.minDepthBounds = 0.f;
-			dsInfo.maxDepthBounds = 1.f;
-			dsInfo.stencilTestEnable = VK_FALSE;
-			dsInfo.front = {};
-			dsInfo.back = {};
+			VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
+			pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
+			pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_FALSE;
+			pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+			pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+			pipelineDepthStencilStateCreateInfo.back.failOp = VK_STENCIL_OP_KEEP;
+			pipelineDepthStencilStateCreateInfo.back.passOp = VK_STENCIL_OP_KEEP;
+			pipelineDepthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+			pipelineDepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+			pipelineDepthStencilStateCreateInfo.front = pipelineDepthStencilStateCreateInfo.back;
 
 			VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 			rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 			rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 			rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 			rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+			rastCreateInfo.depthClampEnable = VK_FALSE;
+			rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+			rastCreateInfo.depthBiasEnable = VK_FALSE;
 			rastCreateInfo.lineWidth = 1.0f;
 
 			VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
 			pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 			pipelineMSCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			pipelineMSCreateInfo.sampleShadingEnable = VK_FALSE;
 
 			VkPipelineColorBlendAttachmentState blendAttachState = {};
-			blendAttachState.colorWriteMask = 0xf;
+			blendAttachState.colorWriteMask = 0xF;
+			blendAttachState.blendEnable = VK_FALSE;
 
 			VkPipelineColorBlendStateCreateInfo blendCreateInfo = {};
 			blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-			blendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+			blendCreateInfo.logicOpEnable = VK_FALSE;
 			blendCreateInfo.attachmentCount = 1;
 			blendCreateInfo.pAttachments = &blendAttachState;
 
+			
+	
+
+			VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
+			pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+			VkPipelineLayout layout;
+			if (vkCreatePipelineLayout(m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &layout) != VK_SUCCESS)
+				assert(!"Failed to create pipelineLayout");
+
 			VkGraphicsPipelineCreateInfo pipelineInfo = {};
 			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineInfo.stageCount = ARRSIZE( ssci );
-			pipelineInfo.pStages = &ssci[0];
+			pipelineInfo.layout = layout;
 			pipelineInfo.pVertexInputState = &vertexInputInfo;
 			pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
-			pipelineInfo.pViewportState = &vpCreateInfo;
-			pipelineInfo.pDepthStencilState = &dsInfo;
-			pipelineInfo.pRasterizationState = &rastCreateInfo;
-			pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
-			pipelineInfo.pColorBlendState = &blendCreateInfo;
 			pipelineInfo.renderPass = _renderPass;
-			pipelineInfo.basePipelineIndex = -1;
+			pipelineInfo.pViewportState = &vpCreateInfo;
+			pipelineInfo.pColorBlendState = &blendCreateInfo;
+			pipelineInfo.pRasterizationState = &rastCreateInfo;
+			pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
+			pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
+			pipelineInfo.pStages = ssci;
+			pipelineInfo.stageCount = 2;//ARRSIZE( ssci );
 
-			if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &_pipeline ) != VK_SUCCESS )
+			if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS )
 				assert( !"Failed to create pipeline!" );
 		}
 

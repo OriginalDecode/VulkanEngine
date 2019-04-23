@@ -5,11 +5,11 @@
 
 #include <memory>
 #include <vector>
+#include <vulkan/vulkan_core.h>
+
 class Window;
 //struct VkWin32SurfaceCreateInfoKHR;
 
-LPE_DEFINE_HANDLE(VkCommandPool);
-LPE_DEFINE_HANDLE(VkCommandBuffer);
 
 namespace Graphics
 {

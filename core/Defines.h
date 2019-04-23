@@ -19,6 +19,8 @@ struct HWND__;
 typedef HWND__* HWND;
 #endif
 typedef HWND HWindow;
+typedef HINSTANCE _HInstance_;
 #else
 typedef void* HWindow; //X11 Window
+typedef void* _HInstance_;
 #endif

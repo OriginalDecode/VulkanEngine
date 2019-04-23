@@ -81,7 +81,7 @@ namespace Graphics
 		instanceCreateInfo.pApplicationInfo = &appInfo;
 
 		instanceCreateInfo.enabledLayerCount = ARRSIZE( validationLayers );
-		instanceCreateInfo.ppEnabledLayerNames = validationLayers;
+		instanceCreateInfo.ppEnabledLayerNames = &validationLayers[0];
 
 		instanceCreateInfo.enabledExtensionCount = ARRSIZE( extentions );
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;

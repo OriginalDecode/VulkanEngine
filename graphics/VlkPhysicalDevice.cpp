@@ -29,6 +29,7 @@ namespace Graphics
 			if (queueProp.queueIndex > -1)
 			{
 				m_PhysicalDevice = device;
+				m_QueueFamilyIndex = queueProp.queueIndex;
 				break;
 			}
 
