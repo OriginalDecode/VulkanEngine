@@ -21,7 +21,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     -- fnc.setPlatform("Windows")
     configurations { "Debug" , "Release" }
     platforms { _OPTIONS["platform"] }
-    debugdir "%{wks.location}/../bin/Resources"
+    debugdir "%{wks.location}../bin"
     -- language "C++"
     cppdialect "C++14"
     -- flags { "C++14" }
