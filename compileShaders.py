@@ -2,8 +2,6 @@ import os
 import glob
 import shutil
 
-workingDir = os.getcwd()
-
 def appendToList(list, dirName, fileType):
     listOfFiles = glob.glob(dirName + fileType)
     for entry in listOfFiles:
@@ -13,39 +11,35 @@ def appendToList(list, dirName, fileType):
         else:
             list.append(fullPath)
 
-# shader suffixes or commands
-# vert, tesc(hull), tese(domain), geom, frag, comp
-
 def main():
-
+    workingDir = os.getcwd()
     folder = workingDir + "/shaders"
     outputFolder = workingDir + "/../bin/Data/shaders"
     if not os.path.isdir(outputFolder):
         os.makedirs(outputFolder)
 
-    print("folder : " + folder)
-    print("output : " + outputFolder)
+    print("input  folder : " + folder)
+    print("output folder : " + outputFolder )
     shaderFiles = list()
 
-    fileTypes = [ 
-        "*.vert", 
-        "*.frag", 
-        "*.comp", 
-        "*.geom", 
-        "*.tese", 
-        "*.tesc" 
-    ]
+    appendToList(shaderFiles, folder, "/*.*")
 
-    for fileType in fileTypes :
-        appendToList(shaderFiles, folder, "/"+fileType)
-    
     for file in shaderFiles:
         outputFile = file[file.rfind('\\')+1:]
-        print(outputFile)
+        print("\ninput : " + file)
+        print("output : " + outputFolder + "/" + outputFile)
         command = "%VKBIN%/glslangValidator.exe " #validator path
         command += "-e main " #entrypoint, this should probably be changed into something else ?
         command += "-o " + outputFolder + "/" + outputFile + " " #output
-        command += "-V -D " #-V needed to generate binary, -D to tell the validator that it's HLSL code.
+
+        command += "-V " #-V needed to generate binary
+
+        with open(file) as f:
+            first_line = f.readline()
+            if first_line.find("#version") == -1:
+                print("is HLSL")
+                command += "-D " #-D to tell the validator that it's HLSL code
+
         command += file 
         os.system(command) 
 
