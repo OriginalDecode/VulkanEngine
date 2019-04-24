@@ -42,7 +42,13 @@ namespace Graphics
 		std::vector<VkCommandBuffer> m_CmdBuffers;
 		VkCommandPool m_CmdPool = nullptr;
 
+		VkSemaphore m_AcquireNextImageSemaphore = nullptr;
+
+		VkSemaphore m_DrawDone = nullptr;
+		VkFence m_FrameFence[2]{ nullptr, nullptr };
 		uint32 m_Index = 0;
+
+		VkShaderModule LoadShader(const char* filepath, VkDevice pDevice);
 
     };
 
