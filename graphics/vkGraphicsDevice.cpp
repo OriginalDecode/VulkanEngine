@@ -257,13 +257,12 @@ namespace Graphics
 			VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 			pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-			VkPipelineLayout layout;
-			if (vkCreatePipelineLayout(m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &layout) != VK_SUCCESS)
+			if (vkCreatePipelineLayout(m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
 				assert(!"Failed to create pipelineLayout");
 
 			VkGraphicsPipelineCreateInfo pipelineInfo = {};
 			pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-			pipelineInfo.layout = layout;
+			pipelineInfo.layout = _pipelineLayout;
 			pipelineInfo.pVertexInputState = &vertexInputInfo;
 			pipelineInfo.pInputAssemblyState = &pipelineIACreateInfo;
 			pipelineInfo.renderPass = _renderPass;
@@ -311,13 +310,13 @@ namespace Graphics
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearValue;
 
-		VkViewport viewport = { 0 };
+		VkViewport viewport = { };
 		viewport.height = _size.m_Height;
 		viewport.width = _size.m_Width;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
-		VkRect2D scissor = { 0 };
+		VkRect2D scissor = { };
 		scissor.extent.width = (uint32)_size.m_Width;
 		scissor.extent.height = (uint32)_size.m_Height;
 		scissor.offset.x = 0;
@@ -327,25 +326,25 @@ namespace Graphics
 		{
 			if( vkBeginCommandBuffer( m_CmdBuffers[i], &cmdInfo ) != VK_SUCCESS )
 				assert( !"Failed to begin commandbuffer!" );
-
-			std::vector<VkImage>& images = m_Swapchain->GetImageList();
-			vkCmdClearColorImage( m_CmdBuffers[i], images.front(), VK_IMAGE_LAYOUT_GENERAL, &_clearColor, 1, &imageRange );
-
 			renderPassInfo.framebuffer = m_FrameBuffers[i];
+
 			vkCmdBeginRenderPass( m_CmdBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
+
+
 			vkCmdBindPipeline( m_CmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline );
 
-			vkCmdSetViewport( m_CmdBuffers[i], 0, 1, &viewport );
+			//vkCmdSetViewport( m_CmdBuffers[i], 0, 1, &viewport );
+			//vkCmdSetScissor( m_CmdBuffers[i], 0, 1, &scissor );
 
-			vkCmdSetScissor( m_CmdBuffers[i], 0, 1, &scissor );
 			vkCmdDraw( m_CmdBuffers[i], 3, 1, 0, 0 );
 
 			vkCmdEndRenderPass( m_CmdBuffers[i] );
 
-			vkEndCommandBuffer( m_CmdBuffers[i] );
+			if (vkEndCommandBuffer(m_CmdBuffers[i]) != VK_SUCCESS)
+				assert(!"Failed to end commandbuffer!");
 		}
 
-		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, NULL, NULL, &m_Index ) != VK_SUCCESS )
+		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, nullptr /*semaphore*/, nullptr /*fence*/, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
 		VkSubmitInfo submitInfo = {};

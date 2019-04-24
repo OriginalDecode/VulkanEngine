@@ -78,9 +78,8 @@ namespace Graphics
 		uint32 swapchain_image_count = 2;
 		assert( swapchain_image_count < capabilities.maxImageCount );
 
-		VkExtent2D extent = capabilities.currentExtent;
+		VkExtent2D vkExtent = capabilities.currentExtent;
 
-		
 		VkSurfaceFormatKHR format = Graphics::GetFormat( m_Surface->GetSurfaceFormats() );
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
@@ -89,7 +88,7 @@ namespace Graphics
 		swapchainCreateInfo.minImageCount = capabilities.minImageCount;
 		swapchainCreateInfo.imageFormat = format.format;
 		swapchainCreateInfo.imageColorSpace = format.colorSpace;
-		swapchainCreateInfo.imageExtent = extent;
+		swapchainCreateInfo.imageExtent = vkExtent;
 		swapchainCreateInfo.imageArrayLayers = 1;
 
 		if( queueProp.queueIndex != queueProp.familyIndex )
