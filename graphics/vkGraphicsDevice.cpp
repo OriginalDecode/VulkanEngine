@@ -282,7 +282,7 @@ namespace Graphics
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rastCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
 		rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
 		rastCreateInfo.depthBiasEnable = VK_FALSE;
@@ -312,7 +312,7 @@ namespace Graphics
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
 		VkPipelineShaderStageCreateInfo vertexStageInfo = {};
