@@ -93,7 +93,7 @@ namespace Graphics
 
 		if( queueProp.queueIndex != queueProp.familyIndex )
 		{
-			uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
+			const uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
 			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE(queueIndices);
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;

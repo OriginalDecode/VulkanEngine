@@ -1,28 +1,21 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-static const float2 positions[] = {
-    float2(-0.75, 0.75),
-    float2(0.5, 0.25),
-    float2(0.75, 0.75)
-};
+layout(location = 0) out vec3 fragColor;
 
-static const float3 color[] = {
-    float3(1,0,0),
-    float3(0,1,0),
-    float3(0,0,1)
-};
+vec2 positions[3] = vec2[](
+    vec2(0.0, -0.5),
+    vec2(0.5, 0.5),
+    vec2(-0.5, 0.5)
+);
 
-struct VSOutput 
-{
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-};
+vec3 colors[3] = vec3[](
+    vec3(1.0, 0.0, 0.0),
+    vec3(0.0, 1.0, 0.0),
+    vec3(0.0, 0.0, 1.0)
+);
 
-VSOutput main(uint vertex_id : SV_VertexID) {
-    
-    VSOutput output = (VSOutput)0;
-
-    output.position = float4(positions[vertex_id], 0.0, 1.0);
-    output.color = float4(color[vertex_id], 1.0);
-
-    return output;
+void main() {
+    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    fragColor = colors[gl_VertexIndex];
 }

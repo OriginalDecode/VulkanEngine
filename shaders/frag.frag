@@ -1,12 +1,10 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
-struct VSOutput 
-{
-    float4 position : SV_POSITION;
-    float4 color : COLOR;
-};
+layout(location = 0) in vec3 fragColor;
 
+layout(location = 0) out vec4 outColor;
 
-float4 main(VSOutput input) : SV_Target 
-{
-    return input.color;
+void main() {
+    outColor = vec4(fragColor, 1.0);
 }

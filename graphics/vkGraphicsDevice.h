@@ -25,7 +25,8 @@ namespace Graphics
 
         bool Init( const Window& window );
 
-        void Present();
+
+
         void DrawFrame();
 
 
@@ -48,6 +49,18 @@ namespace Graphics
 		VkFence m_FrameFence[2]{ nullptr, nullptr };
 		uint32 m_Index = 0;
 
+
+		void SetupScissorArea();
+		void SetupViewport();
+		void CreateRenderPass();
+		void CreateCommandPool();
+		void CreateCommandBuffer();
+		void CreateGraphicsPipeline();
+		void CreatePipelineLayout();
+		void CreateFramebuffers();
+
+
+		VkSemaphore CreateVkSemaphore(VkDevice pDevice);
 		VkShaderModule LoadShader(const char* filepath, VkDevice pDevice);
 
     };
