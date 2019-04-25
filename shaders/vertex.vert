@@ -1,8 +1,15 @@
 
-static const float2 positions[] = {
-    float2(0.0, -0.5),
-    float2(0.5, 0.5),
-    float2(-0.5, 0.5)
+cbuffer mvp : register(b0)
+{
+    row_major float4x4 World;
+    row_major float4x4 View;
+    row_major float4x4 Projection;
+};
+
+struct VSInput 
+{
+    float4 position : POSITION;
+    float4 color : COLOR;
 };
 
 static const float3 color[] = {
@@ -17,12 +24,14 @@ struct VSOutput
     float4 color : COLOR;
 };
 
-VSOutput main(uint vertex_id : SV_VertexID) {
-    
+VSOutput main(VSInput input) 
+{
     VSOutput output = (VSOutput)0;
 
-    output.position = float4(positions[vertex_id], 0.0, 1.0);
-    output.color = float4(color[vertex_id], 1.0);
-
+    output.position = mul(input.position, World);
+    output.position = mul(output.position, View);
+    output.position = mul(output.position, Projection);
+    
+    output.color = input.color;
     return output;
 }
