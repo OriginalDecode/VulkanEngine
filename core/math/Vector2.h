@@ -155,5 +155,6 @@ namespace Core
 	{
 		return (first.x * second.x) + (first.y * second.y);
 	}
-};
 
+	using Vector2f = Vector2<float>;
+};

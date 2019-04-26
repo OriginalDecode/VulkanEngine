@@ -183,4 +183,5 @@ namespace Core
 		return{ (first.y * second.z) - (first.z * second.y), (first.z * second.x) - (first.x * second.z), (first.x * second.y) - (first.y * second.x), 1 };
 	}
 
+	using Vector4f = Vector4<float>;
 };

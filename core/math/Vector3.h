@@ -175,5 +175,7 @@ namespace Core
 	{
 		return{ (first.y * second.z) - (first.z * second.y), (first.z * second.x) - (first.x * second.z), (first.x * second.y) - (first.y * second.x) };
 	}
+
+	using Vector3f = Vector3<float>;
 };
 
