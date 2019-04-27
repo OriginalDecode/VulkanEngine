@@ -43,7 +43,7 @@ namespace Graphics
 							VkSurfaceCapabilitiesKHR* capabilities );
 
 		QueueProperties FindFamilyIndices( VlkSurface* pSurface );
-
+		VkPhysicalDevice GetDevice() { return m_PhysicalDevice; }
 	private:
 		bool SurfaceCanPresent( VkSurfaceKHR pSurface ) const;
 		uint32 GetSurfacePresentModeCount( VkSurfaceKHR pSurface ) const;

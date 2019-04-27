@@ -9,7 +9,7 @@ cbuffer mvp : register(b0)
 struct VSInput 
 {
     float4 position : POSITION;
-    float4 color : COLOR;
+    // float4 color : COLOR;
 };
 
 static const float3 color[] = {
@@ -24,14 +24,14 @@ struct VSOutput
     float4 color : COLOR;
 };
 
-VSOutput main(VSInput input) 
+VSOutput main(VSInput input, uint vertex_id : SV_VertexID) 
 {
     VSOutput output = (VSOutput)0;
 
     output.position = mul(input.position, World);
     output.position = mul(output.position, View);
     output.position = mul(output.position, Projection);
-    
-    output.color = input.color;
+    // output.position = input.position;
+    output.color = float4(color[vertex_id], 1);
     return output;
 }

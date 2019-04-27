@@ -13,6 +13,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 #include "Core/File.h"
+#include <memory.h>
+#include "Core/math/Matrix44.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -25,6 +27,19 @@ VkPipeline _pipeline = nullptr;
 VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
 VkRect2D _Scissor = {};
+VkBuffer _VertexBuffer;
+VkDeviceMemory _vertexBufferMemory;
+VkDeviceMemory _matrixBufferMemory;
+VkBuffer _MatrixBuffer;
+Core::Matrix44f _worldMatrix;
+Core::Matrix44f _projectionMatrix;
+Core::Matrix44f _translationMatrix;
+VkDescriptorSetLayout _descriptorLayout = nullptr;
+
+
+
+Core::Vector4f* _vertices = nullptr;
+
 Window::Size _size;
 
 namespace Graphics
@@ -33,7 +48,13 @@ namespace Graphics
 
 	vkGraphicsDevice::~vkGraphicsDevice()
 	{
+		delete[] _vertices;
+		_vertices = nullptr;
+
 		auto device = m_LogicalDevice->GetDevice();
+		
+		vkDestroyBuffer(device, _VertexBuffer, nullptr);
+		vkDestroyBuffer(device, _MatrixBuffer, nullptr);
 		vkDestroyShaderModule(device, vertModule, nullptr);
 		vkDestroyShaderModule(device, fragModule, nullptr);
 		vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
@@ -50,6 +71,11 @@ namespace Graphics
 	bool vkGraphicsDevice::Init(const Window& window)
 	{
 		_size = window.GetInnerSize();
+
+		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * (3.1415f / 180.f));
+		_translationMatrix = Core::Matrix44f::Identity();
+		_worldMatrix = Core::Matrix44f::Identity();
+
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
 
@@ -61,6 +87,9 @@ namespace Graphics
 
 		m_Swapchain = std::make_unique<VlkSwapchain>();
 		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
+
+		CreateVertexBuffer();
+		CreateMatrixBuffer();
 
 		CreateCommandPool();
 		CreateCommandBuffer();
@@ -74,15 +103,13 @@ namespace Graphics
 
 		SetupViewport();
 		SetupScissorArea();
+		CreateDescriptorLayout();
 		CreatePipelineLayout();
 		CreateGraphicsPipeline();
 		
 		m_AcquireNextImageSemaphore = CreateVkSemaphore(m_LogicalDevice->GetDevice());
 		m_DrawDone = CreateVkSemaphore(m_LogicalDevice->GetDevice());
 
-		VkCommandBufferBeginInfo cmdInfo = {};
-		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 		VkClearValue clearValue = {};
 		clearValue.color = _clearColor;
@@ -94,6 +121,10 @@ namespace Graphics
 		renderPassInfo.renderArea.extent = { (uint32)_size.m_Width, (uint32)_size.m_Height };
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearValue;
+
+		VkCommandBufferBeginInfo cmdInfo = {};
+		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
 		for (size_t i = 0; i < m_CmdBuffers.size(); ++i)
 		{
@@ -107,9 +138,10 @@ namespace Graphics
 			renderPassInfo.framebuffer = frameBuffer;
 
 			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+			VkBuffer vertexBuffers[] = { _VertexBuffer };
+			VkDeviceSize offsets = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
 
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
@@ -145,10 +177,20 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame()
 	{
-		
-
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
+
+
+		void* vpData = nullptr;
+		if (vkMapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory, 0, sizeof(Core::Matrix44f) * 3, 0, &vpData) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+
+		int8* data = (int8*)vpData;
+		memcpy(&data[0], &_translationMatrix, sizeof(Core::Matrix44f));
+		memcpy(&data[sizeof(Core::Matrix44f) * 1], &_translationMatrix, sizeof(Core::Matrix44f));
+		memcpy(&data[sizeof(Core::Matrix44f) * 2], &_translationMatrix, sizeof(Core::Matrix44f));
+
+		vkUnmapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
 		VkSubmitInfo submitInfo = {};
@@ -303,12 +345,24 @@ namespace Graphics
 		blendCreateInfo.attachmentCount = 1;
 		blendCreateInfo.pAttachments = &blendAttachState;
 
+		auto bindDesc = CreateBindDesc();
+		auto attrDesc = CreateAttrDesc();
+
+
+
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = 1;
+
+		vertexInputInfo.pVertexBindingDescriptions = &bindDesc;
+		vertexInputInfo.pVertexAttributeDescriptions = &attrDesc;
+
+		CreateDescriptorLayout();
+
+
+
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -346,12 +400,36 @@ namespace Graphics
 		if (vkCreateGraphicsPipelines(m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
 			assert(!"Failed to create pipeline!");
 	}
+
+	void vkGraphicsDevice::CreateDescriptorLayout()
+	{
+		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+	
+
+		if (vkCreateDescriptorSetLayout(m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &_descriptorLayout) != VK_SUCCESS)
+			assert(!"Failed to create Descriptor layout");
+
+	}
+
 	//_____________________________________________
 
 	void vkGraphicsDevice::CreatePipelineLayout()
 	{
 		VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineCreateInfo.setLayoutCount = 1;
+		pipelineCreateInfo.pSetLayouts = &_descriptorLayout;
 
 		if (vkCreatePipelineLayout(m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
 			assert(!"Failed to create pipelineLayout");
@@ -396,6 +474,113 @@ namespace Graphics
 			if (vkCreateFramebuffer(m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i]) != VK_SUCCESS)
 				assert(!"Failed to create framebuffer!");
 		}
+	}
+
+	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & propertyFlags ) == propertyFlags)
+			{
+				return i;
+			}
+		}
+		assert(!"Failed to find suitable memory type!");
+		return 0;
+	}
+
+	void vkGraphicsDevice::CreateVertexBuffer()
+	{
+		_vertices = new Core::Vector4f[3];
+		_vertices[0] = { 0.0f, -0.5f, -2.f, 1.f };
+		_vertices[1] = { 0.5f, 0.5f, -2.f, 1.f };
+		_vertices[2] = { -0.5f, 0.5f, -2.f, 1.f };
+
+
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = sizeof(Core::Vector4f) * 3;
+		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_VertexBuffer) != VK_SUCCESS)
+			assert(!"Failed to create vertex buffer!");
+
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), _VertexBuffer, &memRequirements);
+
+		_vertexBufferMemory = GPUAllocateMemory(memRequirements);
+
+		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), _VertexBuffer, _vertexBufferMemory, 0) != VK_SUCCESS)
+			assert(!"Failed to bind buffer memory!");
+
+		void* data = nullptr;
+		if (vkMapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, createInfo.size, 0, &data) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+		memcpy(data, _vertices, sizeof(Core::Vector4f) * 3);
+		vkUnmapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory);
+
+	}
+
+	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
+	{
+		VkVertexInputBindingDescription bindingDescription = {};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(Core::Vector4f);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		return bindingDescription;		
+	}
+
+	VkVertexInputAttributeDescription vkGraphicsDevice::CreateAttrDesc()
+	{
+		VkVertexInputAttributeDescription attrDesc = {};
+		attrDesc.binding = 0;
+		attrDesc.location = 0;
+		attrDesc.format = VK_FORMAT_R32G32_SFLOAT;
+		attrDesc.offset = 0;
+		return attrDesc;
+	}
+
+	VkDeviceMemory vkGraphicsDevice::GPUAllocateMemory(const VkMemoryRequirements& memRequirements)
+	{
+		VkDeviceMemory memory;
+		VkMemoryAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_PhysicalDevice->GetDevice());
+
+
+		if (vkAllocateMemory(m_LogicalDevice->GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS)
+			assert(!"Failed to allocate memory on GPU!");
+
+		return memory;
+	}
+
+	void vkGraphicsDevice::CreateMatrixBuffer()
+	{
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = sizeof(Core::Matrix44f) * 3;
+		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_MatrixBuffer) != VK_SUCCESS)
+			assert(!"Failed to create vertex buffer!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), _MatrixBuffer, &memRequirements);
+
+		_matrixBufferMemory = GPUAllocateMemory(memRequirements);
+
+		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), _MatrixBuffer, _matrixBufferMemory, 0) != VK_SUCCESS)
+			assert(!"Failed to bind buffer memory!");
+
+		
 	}
 
 	VkSemaphore vkGraphicsDevice::CreateVkSemaphore(VkDevice pDevice)
