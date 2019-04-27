@@ -99,7 +99,7 @@ namespace Core
 
 	void Quaternion::ToAxisAngle(Core::Vector3f& aVectorAxisOut, float& anAngleOut) const
 	{
-		if (Length2(v) < 0.0001f)
+		if (aVectorAxisOut.Length2() < 0.0001f)
 		{
 			aVectorAxisOut = Core::Vector3f(1.f, 0, 0);
 		}

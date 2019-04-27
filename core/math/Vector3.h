@@ -95,6 +95,11 @@ namespace Core
 			return *this;
 		}
 
+		void Normalize()
+		{
+			*this /= Length();
+		}
+
 	};
 
 	template<typename T>
@@ -148,20 +153,11 @@ namespace Core
 	}
 
 	template <typename T>
-	void Normalize(Vector3<T>& aVector)
-	{
-		if (Length(aVector) > 0.f)
-			aVector /= Length(aVector);
-	}
-
-	template <typename T>
 	Vector3<T> GetNormalized(const Vector3<T>& aVector)
 	{
-		T sqrt = Length(aVector);
-		if (sqrt > 0)
-			return aVector / sqrt;
-
-		return Vector3<T>(0, 0, 0);
+		Vector3<T> vec(aVector);
+		vec.Normalize();
+		return vec;
 	}
 
 	template <typename T>

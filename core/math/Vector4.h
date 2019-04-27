@@ -7,7 +7,7 @@ namespace Core
 	class Vector4
 	{
 	public:
-		Vector4() = default;
+		Vector4(){ }
 		~Vector4() = default;
 
 		Vector4(T x_, T y_, T z_, T w_)
@@ -27,12 +27,12 @@ namespace Core
 		{
 			struct
 			{
-				T x = 0;
-				T y = 0;
-				T z = 0;
-				T w = 0;
+				T x;
+				T y;
+				T z;
+				T w;
 			};
-			T vector[4];
+			T vector[4]{ 0,0,0,0 };
 		};
 		template <typename T>
 		T Length()

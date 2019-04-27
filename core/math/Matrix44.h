@@ -12,7 +12,7 @@ namespace Core
 	class Matrix44
 	{
 	public:
-		Matrix44() = default;
+		Matrix44() {}
 		~Matrix44() = default;
 
 		Matrix44(const Matrix44<T>& matrix);
@@ -60,7 +60,6 @@ namespace Core
 		void SetTranslation(const Vector4<T>& aVector);
 
 		const Vector4<T>& GetTranslation() const;
-		const Vector3<T>& GetPosition() const;
 
 		void SetForward(const Vector4<T>& aVector);
 		void SetRight(const Vector4<T>& aVector);
@@ -75,8 +74,8 @@ namespace Core
 
 		void LookAt(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up);
 
-		const Vector4<T> GetColumn(int index) const;
-		const Matrix44<T> Inverse(Matrix44<T>& aMatrix);
+		Vector4<T> GetColumn(int index) const;
+		Matrix44<T> Inverse(const Matrix44<T>& aMatrix);
 
 		Matrix44<T>& operator+=(const Matrix44<T>& matrix);
 		Matrix44<T>& operator-=(const Matrix44<T>& matrix);
@@ -95,6 +94,8 @@ namespace Core
 			};
 		};
 	};
+	using Matrix44f = Matrix44<float>;
+
 
 	template<typename T>
 	Matrix44<T>& Matrix44<T>::operator+=(const Matrix44<T>& matrix)
@@ -179,7 +180,7 @@ namespace Core
 	}
 
 	template<typename T>
-	const Vector4<T> Matrix44<T>::GetColumn(int index) const
+	Vector4<T> Matrix44<T>::GetColumn(int index) const
 	{
 		assert(index < 4 && index >= 0 && "invalid case!");
 		switch (index)
@@ -210,6 +211,7 @@ namespace Core
 		matrix.m_Matrix[10] = 1;
 		matrix.m_Matrix[15] = 1;
 
+		return matrix;
 	}
 
 	template<typename T>
@@ -248,19 +250,19 @@ namespace Core
 	}
 
 	template<typename T>
-	float Matrix44<T>::GetXRotation() const
+	const T Matrix44<T>::GetXRotation() const
 	{
 		return atan2f(m_Matrix[6], m_Matrix[10]);
 	}
 
 	template<typename T>
-	float Matrix44<T>::GetYRotation() const
+	const T Matrix44<T>::GetYRotation() const
 	{
 		return atan2f(-m_Matrix[8], sqrtf((2.f / m_Matrix[5]) + (2.f / m_Matrix[6] + 0.00001f))) + 0.00001f;
 	}
 
 	template<typename T>
-	float Matrix44<T>::GetZRotation() const
+	const T Matrix44<T>::GetZRotation() const
 	{
 		return atan2f(m_Matrix[1], m_Matrix[0]);
 	}
@@ -409,15 +411,9 @@ namespace Core
 	}
 
 	template<typename T>
-	const Vector4<T> Matrix44<T>::GetTranslation() const
+	const Vector4<T>& Matrix44<T>::GetTranslation() const
 	{
-		return{ m_Matrix[12], m_Matrix[13], m_Matrix[14], m_Matrix[15] };
-	}
-
-	template<typename T>
-	const Vector3<T> Matrix44<T>::GetPosition() const
-	{
-		return{ m_Matrix[12], m_Matrix[13], m_Matrix[14] };
+		return rows[3];
 	}
 
 	template<typename T>
@@ -542,7 +538,7 @@ namespace Core
 	}
 
 	template<typename T>
-	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH(T nearPlane, T farPlane, T aspectRatio, T fovAngle)
+	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH(T nearPlane, T farPlane, T /*aspectRatio*/, T fovAngle)
 	{
 		Matrix44 temp;
 
@@ -577,7 +573,7 @@ namespace Core
 	}
 
 	template<typename T>
-	const Matrix44<T> Matrix44<T>::Inverse(const Matrix44<T>& matrix)
+	Matrix44<T> Matrix44<T>::Inverse(const Matrix44<T>& matrix)
 	{
 		Vector4<T> theTranslation;
 		theTranslation = matrix.GetTranslation();

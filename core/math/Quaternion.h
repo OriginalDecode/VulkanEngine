@@ -1,6 +1,6 @@
 #pragma once
-#include "../Vector/Vector.h"
-#include "../Matrix/Matrix.h"
+#include "Vector3.h"
+#include "Matrix44.h"
 namespace Core
 {
 	class Quaternion
