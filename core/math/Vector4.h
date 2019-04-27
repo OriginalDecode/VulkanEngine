@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+
 namespace Core
 {
 	template<typename T>
@@ -17,19 +18,30 @@ namespace Core
 		{
 		}
 
-		T x = 0;
-		T y = 0;
-		T z = 0;
-		T w = 0;
-
+		Vector4(T vec[4]) 
+			: vector(vec) 
+		{
+		}
+		
+		union
+		{
+			struct
+			{
+				T x = 0;
+				T y = 0;
+				T z = 0;
+				T w = 0;
+			};
+			T vector[4];
+		};
 		template <typename T>
-		const T Length()
+		T Length()
 		{
 			return sqrtf(Length2());
 		};
 
 		template <typename T>
-		const T Length2()
+		T Length2()
 		{
 			return ((x * x) + (y * y) + (z * z) + (w * w));
 		};

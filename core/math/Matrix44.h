@@ -15,16 +15,16 @@ namespace Core
 		Matrix44() = default;
 		~Matrix44() = default;
 
-		Matrix44(const Matrix44<T>& aMatrix);
+		Matrix44(const Matrix44<T>& matrix);
 		Matrix44(T mat[16])
 			: m_Matrix(mat)
 		{
 		}
 
-		Matrix44& operator=(const Matrix44& aMatrix);
+		Matrix44<T>& operator=(const Matrix44<T>& matrix);
 
-		const T& operator[](const int& anIndex) const;
-		T& operator[](const int& anIndex);
+		const T& operator[](const int index) const { return m_Matrix[index]; }
+		T& operator[](const int index) { return m_Matrix[index]; }
 
 		const T GetXRotation() const;
 		const T GetYRotation() const;
@@ -45,17 +45,11 @@ namespace Core
 
 		void SetOrthographicProjection(float width, float height, float near_plane, float far_plane);
 		void SetPerspectiveFOV(float fov, float aspect_ratio);
-
-		void RotateAroundPointX(const Vector3f& point, float radian);
-		void RotateAroundPointY(const Vector3f& point, float radian);
-		void RotateAroundPointZ(const Vector3f& point, float radian);
-
-		void ConvertFromCol(const T aColMatrix[16]);
-		void InitWithArray(const T aColMatrix[16]);
+		
 		static Matrix44<T> Transpose(const Matrix44<T>& mat);
 
+		/* Return rotation in radians as vector3 */
 		Vector3<T> GetRadRotations();
-		Vector3<T> GetGradRotations();
 
 
 		void SetRotation3dX(const float aRadian);
@@ -87,8 +81,6 @@ namespace Core
 		Matrix44<T>& operator+=(const Matrix44<T>& matrix);
 		Matrix44<T>& operator-=(const Matrix44<T>& matrix);
 		Matrix44<T>& operator*=(const Matrix44<T>& matrix);
-		Vector4<T> operator*=(const Vector4<T>& vector);
-		Matrix44<T>& operator/=(const Matrix44<T>& matrix);
 
 		union
 		{
@@ -105,19 +97,60 @@ namespace Core
 	};
 
 	template<typename T>
-	Matrix44<T> Matrix44<T>::Identity()
+	Matrix44<T>& Matrix44<T>::operator+=(const Matrix44<T>& matrix)
 	{
-		Matrix44<T> matrix;
-		
-		for (int i = 0; i < 16; i++)
-			matrix.m_Matrix[i] = 0;
-
-		matrix.m_Matrix[0] = 1;
-		matrix.m_Matrix[5] = 1;
-		matrix.m_Matrix[10] = 1;
-		matrix.m_Matrix[15] = 1;
-
+		for (int i = 0; i < 16; ++i)
+			m_Matrix[i] += matrix.m_Matrix[i];
+		return *this;
 	}
+
+	template<typename T>
+	Matrix44<T>& Matrix44<T>::operator-=(const Matrix44<T>& matrix)
+	{
+		for (int i = 0; i < 16; ++i)
+			m_Matrix[i] -= matrix.m_Matrix[i];
+
+		return *this;
+	}
+
+	template<typename T>
+	Matrix44<T>& Matrix44<T>::operator*=(const Matrix44<T>& other)
+	{
+		const __m128 r0 = _mm_load_ps(&m_Matrix[0]);
+		const __m128 r1 = _mm_load_ps(&m_Matrix[4]);
+		const __m128 r2 = _mm_load_ps(&m_Matrix[8]);
+		const __m128 r3 = _mm_load_ps(&m_Matrix[12]);
+
+		for (size_t i = 0; i < 4; i++)
+		{
+			__m128 c0 = _mm_set1_ps(other.m_Matrix[0 + (i * 4)]);
+			__m128 c1 = _mm_set1_ps(other.m_Matrix[1 + (i * 4)]);
+			__m128 c2 = _mm_set1_ps(other.m_Matrix[2 + (i * 4)]);
+			__m128 c3 = _mm_set1_ps(other.m_Matrix[3 + (i * 4)]);
+
+			__m128 row = _mm_add_ps(
+				_mm_add_ps(
+					_mm_mul_ps(r0, c0),
+					_mm_mul_ps(r1, c1)),
+				_mm_add_ps(
+					_mm_mul_ps(r2, c2),
+					_mm_mul_ps(r3, c3)));
+
+			_mm_store_ps(&m_Matrix[4 * i], row);
+		}
+
+		return *this;
+	}
+
+	template<typename T>
+	Matrix44<T>& Matrix44<T>::operator=(const Matrix44<T>& aMatrix)
+	{
+		for (unsigned short i = 0; i < 16; ++i)
+			m_Matrix[i] = aMatrix.m_Matrix[i];
+
+		return *this;
+	}
+
 
 	template<typename T>
 	void Matrix44<T>::SetOrthographicProjection(float width, float height, float near_plane, float far_plane)
@@ -149,7 +182,6 @@ namespace Core
 	const Vector4<T> Matrix44<T>::GetColumn(int index) const
 	{
 		assert(index < 4 && index >= 0 && "invalid case!");
-		Vector4<T> out;
 		switch (index)
 		{
 		case 0:
@@ -164,10 +196,26 @@ namespace Core
 		return Vector4<T>();
 	}
 
+
+	template<typename T>
+	Matrix44<T> Matrix44<T>::Identity()
+	{
+		Matrix44<T> matrix;
+
+		for (int i = 0; i < 16; i++)
+			matrix.m_Matrix[i] = 0;
+
+		matrix.m_Matrix[0] = 1;
+		matrix.m_Matrix[5] = 1;
+		matrix.m_Matrix[10] = 1;
+		matrix.m_Matrix[15] = 1;
+
+	}
+
 	template<typename T>
 	Matrix44<T> Matrix44<T>::Transpose(const Matrix44<T>& mat)
 	{
-		Matrix44<T> result = mat;
+		Matrix44<T> result(mat);
 		std::swap(result.m_Matrix[1], result.m_Matrix[4]);
 		std::swap(result.m_Matrix[2], result.m_Matrix[8]);
 		std::swap(result.m_Matrix[3], result.m_Matrix[12]);
@@ -176,55 +224,13 @@ namespace Core
 		std::swap(result.m_Matrix[11], result.m_Matrix[14]);
 		return result;
 	}
-
-	template<typename T>
-	Vector3<T> Matrix44<T>::GetGradRotations()
-	{
-		Vector3<T> output;
-		output.x = (-atan2(m_Matrix[9], m_Matrix[10]))  * (180.f / 3.1415926535f);
-		output.y = (atan2(m_Matrix[8], sqrt((m_Matrix[9] * m_Matrix[9]) + (m_Matrix[10] * m_Matrix[10]))))  * (180.f / 3.1415926535f);
-		output.z = (-atan2(m_Matrix[4], m_Matrix[0])) * (180.f / 3.1415926535f);
-		return output;
-	}
-
+	
 	template<typename T>
 	Vector3<T> Matrix44<T>::GetRadRotations()
 	{
-		Vector3<T> output;
-		output.x = -atan2(m_Matrix[9], m_Matrix[10]);
-		output.y = atan2(m_Matrix[8], m_Matrix[0]);
-		output.z = -atan2(m_Matrix[4], m_Matrix[0]);
-		return output;
-	}
-
-	template<typename T>
-	void Matrix44<T>::RotateAroundPointZ(const Vector3f& point, float radian)
-	{
-		Vector3f original_pos = GetPosition();
-		SetPosition(original_pos - point);
-
-		*this = *this * Matrix44<float>::CreateRotateAroundZ(radian);
-		SetPosition(GetPosition() + point);
-	}
-
-	template<typename T>
-	void Matrix44<T>::RotateAroundPointY(const Vector3f& point, float radian)
-	{
-		Vector3f original_pos = GetPosition();
-		SetPosition(original_pos - point);
-
-		*this = *this * Matrix44<float>::CreateRotateAroundY(radian);
-		SetPosition(GetPosition() + point);
-	}
-
-	template<typename T>
-	void Matrix44<T>::RotateAroundPointX(const Vector3f& point, float radian)
-	{
-		Vector3f original_pos = GetPosition();
-		SetPosition(original_pos - point);
-
-		*this = *this * Matrix44<float>::CreateRotateAroundX(radian);
-		SetPosition(GetPosition() + point);
+		return{ -atan2(m_Matrix[9], m_Matrix[10]),
+				atan2(m_Matrix[8], m_Matrix[0]),
+				-atan2(m_Matrix[4], m_Matrix[0]) };
 	}
 
 	template<typename T>
@@ -234,50 +240,7 @@ namespace Core
 		new_matrix.SetOrthographicProjection(width, height, near_plane, far_plane);
 		return new_matrix;
 	}
-
-	template<typename T>
-	void Matrix44<T>::InitWithArray(const T aColMatrix[16])
-	{
-		for (int i = 0; i < 16; i++)
-		{
-			m_Matrix[i] = aColMatrix[i];
-		}
-	}
-
-	template<typename T>
-	void Matrix44<T>::ConvertFromCol(const T aColMatrix[16])
-	{
-		m_Matrix[1] = aColMatrix[4];
-		m_Matrix[4] = aColMatrix[1];
-
-		m_Matrix[2] = aColMatrix[8];
-		m_Matrix[8] = aColMatrix[2];
-
-		m_Matrix[3] = aColMatrix[12];
-		m_Matrix[12] = aColMatrix[3];
-
-		m_Matrix[6] = aColMatrix[9];
-		m_Matrix[9] = aColMatrix[6];
-
-		m_Matrix[7] = aColMatrix[13];
-		m_Matrix[13] = aColMatrix[7];
-
-		m_Matrix[11] = aColMatrix[14];
-		m_Matrix[14] = aColMatrix[11];
-	}
-
-	template<typename T>
-	inline const T Matrix44<T>::operator[](const int& anIndex) const
-	{
-		return m_Matrix[anIndex];
-	}
-
-	template<typename T>
-	inline T Matrix44<T>::operator[](const int& anIndex)
-	{
-		return m_Matrix[anIndex];
-	}
-	
+		
 	template<typename T>
 	Matrix44<T>::Matrix44(const Matrix44<T>& aMatrix)
 	{
@@ -442,10 +405,7 @@ namespace Core
 	template<typename T>
 	void Matrix44<T>::SetTranslation(const Vector4<T>& vector)
 	{
-		m_Matrix[12] = vector.x;
-		m_Matrix[13] = vector.y;
-		m_Matrix[14] = vector.z;
-		m_Matrix[15] = vector.w;
+		rows[3] = vector;
 	}
 
 	template<typename T>
@@ -493,39 +453,27 @@ namespace Core
 	}
 
 	template<typename T>
-	void Matrix44<T>::SetPosition(const Vector4<T>& aVector)
+	void Matrix44<T>::SetRight(const Vector4<T>& vector)
 	{
-		m_Matrix[12] = aVector.x;
-		m_Matrix[13] = aVector.y;
-		m_Matrix[14] = aVector.z;
-		m_Matrix[15] = aVector.w;
+		rows[0] = vector;
 	}
 
 	template<typename T>
-	void Matrix44<T>::SetRight(const Vector4<T>& aVector)
-	{
-		m_Matrix[0] = aVector.x;
-		m_Matrix[1] = aVector.y;
-		m_Matrix[2] = aVector.z;
-		m_Matrix[3] = aVector.w;
+	void Matrix44<T>::SetUp(const Vector4<T>& vector)
+	{ 
+		rows[1] = vector;
 	}
 
 	template<typename T>
-	void Matrix44<T>::SetUp(const Vector4<T>& aVector)
+	void Matrix44<T>::SetForward(const Vector4<T>& vector)
 	{
-		m_Matrix[4] = aVector.x;
-		m_Matrix[5] = aVector.y;
-		m_Matrix[6] = aVector.z;
-		m_Matrix[7] = aVector.w;
+		rows[2] = vector;
 	}
 
 	template<typename T>
-	void Matrix44<T>::SetForward(const Vector4<T>& aVector)
+	void Matrix44<T>::SetPosition(const Vector4<T>& vector)
 	{
-		m_Matrix[8] = aVector.x;
-		m_Matrix[9] = aVector.y;
-		m_Matrix[10] = aVector.z;
-		m_Matrix[11] = aVector.w;
+		rows[3] = vector;
 	}
 
 	template<typename T>
@@ -543,14 +491,6 @@ namespace Core
 		inverse.SetPosition(translation);
 		return inverse;
 	}
-
-
-#pragma endregion
-
-#pragma region Operators
-	/****************************\
-	|		Normal Operators	 |
-	\****************************/
 
 	template<typename T>
 	const Matrix44<T> operator+(const Matrix44<T>& aFirstMatrix, const Matrix44<T>& aSecondMatrix)
@@ -570,8 +510,6 @@ namespace Core
 	Matrix44<T> operator*(const Matrix44<T>& first, const Matrix44<T>& second)
 	{
 		
-
-
 	}
 
 	template<typename T>
@@ -581,95 +519,13 @@ namespace Core
 	}
 
 	template<typename T>
-	Vector3<T> operator*(const Vector3<T>& v, const Matrix44<T>& m)
+	Vector4<T>& operator*=(Vector4<T>& v, const Matrix44<T>& m)
 	{
-		return Vector3<T>(
-			m[0] * v.x + m[4] * v.y + m[8] * v.z,
-			m[1] * v.x + m[5] * v.y + m[9] * v.z,
-			m[2] * v.x + m[6] * v.y + m[10] * v.z);
-	}
-
-	template<typename T>
-	Matrix44<T>& operator+=(const Matrix44<T>& matrix)
-	{
-		for (int i = 0; i < 16; ++i)
-			m_Matrix[i] += matrix.m_Matrix[i];
-
-		return *this;
-	}
-
-	template<typename T>
-	Matrix44<T>& operator-=(const Matrix44<T>& matrix)
-	{
-		for (int i = 0; i < 16; ++i)
-			m_Matrix[i] -= matrix.m_Matrix[i];
-
-		return *this;
-	}
-
-	template<typename T>
-	Matrix44<T>& operator*=(const Matrix44<T>& matrix)
-	{
-		const __m128 c0 = _mm_load_ps(&matrix.m_Matrix[0]);
-		const __m128 c1 = _mm_load_ps(&matrix.m_Matrix[4]);
-		const __m128 c2 = _mm_load_ps(&matrix.m_Matrix[8]);
-		const __m128 c3 = _mm_load_ps(&matrix.m_Matrix[12]);
-
-		for (size_t i = 0; i < 4; i++)
-		{
-			__m128 r0 = _mm_set1_ps(m_Matrix[0 + (i * 4)]);
-			__m128 r1 = _mm_set1_ps(m_Matrix[1 + (i * 4)]);
-			__m128 r2 = _mm_set1_ps(m_Matrix[2 + (i * 4)]);
-			__m128 r3 = _mm_set1_ps(m_Matrix[3 + (i * 4)]);
-
-			__m128 row = _mm_add_ps(
-				_mm_add_ps(
-					_mm_mul_ps(r0, c0),
-					_mm_mul_ps(r1, c1)),
-				_mm_add_ps(
-					_mm_mul_ps(r2, c2),
-					_mm_mul_ps(r3, c3)));
-
-			_mm_store_ps(&m_Matrix[4 * i], row);
-		}
-
-		return *this;
-	}
-
-	template<typename T>
-	Vector4<T> operator*=(const Vector4<T>& v, const Matrix44<T>& m)
-	{
-		Vector4<T> vector;
-		vector.x = Dot(v, m.GetColumn(0));
-		vector.y = Dot(v, m.GetColumn(1));
-		vector.z = Dot(v, m.GetColumn(2));
-		vector.w = Dot(v, m.GetColumn(3));
-
-		return vector;
-	}
-
-	template<typename T>
-	Matrix44<T>& Matrix44<T>::operator=(const Matrix44<T>& aMatrix)
-	{
-		for (unsigned short i = 0; i < 16; ++i)
-		{
-			m_Matrix[i] = aMatrix.m_Matrix[i];
-		}
-		return *this;
-	}
-
-	template<typename T>
-	Matrix44<T> Transpose(const Matrix44<T>& aMatrix)
-	{
-		Matrix44<T> tempMatrix;
-		for (unsigned short i = 0; i < 4; ++i)
-		{
-			for (unsigned short j = 0; j < 4; ++j)
-			{
-				tempMatrix.m_Matrix[i + (j * 4)] = aMatrix.m_Matrix[j + (i * 4)];
-			}
-		}
-		return tempMatrix;
+		v.x = Dot(v, m.GetColumn(0));
+		v.y = Dot(v, m.GetColumn(1));
+		v.z = Dot(v, m.GetColumn(2));
+		v.w = Dot(v, m.GetColumn(3));
+		return v;
 	}
 
 	template<typename T>
@@ -721,23 +577,20 @@ namespace Core
 	}
 
 	template<typename T>
-	const Matrix44<T> Matrix44<T>::Inverse(Matrix44<T> &aMatrix)
+	const Matrix44<T> Matrix44<T>::Inverse(const Matrix44<T>& matrix)
 	{
 		Vector4<T> theTranslation;
-		theTranslation = aMatrix.GetTranslation();
+		theTranslation = matrix.GetTranslation();
 		theTranslation.x *= -1;
 		theTranslation.y *= -1;
 		theTranslation.z *= -1;
 		theTranslation.w = 1;
 
-		aMatrix.SetTranslation(0.0f, 0.0f, 0.0f, 1.0f);
-		aMatrix = Transpose(aMatrix);
+		Matrix44<T> inverse = Transpose(matrix);
+		theTranslation *= inverse;
+		inverse.SetTranslation(theTranslation.x, theTranslation.y, theTranslation.z, 1);
 
-		theTranslation *= aMatrix;
-
-		aMatrix.SetTranslation(theTranslation.x, theTranslation.y, theTranslation.z, 1);
-
-		return aMatrix;
+		return inverse;
 	}
 
 	template<class T>
@@ -757,10 +610,6 @@ namespace Core
 		reflectionMatrix.m_Matrix[10] = 1 - 2 * (reflectionVector.z*reflectionVector.z);
 		return reflectionMatrix;
 	};
-
-
-
-#pragma endregion
 
 	template <typename T>
 	Matrix44<T> InverseReal(const Matrix44<T>& aMatrix)
@@ -889,7 +738,5 @@ namespace Core
 
 		return returnMatrix;
 	}
-
-
 
 };
