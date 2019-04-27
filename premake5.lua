@@ -24,6 +24,7 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
     debugdir "%{wks.location}../bin"
     -- language "C++"
     cppdialect "C++14"
+    disablewarnings { "4201" }
     -- flags { "C++14" }
 --filename "whiteroom"
     -- platforms { "Windows" }
