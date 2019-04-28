@@ -15,6 +15,8 @@
 #include "Core/File.h"
 #include <memory.h>
 #include "Core/math/Matrix44.h"
+#include "Core/Timer.h"
+
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -31,14 +33,18 @@ VkBuffer _VertexBuffer;
 VkDeviceMemory _vertexBufferMemory;
 VkDeviceMemory _matrixBufferMemory;
 VkBuffer _MatrixBuffer;
+VkDescriptorSetLayout _descriptorLayout = nullptr;
+VkDescriptorPool _descriptorPool = nullptr;
+VkDescriptorSet _descriptorSet = nullptr;
+
+
 Core::Matrix44f _worldMatrix;
 Core::Matrix44f _projectionMatrix;
 Core::Matrix44f _translationMatrix;
-VkDescriptorSetLayout _descriptorLayout = nullptr;
-
-
 
 Core::Vector4f* _vertices = nullptr;
+Core::Timer _Timer;
+
 
 Window::Size _size;
 
@@ -75,6 +81,7 @@ namespace Graphics
 		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * (3.1415f / 180.f));
 		_translationMatrix = Core::Matrix44f::Identity();
 		_worldMatrix = Core::Matrix44f::Identity();
+		_worldMatrix.SetPosition({ 0.f, 0.f, 2.1f });
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -139,6 +146,7 @@ namespace Graphics
 
 			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 			VkBuffer vertexBuffers[] = { _VertexBuffer };
 			VkDeviceSize offsets = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
@@ -150,6 +158,9 @@ namespace Graphics
 			if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 				assert(!"Failed to end CommandBuffer!");
 		}
+
+
+		_Timer.Start();
 
 		return true;
 	}
@@ -177,6 +188,16 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame()
 	{
+		
+		_Timer.Update();
+
+
+		//_Timer.GetTime();
+
+
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * _Timer.GetTime());
+
+
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
 
@@ -186,9 +207,9 @@ namespace Graphics
 			assert(!"Failed to map memory!");
 
 		int8* data = (int8*)vpData;
-		memcpy(&data[0], &_translationMatrix, sizeof(Core::Matrix44f));
+		memcpy(&data[0], &_worldMatrix, sizeof(Core::Matrix44f));
 		memcpy(&data[sizeof(Core::Matrix44f) * 1], &_translationMatrix, sizeof(Core::Matrix44f));
-		memcpy(&data[sizeof(Core::Matrix44f) * 2], &_translationMatrix, sizeof(Core::Matrix44f));
+		memcpy(&data[sizeof(Core::Matrix44f) * 2], &_projectionMatrix, sizeof(Core::Matrix44f));
 
 		vkUnmapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory);
 
@@ -323,7 +344,7 @@ namespace Graphics
 		VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
 		rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -360,13 +381,30 @@ namespace Graphics
 		vertexInputInfo.pVertexAttributeDescriptions = &attrDesc;
 
 		CreateDescriptorLayout();
+		CreateDescriptorPool();
+		CreateDescriptorSet();
 
+		VkDescriptorBufferInfo bInfo = {};
+		bInfo.buffer = _MatrixBuffer;
+		bInfo.offset = 0;
+		bInfo.range = sizeof(Core::Matrix44f) * 3;
 
+		VkWriteDescriptorSet descWrite = {};
+		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descWrite.dstSet = _descriptorSet;
+		descWrite.dstBinding = 0;
+		descWrite.dstArrayElement = 0;
+		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descWrite.descriptorCount = 1;
+		descWrite.pBufferInfo = &bInfo;
+		descWrite.pImageInfo = nullptr;
+		descWrite.pTexelBufferView = nullptr;
 
+		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
 		VkPipelineShaderStageCreateInfo vertexStageInfo = {};
@@ -419,6 +457,42 @@ namespace Graphics
 
 		if (vkCreateDescriptorSetLayout(m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &_descriptorLayout) != VK_SUCCESS)
 			assert(!"Failed to create Descriptor layout");
+
+	}
+
+	void vkGraphicsDevice::CreateDescriptorPool()
+	{
+
+		VkDescriptorPoolSize poolSize = {};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
+		
+		VkDescriptorPoolCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		createInfo.poolSizeCount = 1;
+		createInfo.pPoolSizes = &poolSize;
+		createInfo.maxSets = (uint32_t)m_Swapchain->GetNofImages();
+
+		if (vkCreateDescriptorPool(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
+			assert(!"Failed to create descriptorPool");
+
+
+
+
+
+	}
+
+	void vkGraphicsDevice::CreateDescriptorSet()
+	{
+		VkDescriptorSetAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = _descriptorPool;
+		allocInfo.descriptorSetCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
+		allocInfo.pSetLayouts = &_descriptorLayout;
+		if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet) != VK_SUCCESS)
+			assert(!"failed to allocate descriptor sets!");
+
+
 
 	}
 
@@ -496,9 +570,9 @@ namespace Graphics
 	void vkGraphicsDevice::CreateVertexBuffer()
 	{
 		_vertices = new Core::Vector4f[3];
-		_vertices[0] = { 0.0f, -0.5f, -2.f, 1.f };
-		_vertices[1] = { 0.5f, 0.5f, -2.f, 1.f };
-		_vertices[2] = { -0.5f, 0.5f, -2.f, 1.f };
+		_vertices[0] = { 0.0f, -0.75f, 0.f, 1.f };
+		_vertices[1] = { 0.25f, 0.5f, 0.f, 1.f };
+		_vertices[2] = { -0.25f, 0.5f, 0.f, 1.f };
 
 
 		VkBufferCreateInfo createInfo = {};

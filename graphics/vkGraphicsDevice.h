@@ -58,6 +58,8 @@ namespace Graphics
 		void CreateGraphicsPipeline();
 
 		void CreateDescriptorLayout();
+		void CreateDescriptorPool();
+		void CreateDescriptorSet();
 
 		void CreatePipelineLayout();
 		void CreateFramebuffers();

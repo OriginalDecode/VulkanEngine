@@ -505,7 +505,8 @@ namespace Core
 	template<typename T>
 	Matrix44<T> operator*(const Matrix44<T>& first, const Matrix44<T>& second)
 	{
-		
+		Matrix44<T> temp(first);
+		return temp *= second;
 	}
 
 	template<typename T>
@@ -540,7 +541,7 @@ namespace Core
 	template<typename T>
 	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH(T nearPlane, T farPlane, T /*aspectRatio*/, T fovAngle)
 	{
-		Matrix44 temp;
+		Matrix44<T> temp = Matrix44<T>::Identity();
 
 		T sinFov = sinf(0.5f * fovAngle);
 		T cosFov = cosf(0.5f * fovAngle);
