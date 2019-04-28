@@ -1,5 +1,9 @@
 #include "vkGraphicsDevice.h"
 
+#include "Core/File.h"
+#include "Core/math/Matrix44.h"
+#include "Core/Timer.h"
+
 #include "VlkInstance.h"
 #include "VlkPhysicalDevice.h"
 #include "VlkDevice.h"
@@ -8,15 +12,11 @@
 #include "Utilities.h"
 #include "Window.h"
 
+
 #include <cassert>
 #include <windows.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
-#include "Core/File.h"
-#include <memory.h>
-#include "Core/math/Matrix44.h"
-#include "Core/Timer.h"
-
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -29,10 +29,6 @@ VkPipeline _pipeline = nullptr;
 VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
 VkRect2D _Scissor = {};
-VkBuffer _VertexBuffer;
-VkDeviceMemory _vertexBufferMemory;
-VkDeviceMemory _matrixBufferMemory;
-VkBuffer _MatrixBuffer;
 VkDescriptorSetLayout _descriptorLayout = nullptr;
 VkDescriptorPool _descriptorPool = nullptr;
 VkDescriptorSet _descriptorSet = nullptr;
@@ -42,11 +38,51 @@ Core::Matrix44f _worldMatrix;
 Core::Matrix44f _projectionMatrix;
 Core::Matrix44f _translationMatrix;
 
-Core::Vector4f* _vertices = nullptr;
 Core::Timer _Timer;
 
+VkBuffer _VertexBuffer;
+VkDeviceMemory _vertexBufferMemory;
+
+VkBuffer _cubeBuffer;
+VkDeviceMemory _cubeBufferMemory;
+
+
+VkBuffer _MatrixBuffer;
+VkDeviceMemory _matrixBufferMemory;
 
 Window::Size _size;
+Core::Vector4f _triangle[3] = {
+	{ 0.0f, -0.75f, 0.f, 1.f },
+	{ 0.25f, 0.5f, 0.f, 1.f },
+	{ -0.25f, 0.5f, 0.f, 1.f }
+};
+
+Core::Vector4f _cube[] = {
+	{ -1.f, 1.f, -1.f, 1.f },
+	{ 1.f, 1.f, 1.f, 1.f },
+	{ 1.f, 1.f, 1.f, 1.f },
+	{ -1.f, 1.f, 1.f, 1.f },
+	{ -1.f, -1.f, -1.f, 1.f },
+	{ 1.f, -1.f, -1.f, 1.f },
+	{ 1.f, -1.f, 1.f, 1.f },
+	{ -1.f, -1.f, 1.f, 1.f },
+	{ -1.f, -1.f, 1.f, 1.f },
+	{ -1.f, -1.f, -1.f, 1.f },
+	{ -1.f, 1.f, 1.f, 1.f },
+	{ 1.f, -1.f, 1.f, 1.f },
+	{ 1.f, -1.f, -1.f, 1.f },
+	{ 1.f, 1.f, -1.f, 1.f },
+	{ 1.f, 1.f, 1.f, 1.f },
+	{ -1.f, -1.f, -1.f, 1.f },
+	{ 1.f, -1.f, -1.f, 1.f },
+	{ 1.f, 1.f, -1.f, 1.f },
+	{ -1.f, 1.f, -1.f, 1.f },
+	{ -1.f, 1.f, 1.f, 1.f },
+	{ 1.f, -1.f, 1.f, 1.f },
+	{ 1.f, 1.f, 1.f, 1.f },
+	{ -1.f, 1.f, 1.f, 1.f },
+
+};
 
 namespace Graphics
 {
@@ -54,9 +90,6 @@ namespace Graphics
 
 	vkGraphicsDevice::~vkGraphicsDevice()
 	{
-		delete[] _vertices;
-		_vertices = nullptr;
-
 		auto device = m_LogicalDevice->GetDevice();
 		
 		vkDestroyBuffer(device, _VertexBuffer, nullptr);
@@ -190,13 +223,7 @@ namespace Graphics
 	{
 		
 		_Timer.Update();
-
-
-		//_Timer.GetTime();
-
-
 		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * _Timer.GetTime());
-
 
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
@@ -475,11 +502,6 @@ namespace Graphics
 
 		if (vkCreateDescriptorPool(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
 			assert(!"Failed to create descriptorPool");
-
-
-
-
-
 	}
 
 	void vkGraphicsDevice::CreateDescriptorSet()
@@ -491,9 +513,6 @@ namespace Graphics
 		allocInfo.pSetLayouts = &_descriptorLayout;
 		if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet) != VK_SUCCESS)
 			assert(!"failed to allocate descriptor sets!");
-
-
-
 	}
 
 	//_____________________________________________
@@ -569,36 +588,43 @@ namespace Graphics
 
 	void vkGraphicsDevice::CreateVertexBuffer()
 	{
-		_vertices = new Core::Vector4f[3];
-		_vertices[0] = { 0.0f, -0.75f, 0.f, 1.f };
-		_vertices[1] = { 0.25f, 0.5f, 0.f, 1.f };
-		_vertices[2] = { -0.25f, 0.5f, 0.f, 1.f };
-
+		const int32 _dataSize = sizeof(_triangle);
 
 		VkBufferCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.size = sizeof(Core::Vector4f) * 3;
+		createInfo.size = _dataSize;
 		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_VertexBuffer) != VK_SUCCESS)
-			assert(!"Failed to create vertex buffer!");
 
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), _VertexBuffer, &memRequirements);
-
-		_vertexBufferMemory = GPUAllocateMemory(memRequirements);
-
-		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), _VertexBuffer, _vertexBufferMemory, 0) != VK_SUCCESS)
-			assert(!"Failed to bind buffer memory!");
+		CreateBuffer(createInfo, &_VertexBuffer, &_vertexBufferMemory);
 
 		void* data = nullptr;
-		if (vkMapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, createInfo.size, 0, &data) != VK_SUCCESS)
+		if (vkMapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
 			assert(!"Failed to map memory!");
-		memcpy(data, _vertices, sizeof(Core::Vector4f) * 3);
+		memcpy(data, _triangle, _dataSize);
 		vkUnmapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory);
 
+	}
+
+	void vkGraphicsDevice::CreateCube()
+	{
+		const int32 _dataSize = sizeof(_cube);
+
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = _dataSize;
+		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+
+		CreateBuffer(createInfo, &_cubeBuffer, &_cubeBufferMemory);
+
+		void* data = nullptr;
+		if (vkMapMemory(m_LogicalDevice->GetDevice(), _cubeBufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+		memcpy(data, _cube, _dataSize);
+		vkUnmapMemory(m_LogicalDevice->GetDevice(), _cubeBufferMemory);
 	}
 
 	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
@@ -643,18 +669,22 @@ namespace Graphics
 		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_MatrixBuffer) != VK_SUCCESS)
+		CreateBuffer(createInfo, &_MatrixBuffer, &_matrixBufferMemory);		
+		
+	}
+
+	void vkGraphicsDevice::CreateBuffer(const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory)
+	{
+		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, buffer) != VK_SUCCESS)
 			assert(!"Failed to create vertex buffer!");
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), _MatrixBuffer, &memRequirements);
+		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), *buffer, &memRequirements);
 
-		_matrixBufferMemory = GPUAllocateMemory(memRequirements);
+		*memory = GPUAllocateMemory(memRequirements);
 
-		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), _MatrixBuffer, _matrixBufferMemory, 0) != VK_SUCCESS)
+		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), *buffer, *memory, 0) != VK_SUCCESS)
 			assert(!"Failed to bind buffer memory!");
-
-		
 	}
 
 	VkSemaphore vkGraphicsDevice::CreateVkSemaphore(VkDevice pDevice)

@@ -48,8 +48,7 @@ namespace Core
 		
 		static Matrix44<T> Transpose(const Matrix44<T>& mat);
 
-		/* Return rotation in radians as vector3 */
-		Vector3<T> GetRadRotations();
+		Vector4<T> GetRadRotations();
 
 
 		void SetRotation3dX(const float aRadian);
@@ -228,11 +227,11 @@ namespace Core
 	}
 	
 	template<typename T>
-	Vector3<T> Matrix44<T>::GetRadRotations()
+	Vector4<T> Matrix44<T>::GetRadRotations()
 	{
 		return{ -atan2(m_Matrix[9], m_Matrix[10]),
 				atan2(m_Matrix[8], m_Matrix[0]),
-				-atan2(m_Matrix[4], m_Matrix[0]) };
+				-atan2(m_Matrix[4], m_Matrix[0]), 1.f };
 	}
 
 	template<typename T>
