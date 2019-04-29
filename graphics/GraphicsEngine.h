@@ -17,7 +17,7 @@ namespace Graphics
 		static GraphicsEngine& Get();
 
 		bool Init(const Window& window);
-		void Present();
+		void Present(float dt);
 
 		static vkGraphicsDevice& GetDevice() { return *m_Instance->m_Device; }
 

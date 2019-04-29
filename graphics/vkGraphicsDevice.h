@@ -27,7 +27,7 @@ namespace Graphics
 
 
 
-        void DrawFrame();
+        void DrawFrame(float dt);
 
 
 		VlkInstance& GetVlkInstance() { return *m_Instance; }

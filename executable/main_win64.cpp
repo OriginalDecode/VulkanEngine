@@ -4,6 +4,7 @@
 
 #include <graphics/Window.h>
 #include <graphics/GraphicsEngine.h>
+#include <core/Timer.h>
 #include <memory>
 
 LRESULT CALLBACK WindowProc( HWND, UINT, WPARAM, LPARAM );
@@ -20,14 +21,22 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
     Graphics::GraphicsEngine::Create();
     Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
+
     if( !graphics_engine.Init( *window ) )
-    {
         return 1;
-    }
+
+	Core::Timer timer;
+	timer.Start();
 
     MSG msg;
     do
     {
+		timer.Update();
+
+		char temp[100] = { 0 };
+		sprintf_s(temp, "FPS : %.3f dt: %.3f", 1.f / timer.GetTime(), timer.GetTime());
+		window->SetText(temp);
+
         while( PeekMessage( &msg, 0, 0, 0, PM_REMOVE ) )
         {
             TranslateMessage( &msg );
@@ -40,7 +49,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
             break;
         }
 
-        graphics_engine.Present();
+        graphics_engine.Present(timer.GetTime());
 
     } while( gameRunning );
 

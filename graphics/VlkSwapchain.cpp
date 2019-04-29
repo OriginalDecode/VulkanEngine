@@ -113,7 +113,8 @@ namespace Graphics
 
 		swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; //this field defines blocking or nonblocking - (VK_PRESENT_MODE_FIFO_KHR) blocks (vsync on or off)
+		
 		swapchainCreateInfo.clipped = VK_TRUE;
 
 

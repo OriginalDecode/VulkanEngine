@@ -42,10 +42,10 @@ namespace Graphics
 		return true;
 	}
 
-	void GraphicsEngine::Present()
+	void GraphicsEngine::Present(float dt)
 	{
 		//BeginFrame();
-		m_Device->DrawFrame();
+		m_Device->DrawFrame(dt);
 
 	}
 

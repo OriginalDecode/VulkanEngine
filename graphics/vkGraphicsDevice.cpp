@@ -2,7 +2,6 @@
 
 #include "Core/File.h"
 #include "Core/math/Matrix44.h"
-#include "Core/Timer.h"
 
 #include "VlkInstance.h"
 #include "VlkPhysicalDevice.h"
@@ -39,8 +38,6 @@ Core::Matrix44f _worldMatrix2;
 Core::Matrix44f _projectionMatrix;
 Core::Matrix44f _translationMatrix;
 
-Core::Timer _Timer;
-
 VkBuffer _VertexBuffer;
 VkDeviceMemory _vertexBufferMemory;
 
@@ -64,7 +61,7 @@ struct Vertex
 	Core::Vector4f color;
 };
 
-Vertex _cube[] = {
+constexpr Vertex _cube[] = {
 	//front
 	{ { -1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
 	{ {  1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
@@ -238,10 +235,6 @@ namespace Graphics
 				assert(!"Failed to end CommandBuffer!");
 		}
 
-
-		_Timer.Start();
-		//_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)));
-
 		return true;
 	}
 	//_____________________________________________
@@ -266,12 +259,11 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	void vkGraphicsDevice::DrawFrame()
+	void vkGraphicsDevice::DrawFrame(float dt)
 	{
 		
-		_Timer.Update();
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * _Timer.GetTime());
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)) * _Timer.GetTime());
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * dt);
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)) * dt);
 
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
