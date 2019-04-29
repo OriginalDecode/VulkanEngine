@@ -73,7 +73,7 @@ namespace Core
 		void LookAt(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up);
 
 		Vector4<T> GetColumn(int index) const;
-		Matrix44<T> Inverse(const Matrix44<T>& aMatrix);
+		static Matrix44<T> Inverse(const Matrix44<T>& aMatrix);
 
 		Matrix44<T>& operator+=(const Matrix44<T>& matrix);
 		Matrix44<T>& operator-=(const Matrix44<T>& matrix);
@@ -531,7 +531,7 @@ namespace Core
 	}
 
 	template<typename T>
-	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH(T nearPlane, T farPlane, T /*aspectRatio*/, T fovAngle)
+	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH(T nearPlane, T farPlane, T aspectRatio, T fovAngle)
 	{
 		Matrix44<T> temp = Matrix44<T>::Identity();
 
@@ -539,7 +539,7 @@ namespace Core
 		T cosFov = cosf(0.5f * fovAngle);
 
 		T width = cosFov / sinFov;
-		T height = width / fovAngle;
+		T height = width / aspectRatio;
 
 		T scaling = farPlane / (farPlane - nearPlane);
 

@@ -102,22 +102,22 @@ Vertex _cube[] = {
 	{ { -1.f,  1.f, 1.f }, { 1.f, 1.f, 0.f } },
 
 	//top
-	{ { -1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
-	{ {  1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
-	{ {  1.f, 1.f, 1.f }, { 1.f, 0.f, 1.f } },
+	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
+	{ {  1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
+	{ {  1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
 
-	{ { 1.f, 1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, 1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
+	{ { 1.f, 1.f, 1.f },{ 1.f, 1.f, 1.f } },
+	{ { -1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
+	{ { -1.f, 1.f, -1.f },{ 1.f, 1.f, 1.f } },
 
-	////bottom
-	{ { -1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, -1.f, 1.f },{ 1.f, 0.f, 1.f } },
+	//bottom
+	{ { 1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
+	{ { -1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
+	{ { 1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
 
-	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
-	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { -1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
+	{ { 1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
+	{ { -1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
 
 };
 
@@ -150,6 +150,7 @@ namespace Graphics
 
 		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * (3.1415f / 180.f));
 		_translationMatrix = Core::Matrix44f::Identity();
+		_translationMatrix = Core::Matrix44f::Inverse(_translationMatrix);
 		_worldMatrix = Core::Matrix44f::Identity();
 		_worldMatrix.SetPosition({ 0.f, 0.f, 5.0f });
 
@@ -239,6 +240,7 @@ namespace Graphics
 
 
 		_Timer.Start();
+		//_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)));
 
 		return true;
 	}
