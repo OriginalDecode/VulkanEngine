@@ -35,6 +35,7 @@ VkDescriptorSet _descriptorSet = nullptr;
 
 
 Core::Matrix44f _worldMatrix;
+Core::Matrix44f _worldMatrix2;
 Core::Matrix44f _projectionMatrix;
 Core::Matrix44f _translationMatrix;
 
@@ -57,30 +58,66 @@ Core::Vector4f _triangle[3] = {
 	{ -0.25f, 0.5f, 0.f, 1.f }
 };
 
-Core::Vector4f _cube[] = {
-	{ -1.f, 1.f, -1.f, 1.f },
-	{ 1.f, 1.f, 1.f, 1.f },
-	{ 1.f, 1.f, 1.f, 1.f },
-	{ -1.f, 1.f, 1.f, 1.f },
-	{ -1.f, -1.f, -1.f, 1.f },
-	{ 1.f, -1.f, -1.f, 1.f },
-	{ 1.f, -1.f, 1.f, 1.f },
-	{ -1.f, -1.f, 1.f, 1.f },
-	{ -1.f, -1.f, 1.f, 1.f },
-	{ -1.f, -1.f, -1.f, 1.f },
-	{ -1.f, 1.f, 1.f, 1.f },
-	{ 1.f, -1.f, 1.f, 1.f },
-	{ 1.f, -1.f, -1.f, 1.f },
-	{ 1.f, 1.f, -1.f, 1.f },
-	{ 1.f, 1.f, 1.f, 1.f },
-	{ -1.f, -1.f, -1.f, 1.f },
-	{ 1.f, -1.f, -1.f, 1.f },
-	{ 1.f, 1.f, -1.f, 1.f },
-	{ -1.f, 1.f, -1.f, 1.f },
-	{ -1.f, 1.f, 1.f, 1.f },
-	{ 1.f, -1.f, 1.f, 1.f },
-	{ 1.f, 1.f, 1.f, 1.f },
-	{ -1.f, 1.f, 1.f, 1.f },
+struct Vertex
+{
+	Core::Vector4f position;
+	Core::Vector4f color;
+};
+
+Vertex _cube[] = {
+	//front
+	{ { -1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ {  1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ {  1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
+
+	{ { -1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ {  1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ { -1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
+
+	//right
+	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, -1.f,  1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f,  1.f,  1.f }, { 0.f, 1.f, 0.f } },
+
+	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, 1.f,   1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, 1.f,  -1.f }, { 0.f, 1.f, 0.f } },
+
+	//back
+	{ {	 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { -1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { -1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
+
+	{ {  1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { -1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ {  1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
+
+	//left
+	{ { -1.f, -1.f,  1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, -1.f, -1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f,  1.f, -1.f }, { 1.f, 1.f, 0.f } },
+
+	{ { -1.f, -1.f,  1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f,  1.f, -1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f,  1.f, 1.f }, { 1.f, 1.f, 0.f } },
+
+	//top
+	{ { -1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
+	{ {  1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
+	{ {  1.f, 1.f, 1.f }, { 1.f, 0.f, 1.f } },
+
+	{ { 1.f, 1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, 1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 1.f } },
+
+	////bottom
+	{ { -1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, 1.f },{ 1.f, 0.f, 1.f } },
+
+	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, -1.f },{ 1.f, 0.f, 1.f } },
 
 };
 
@@ -91,7 +128,7 @@ namespace Graphics
 	vkGraphicsDevice::~vkGraphicsDevice()
 	{
 		auto device = m_LogicalDevice->GetDevice();
-		
+		vkDestroyBuffer(device, _cubeBuffer, nullptr);
 		vkDestroyBuffer(device, _VertexBuffer, nullptr);
 		vkDestroyBuffer(device, _MatrixBuffer, nullptr);
 		vkDestroyShaderModule(device, vertModule, nullptr);
@@ -114,7 +151,10 @@ namespace Graphics
 		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * (3.1415f / 180.f));
 		_translationMatrix = Core::Matrix44f::Identity();
 		_worldMatrix = Core::Matrix44f::Identity();
-		_worldMatrix.SetPosition({ 0.f, 0.f, 2.1f });
+		_worldMatrix.SetPosition({ 0.f, 0.f, 5.0f });
+
+		_worldMatrix2 = Core::Matrix44f::Identity();
+		_worldMatrix2.SetPosition({ 0.f, 0.f, 2.f });
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -130,6 +170,7 @@ namespace Graphics
 
 		CreateVertexBuffer();
 		CreateMatrixBuffer();
+		CreateCube();
 
 		CreateCommandPool();
 		CreateCommandBuffer();
@@ -180,11 +221,15 @@ namespace Graphics
 			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
-			VkBuffer vertexBuffers[] = { _VertexBuffer };
-			VkDeviceSize offsets = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
 
-			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+			//VkBuffer vertexBuffers[] = { _VertexBuffer };
+			VkDeviceSize offsets = { 0 };
+			//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
+			//vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_cubeBuffer, &offsets);
+			vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
+
 
 			vkCmdEndRenderPass(commandBuffer);
 
@@ -224,6 +269,7 @@ namespace Graphics
 		
 		_Timer.Update();
 		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * _Timer.GetTime());
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)) * _Timer.GetTime());
 
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
@@ -371,7 +417,7 @@ namespace Graphics
 		VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
+		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
 		rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -394,18 +440,20 @@ namespace Graphics
 		blendCreateInfo.pAttachments = &blendAttachState;
 
 		auto bindDesc = CreateBindDesc();
-		auto attrDesc = CreateAttrDesc();
+		auto attrDesc = CreateAttrDesc(0, 0);
+		auto attrDesc2 = CreateAttrDesc(1, 16);
 
+		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
 
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = 2;
 
 		vertexInputInfo.pVertexBindingDescriptions = &bindDesc;
-		vertexInputInfo.pVertexAttributeDescriptions = &attrDesc;
+		vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
 		CreateDescriptorLayout();
 		CreateDescriptorPool();
@@ -457,7 +505,7 @@ namespace Graphics
 		pipelineInfo.pViewportState = &vpCreateInfo;
 		pipelineInfo.pColorBlendState = &blendCreateInfo;
 		pipelineInfo.pRasterizationState = &rastCreateInfo;
-		//pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
+		pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
 		pipelineInfo.pStages = ssci;
 		pipelineInfo.stageCount = ARRSIZE(ssci);
@@ -631,18 +679,18 @@ namespace Graphics
 	{
 		VkVertexInputBindingDescription bindingDescription = {};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Core::Vector4f);
+		bindingDescription.stride = sizeof(Vertex);
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		return bindingDescription;		
 	}
 
-	VkVertexInputAttributeDescription vkGraphicsDevice::CreateAttrDesc()
+	VkVertexInputAttributeDescription vkGraphicsDevice::CreateAttrDesc(int location, int offset)
 	{
 		VkVertexInputAttributeDescription attrDesc = {};
 		attrDesc.binding = 0;
-		attrDesc.location = 0;
-		attrDesc.format = VK_FORMAT_R32G32_SFLOAT;
-		attrDesc.offset = 0;
+		attrDesc.location = location;
+		attrDesc.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		attrDesc.offset = offset;
 		return attrDesc;
 	}
 

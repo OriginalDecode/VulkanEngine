@@ -63,7 +63,6 @@ namespace Core
 		void SetForward(const Vector4<T>& aVector);
 		void SetRight(const Vector4<T>& aVector);
 		void SetUp(const Vector4<T>& aVector);
-		void SetPosition(const Vector3<T>& aVector);
 		void SetPosition(const Vector4<T>& aVector);
 
 		const Vector4<T> GetForward() const;
@@ -440,14 +439,6 @@ namespace Core
 	}
 
 	template<typename T>
-	void Matrix44<T>::SetPosition(const Vector3<T>& vector)
-	{
-		m_Matrix[12] = vector.x;
-		m_Matrix[13] = vector.y;
-		m_Matrix[14] = vector.z;
-	}
-
-	template<typename T>
 	void Matrix44<T>::SetRight(const Vector4<T>& vector)
 	{
 		rows[0] = vector;
@@ -468,7 +459,9 @@ namespace Core
 	template<typename T>
 	void Matrix44<T>::SetPosition(const Vector4<T>& vector)
 	{
-		rows[3] = vector;
+		rows[3].x = vector.x;
+		rows[3].y = vector.y;
+		rows[3].z = vector.z;
 	}
 
 	template<typename T>

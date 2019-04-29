@@ -10,7 +10,7 @@ namespace Core
 		Vector4(){ }
 		~Vector4() = default;
 
-		Vector4(T x_, T y_, T z_, T w_)
+		Vector4(T x_, T y_, T z_, T w_ = 1)
 			: x(x_)
 			, y(y_)
 			, z(z_)
@@ -23,6 +23,7 @@ namespace Core
 		{
 		}
 		
+
 		union
 		{
 			struct

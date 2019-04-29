@@ -66,7 +66,7 @@ namespace Graphics
 		void CreateVertexBuffer();
 		void CreateCube();
 		VkVertexInputBindingDescription CreateBindDesc();
-		VkVertexInputAttributeDescription CreateAttrDesc();
+		VkVertexInputAttributeDescription CreateAttrDesc(int location, int offset);
 
 		VkDeviceMemory GPUAllocateMemory(const VkMemoryRequirements& memRequirements);
 
