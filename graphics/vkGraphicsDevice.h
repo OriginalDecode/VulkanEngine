@@ -13,6 +13,7 @@ class Window;
 
 namespace Graphics
 {
+	class ConstantBuffer;
     class VlkInstance;
     class VlkPhysicalDevice;
     class VlkDevice;
@@ -32,6 +33,10 @@ namespace Graphics
 
 		VlkInstance& GetVlkInstance() { return *m_Instance; }
 		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
+
+		void CreateVKUniformBuffer(ConstantBuffer* buffer);
+		void DestroyVKUniformBuffer(ConstantBuffer* buffer);
+		void BindVKUniformBuffer(ConstantBuffer* buffer, int offset);
 
     private:
   
@@ -80,7 +85,6 @@ namespace Graphics
 
     };
 
-
 	class ConstantBuffer
 	{
 	private:
@@ -93,24 +97,21 @@ namespace Graphics
 		};
 	public:
 
-		void Init(VkDevice logicDevice, VkPhysicalDevice physDevice);
-		void Bind(VkDevice pDevice, int offset);
-
-		void Destroy(VkDevice logicDevice)
-		{
-			vkDestroyBuffer(logicDevice, m_cBuffer, nullptr);
-		}
+		void SetBuffer(void* buffer) { m_cBuffer = buffer; }
+		void SetDeviceMemory(void* memory) { m_DeviceMemory = memory; }
 
 		template<typename T>
 		void RegVar(T* var);
 
-		VkBuffer Get() const { return m_cBuffer; }
-
+		void* GetBuffer() { return m_cBuffer; }
+		void* GetDeviceMemory() { return m_DeviceMemory; }
+		uint32 GetSize() const { return m_BufferSize; }
+		void* GetData() { return m_Vars.data(); }
 	private:
 		uint32 m_BufferSize = 0;
 		std::vector<Variable> m_Vars;
-		VkBuffer m_cBuffer = nullptr;
-		VkDeviceMemory m_DeviceMemory = nullptr;
+		void* m_cBuffer = nullptr;
+		void* m_DeviceMemory = nullptr;
 	};
 
 	template<typename T>

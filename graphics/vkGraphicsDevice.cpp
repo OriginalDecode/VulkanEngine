@@ -136,35 +136,6 @@ namespace Graphics
 		return memory;
 	}
 
-	void ConstantBuffer::Init(VkDevice logicDevice, VkPhysicalDevice physDevice)
-	{
-		VkBufferCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.size = m_BufferSize;
-		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(logicDevice, &createInfo, nullptr, &m_cBuffer) != VK_SUCCESS)
-			assert(!"Failed to create vertex buffer!");
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(logicDevice, m_cBuffer, &memRequirements);
-
-		m_DeviceMemory = GPUAllocateMemory(memRequirements, logicDevice, physDevice);
-
-		if (vkBindBufferMemory(logicDevice, m_cBuffer, m_DeviceMemory, 0) != VK_SUCCESS)
-			assert(!"Failed to bind buffer memory!");
-	}
-
-	
-	void ConstantBuffer::Bind(VkDevice pDevice, int offset)
-	{
-		void* data = nullptr;
-		if (vkMapMemory(pDevice, m_DeviceMemory, offset, m_BufferSize, 0, &data) != VK_SUCCESS)
-			assert(!"Failed to map memory!");
-		memcpy(&static_cast<int8*>(data)[0], &m_Vars[0], m_BufferSize);
-		vkUnmapMemory(pDevice, m_DeviceMemory);
-	}
 	ConstantBuffer _Model;
 	ConstantBuffer _Model2;
 	ConstantBuffer _ViewProjection;
@@ -175,9 +146,7 @@ namespace Graphics
 	{
 
 		auto device = m_LogicalDevice->GetDevice();
-		_Model.Destroy(device);
-		_Model2.Destroy(device);
-		_ViewProjection.Destroy(device);
+		DestroyVKUniformBuffer(&_ViewProjection);
 
 		vkDestroyBuffer(device, _cubeBuffer, nullptr);
 		vkDestroyBuffer(device, _VertexBuffer, nullptr);
@@ -226,12 +195,15 @@ namespace Graphics
 		//CreateMatrixBuffer();
 
 
-		auto pDevice = m_PhysicalDevice->GetDevice();
-		auto lDevice = m_LogicalDevice->GetDevice();
+		//auto pDevice = m_PhysicalDevice->GetDevice();
+		//auto lDevice = m_LogicalDevice->GetDevice();
 
 		_ViewProjection.RegVar(&_worldMatrix);
 		_ViewProjection.RegVar(&_ViewProjectionMatrix);
-		_ViewProjection.Init(lDevice, pDevice);
+		//_ViewProjection.Init(lDevice, pDevice);
+
+
+		CreateVKUniformBuffer(&_ViewProjection);
 
 		CreateCube();
 
@@ -343,7 +315,8 @@ namespace Graphics
 
 */
 		_ViewProjectionMatrix = _translationMatrix*_projectionMatrix;
-		_ViewProjection.Bind(m_LogicalDevice->GetDevice(), 0);
+		BindVKUniformBuffer(&_ViewProjection, 0);
+		//_ViewProjection.Bind(m_LogicalDevice->GetDevice(), 0);
 
 /*
 		int8* data = (int8*)vpData;
@@ -383,6 +356,57 @@ namespace Graphics
 		if (vkQueuePresentKHR(m_LogicalDevice->GetQueue(), &presentInfo) != VK_SUCCESS)
 			assert(!"Failed to present!");
 	}
+
+	void vkGraphicsDevice::CreateVKUniformBuffer(ConstantBuffer* buffer)
+	{
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = buffer->GetSize();
+		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		auto lDevice = m_LogicalDevice->GetDevice();
+		auto pDevice = m_PhysicalDevice->GetDevice();
+
+		VkBuffer vulkan_buffer = nullptr;
+		if (vkCreateBuffer(lDevice, &createInfo, nullptr, &vulkan_buffer) != VK_SUCCESS)
+			assert(!"Failed to create vertex buffer!");
+
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(lDevice, vulkan_buffer, &memRequirements);
+
+		VkDeviceMemory deviceMem = GPUAllocateMemory(memRequirements, lDevice, pDevice);
+
+		if (vkBindBufferMemory(lDevice, vulkan_buffer, deviceMem, 0) != VK_SUCCESS)
+			assert(!"Failed to bind buffer memory!");
+
+
+		buffer->SetBuffer(vulkan_buffer);
+		buffer->SetDeviceMemory(deviceMem);
+	}
+
+
+	void vkGraphicsDevice::DestroyVKUniformBuffer(ConstantBuffer* buffer)
+	{
+		vkDestroyBuffer(m_LogicalDevice->GetDevice(), static_cast<VkBuffer>(buffer->GetBuffer()), nullptr);
+	}
+
+
+	void vkGraphicsDevice::BindVKUniformBuffer(ConstantBuffer* buffer, int offset)
+	{
+		auto lDevice = m_LogicalDevice->GetDevice();
+		VkDeviceMemory deviceMem = reinterpret_cast<VkDeviceMemory>(buffer->GetDeviceMemory());
+		void* data = nullptr;
+		if (vkMapMemory(lDevice, deviceMem, offset, buffer->GetSize(), 0, &data) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+
+		void* buffer_data = buffer->GetData();
+		memcpy(data, buffer_data, buffer->GetSize());
+
+		vkUnmapMemory(lDevice, deviceMem);
+	}
+
 	//_____________________________________________
 
 
@@ -526,10 +550,12 @@ namespace Graphics
 		CreateDescriptorPool();
 		CreateDescriptorSet();
 
+		VkBuffer buffer = reinterpret_cast<VkBuffer>(_ViewProjection.GetBuffer());
+
 		VkDescriptorBufferInfo bInfo = {};
-		bInfo.buffer = _ViewProjection.Get();
+		bInfo.buffer = buffer;
 		bInfo.offset = 0;
-		bInfo.range = sizeof(Core::Matrix44f) * 2;
+		bInfo.range = _ViewProjection.GetSize();
 
 		VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
