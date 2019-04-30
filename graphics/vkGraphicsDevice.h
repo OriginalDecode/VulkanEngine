@@ -68,8 +68,6 @@ namespace Graphics
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc(int location, int offset);
 
-		VkDeviceMemory GPUAllocateMemory(const VkMemoryRequirements& memRequirements);
-
 		void CreateMatrixBuffer();
 
 
@@ -79,6 +77,47 @@ namespace Graphics
 		VkSemaphore CreateVkSemaphore(VkDevice pDevice);
 		VkShaderModule LoadShader(const char* filepath, VkDevice pDevice);
 
+
     };
+
+
+	class ConstantBuffer
+	{
+	private:
+		struct Variable
+		{
+			Variable() = default;
+			Variable(void* var, uint32 size) : var(var), size(size) {}
+			void* var = nullptr;
+			uint32 size = 0;
+		};
+	public:
+
+		void Init(VkDevice logicDevice, VkPhysicalDevice physDevice);
+		void Bind(VkDevice pDevice, int offset);
+
+		void Destroy(VkDevice logicDevice)
+		{
+			vkDestroyBuffer(logicDevice, m_cBuffer, nullptr);
+		}
+
+		template<typename T>
+		void RegVar(T* var);
+
+		VkBuffer Get() const { return m_cBuffer; }
+
+	private:
+		uint32 m_BufferSize = 0;
+		std::vector<Variable> m_Vars;
+		VkBuffer m_cBuffer = nullptr;
+		VkDeviceMemory m_DeviceMemory = nullptr;
+	};
+
+	template<typename T>
+	void ConstantBuffer::RegVar(T* var)
+	{
+		m_Vars.push_back({ var, sizeof(T) });
+		m_BufferSize += sizeof(T);
+	}
 
 }; // namespace Graphics

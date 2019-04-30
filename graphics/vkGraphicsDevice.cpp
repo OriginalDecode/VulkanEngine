@@ -37,6 +37,7 @@ Core::Matrix44f _worldMatrix;
 Core::Matrix44f _worldMatrix2;
 Core::Matrix44f _projectionMatrix;
 Core::Matrix44f _translationMatrix;
+Core::Matrix44f _ViewProjectionMatrix;
 
 VkBuffer _VertexBuffer;
 VkDeviceMemory _vertexBufferMemory;
@@ -117,14 +118,67 @@ constexpr Vertex _cube[] = {
 	{ { -1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
 
 };
-
+#include <vector>
 namespace Graphics
 {
+	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device);
+	VkDeviceMemory GPUAllocateMemory(const VkMemoryRequirements& memRequirements, VkDevice logicalDevice, VkPhysicalDevice physDevice)
+	{
+		VkDeviceMemory memory;
+		VkMemoryAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, physDevice);
+
+		if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS)
+			assert(!"Failed to allocate memory on GPU!");
+
+		return memory;
+	}
+
+	void ConstantBuffer::Init(VkDevice logicDevice, VkPhysicalDevice physDevice)
+	{
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = m_BufferSize;
+		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(logicDevice, &createInfo, nullptr, &m_cBuffer) != VK_SUCCESS)
+			assert(!"Failed to create vertex buffer!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(logicDevice, m_cBuffer, &memRequirements);
+
+		m_DeviceMemory = GPUAllocateMemory(memRequirements, logicDevice, physDevice);
+
+		if (vkBindBufferMemory(logicDevice, m_cBuffer, m_DeviceMemory, 0) != VK_SUCCESS)
+			assert(!"Failed to bind buffer memory!");
+	}
+
+	
+	void ConstantBuffer::Bind(VkDevice pDevice, int offset)
+	{
+		void* data = nullptr;
+		if (vkMapMemory(pDevice, m_DeviceMemory, offset, m_BufferSize, 0, &data) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+		memcpy(&static_cast<int8*>(data)[0], &m_Vars[0], m_BufferSize);
+		vkUnmapMemory(pDevice, m_DeviceMemory);
+	}
+	ConstantBuffer _Model;
+	ConstantBuffer _Model2;
+	ConstantBuffer _ViewProjection;
+
 	vkGraphicsDevice::vkGraphicsDevice() = default;
 
 	vkGraphicsDevice::~vkGraphicsDevice()
 	{
+
 		auto device = m_LogicalDevice->GetDevice();
+		_Model.Destroy(device);
+		_Model2.Destroy(device);
+		_ViewProjection.Destroy(device);
+
 		vkDestroyBuffer(device, _cubeBuffer, nullptr);
 		vkDestroyBuffer(device, _VertexBuffer, nullptr);
 		vkDestroyBuffer(device, _MatrixBuffer, nullptr);
@@ -140,6 +194,8 @@ namespace Graphics
 		for (VkFramebuffer buffer : m_FrameBuffers)
 			vkDestroyFramebuffer(device, buffer, nullptr);
 	}
+
+
 
 	bool vkGraphicsDevice::Init(const Window& window)
 	{
@@ -167,7 +223,16 @@ namespace Graphics
 		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
 
 		CreateVertexBuffer();
-		CreateMatrixBuffer();
+		//CreateMatrixBuffer();
+
+
+		auto pDevice = m_PhysicalDevice->GetDevice();
+		auto lDevice = m_LogicalDevice->GetDevice();
+
+		_ViewProjection.RegVar(&_worldMatrix);
+		_ViewProjection.RegVar(&_ViewProjectionMatrix);
+		_ViewProjection.Init(lDevice, pDevice);
+
 		CreateCube();
 
 		CreateCommandPool();
@@ -223,8 +288,11 @@ namespace Graphics
 			//VkBuffer vertexBuffers[] = { _VertexBuffer };
 			VkDeviceSize offsets = { 0 };
 			//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
+
+			//_Model.Bind(m_LogicalDevice->GetDevice(), 0);
 			//vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+			//_Model2.Bind(m_LogicalDevice->GetDevice(), 0);
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_cubeBuffer, &offsets);
 			vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
 
@@ -269,17 +337,22 @@ namespace Graphics
 			assert(!"Failed to acquire next image!");
 
 
-		void* vpData = nullptr;
+		/*void* vpData = nullptr;
 		if (vkMapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory, 0, sizeof(Core::Matrix44f) * 3, 0, &vpData) != VK_SUCCESS)
 			assert(!"Failed to map memory!");
 
+*/
+		_ViewProjectionMatrix = _translationMatrix*_projectionMatrix;
+		_ViewProjection.Bind(m_LogicalDevice->GetDevice(), 0);
+
+/*
 		int8* data = (int8*)vpData;
 		memcpy(&data[0], &_worldMatrix, sizeof(Core::Matrix44f));
 		memcpy(&data[sizeof(Core::Matrix44f) * 1], &_translationMatrix, sizeof(Core::Matrix44f));
 		memcpy(&data[sizeof(Core::Matrix44f) * 2], &_projectionMatrix, sizeof(Core::Matrix44f));
 
 		vkUnmapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory);
-
+*/
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -454,9 +527,9 @@ namespace Graphics
 		CreateDescriptorSet();
 
 		VkDescriptorBufferInfo bInfo = {};
-		bInfo.buffer = _MatrixBuffer;
+		bInfo.buffer = _ViewProjection.Get();
 		bInfo.offset = 0;
-		bInfo.range = sizeof(Core::Matrix44f) * 3;
+		bInfo.range = sizeof(Core::Matrix44f) * 2;
 
 		VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -688,20 +761,6 @@ namespace Graphics
 		return attrDesc;
 	}
 
-	VkDeviceMemory vkGraphicsDevice::GPUAllocateMemory(const VkMemoryRequirements& memRequirements)
-	{
-		VkDeviceMemory memory;
-		VkMemoryAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_PhysicalDevice->GetDevice());
-
-
-		if (vkAllocateMemory(m_LogicalDevice->GetDevice(), &allocInfo, nullptr, &memory) != VK_SUCCESS)
-			assert(!"Failed to allocate memory on GPU!");
-
-		return memory;
-	}
 
 	void vkGraphicsDevice::CreateMatrixBuffer()
 	{
@@ -723,7 +782,7 @@ namespace Graphics
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), *buffer, &memRequirements);
 
-		*memory = GPUAllocateMemory(memRequirements);
+		*memory = GPUAllocateMemory(memRequirements, m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
 
 		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), *buffer, *memory, 0) != VK_SUCCESS)
 			assert(!"Failed to bind buffer memory!");
