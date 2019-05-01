@@ -192,15 +192,9 @@ namespace Graphics
 		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
 
 		CreateVertexBuffer();
-		//CreateMatrixBuffer();
-
-
-		//auto pDevice = m_PhysicalDevice->GetDevice();
-		//auto lDevice = m_LogicalDevice->GetDevice();
 
 		_ViewProjection.RegVar(&_worldMatrix);
 		_ViewProjection.RegVar(&_ViewProjectionMatrix);
-		//_ViewProjection.Init(lDevice, pDevice);
 
 
 		CreateVKUniformBuffer(&_ViewProjection);
@@ -308,24 +302,10 @@ namespace Graphics
 		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
 			assert(!"Failed to acquire next image!");
 
-
-		/*void* vpData = nullptr;
-		if (vkMapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory, 0, sizeof(Core::Matrix44f) * 3, 0, &vpData) != VK_SUCCESS)
-			assert(!"Failed to map memory!");
-
-*/
 		_ViewProjectionMatrix = _translationMatrix*_projectionMatrix;
+
 		BindVKUniformBuffer(&_ViewProjection, 0);
-		//_ViewProjection.Bind(m_LogicalDevice->GetDevice(), 0);
 
-/*
-		int8* data = (int8*)vpData;
-		memcpy(&data[0], &_worldMatrix, sizeof(Core::Matrix44f));
-		memcpy(&data[sizeof(Core::Matrix44f) * 1], &_translationMatrix, sizeof(Core::Matrix44f));
-		memcpy(&data[sizeof(Core::Matrix44f) * 2], &_projectionMatrix, sizeof(Core::Matrix44f));
-
-		vkUnmapMemory(m_LogicalDevice->GetDevice(), _matrixBufferMemory);
-*/
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -396,14 +376,19 @@ namespace Graphics
 	void vkGraphicsDevice::BindVKUniformBuffer(ConstantBuffer* buffer, int offset)
 	{
 		auto lDevice = m_LogicalDevice->GetDevice();
-		VkDeviceMemory deviceMem = reinterpret_cast<VkDeviceMemory>(buffer->GetDeviceMemory());
+
+		VkDeviceMemory deviceMem = static_cast<VkDeviceMemory>(buffer->GetDeviceMemory());
 		void* data = nullptr;
 		if (vkMapMemory(lDevice, deviceMem, offset, buffer->GetSize(), 0, &data) != VK_SUCCESS)
 			assert(!"Failed to map memory!");
-
-		void* buffer_data = buffer->GetData();
-		memcpy(data, buffer_data, buffer->GetSize());
-
+		
+		int8* pMem = static_cast<int8*>(data);
+		int32 step = 0;
+		for (auto it : buffer->GetVariables())
+		{
+			memcpy(&pMem[step], static_cast<int8*>(it.var), it.size);
+			step += it.size;
+		}
 		vkUnmapMemory(lDevice, deviceMem);
 	}
 
@@ -550,10 +535,9 @@ namespace Graphics
 		CreateDescriptorPool();
 		CreateDescriptorSet();
 
-		VkBuffer buffer = reinterpret_cast<VkBuffer>(_ViewProjection.GetBuffer());
 
 		VkDescriptorBufferInfo bInfo = {};
-		bInfo.buffer = buffer;
+		bInfo.buffer = static_cast<VkBuffer>(_ViewProjection.GetBuffer());
 		bInfo.offset = 0;
 		bInfo.range = _ViewProjection.GetSize();
 

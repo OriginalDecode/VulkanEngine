@@ -87,7 +87,8 @@ namespace Graphics
 
 	class ConstantBuffer
 	{
-	private:
+	public:
+
 		struct Variable
 		{
 			Variable() = default;
@@ -95,22 +96,22 @@ namespace Graphics
 			void* var = nullptr;
 			uint32 size = 0;
 		};
-	public:
 
-		void SetBuffer(void* buffer) { m_cBuffer = buffer; }
+		void SetBuffer(void* buffer) { m_Buffer = buffer; }
 		void SetDeviceMemory(void* memory) { m_DeviceMemory = memory; }
 
 		template<typename T>
 		void RegVar(T* var);
 
-		void* GetBuffer() { return m_cBuffer; }
+		void* GetBuffer() { return m_Buffer; }
 		void* GetDeviceMemory() { return m_DeviceMemory; }
 		uint32 GetSize() const { return m_BufferSize; }
 		void* GetData() { return m_Vars.data(); }
+		const std::vector<Variable>& GetVariables() const { return m_Vars; }
 	private:
 		uint32 m_BufferSize = 0;
 		std::vector<Variable> m_Vars;
-		void* m_cBuffer = nullptr;
+		void* m_Buffer = nullptr;
 		void* m_DeviceMemory = nullptr;
 	};
 
