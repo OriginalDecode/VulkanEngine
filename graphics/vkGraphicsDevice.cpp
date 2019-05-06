@@ -158,6 +158,7 @@ namespace Graphics
 		auto device = m_LogicalDevice->GetDevice();
 		DestroyConstantBuffer( &_ViewProjection );
 		DestroyConstantBuffer( &_Model );
+		DestroyConstantBuffer( &_Model2 );
 
 		vkDestroyBuffer( device, _cubeBuffer, nullptr );
 		vkDestroyBuffer( device, _VertexBuffer, nullptr );
@@ -183,10 +184,10 @@ namespace Graphics
 		_translationMatrix = Core::Matrix44f::Identity();
 		_translationMatrix = Core::Matrix44f::Inverse( _translationMatrix );
 		_worldMatrix = Core::Matrix44f::Identity();
-		_worldMatrix.SetPosition( { 0.f, 0.f, 5.0f } );
+		_worldMatrix.SetPosition( { -5.f, 0.f, 10.0f } );
 
 		_worldMatrix2 = Core::Matrix44f::Identity();
-		_worldMatrix2.SetPosition( { 0.f, 0.f, 2.f } );
+		_worldMatrix2.SetPosition( { 5.f, 0.f, 10.f } );
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -204,6 +205,9 @@ namespace Graphics
 
 		_Model.RegVar( &_worldMatrix );
 		CreateConstantBuffer( &_Model );
+
+		_Model2.RegVar(&_worldMatrix2);
+		CreateConstantBuffer(&_Model2);
 
 		_ViewProjection.RegVar( &_ViewProjectionMatrix );
 		CreateConstantBuffer( &_ViewProjection );
@@ -269,12 +273,16 @@ namespace Graphics
 		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY( ( 90.f * ( 3.1415f / 180.f ) ) * dt );
 		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX( ( 45.f * ( 3.1415f / 180.f ) ) * dt );
 
+		_worldMatrix2 = _worldMatrix2 * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * dt);
+
+
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
 		_ViewProjectionMatrix = _translationMatrix * _projectionMatrix;
 
 		BindConstantBuffer(&_Model, 0);
+		BindConstantBuffer(&_Model2, 0);
 		BindConstantBuffer(&_ViewProjection, 0);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
@@ -460,6 +468,11 @@ namespace Graphics
 		bInfo2.offset = 0;
 		bInfo2.range = _ViewProjection.GetSize();
 
+		VkDescriptorBufferInfo bInfo3 = {};
+		bInfo3.buffer = static_cast<VkBuffer>(_Model2.GetBuffer());
+		bInfo3.offset = 0;
+		bInfo3.range = _Model2.GetSize();
+
 		VkDescriptorBufferInfo bufferArray[] = {
 			bInfo,
 			bInfo2,
@@ -473,6 +486,11 @@ namespace Graphics
 		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descWrite.descriptorCount = ARRSIZE(bufferArray);
 		descWrite.pBufferInfo = bufferArray;
+
+		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
+
+		descWrite.dstSet = _descriptorSet2;
+		bufferArray[0] = bInfo3;
 
 		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
 
@@ -574,6 +592,10 @@ namespace Graphics
 
 		if( vkAllocateDescriptorSets( m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet ) != VK_SUCCESS )
 			assert( !"failed to allocate descriptor sets!" );
+
+
+		if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet2) != VK_SUCCESS)
+			assert(!"failed to allocate descriptor sets!");
 	}
 
 	//_____________________________________________
@@ -842,7 +864,7 @@ namespace Graphics
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet2, 0, nullptr);
 
 		VkBuffer vertexBuffers[] = { _VertexBuffer };
 		VkDeviceSize offsets = { 0 };
@@ -850,6 +872,7 @@ namespace Graphics
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_cubeBuffer, &offsets);
 		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
