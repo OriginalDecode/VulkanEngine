@@ -68,14 +68,9 @@ namespace Graphics
 
 		void CreatePipelineLayout();
 		void CreateFramebuffers();
-		void CreateVertexBuffer();
-		void CreateCube();
+		//void CreateVertexBuffer();
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
-
-		void CreateMatrixBuffer();
-
-		void CreateBuffer( const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory );
 
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );

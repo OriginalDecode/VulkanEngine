@@ -50,6 +50,9 @@ namespace Core
 
 		Vector4<T> GetRadRotations();
 
+		void RotateAroundPointX(const Vector4<T>& point, float rad);
+		void RotateAroundPointY(const Vector4<T>& point, float rad);
+		void RotateAroundPointZ(const Vector4<T>& point, float rad);
 
 		void SetRotation3dX(const float aRadian);
 		void SetRotation3dY(const float aRadian);
@@ -327,6 +330,29 @@ namespace Core
 		return to_return;
 	}
 
+	template<typename T>
+	void Matrix44<T>::RotateAroundPointX(const Vector4<T>& point, float rad)
+	{
+		SetPosition(rows[3] - point);
+		*this = *this * Matrix44<T>::CreateRotateAroundX(rad);	
+		SetPosition(rows[3] + point);
+	}
+
+	template<typename T>
+	void Matrix44<T>::RotateAroundPointY(const Vector4<T>& point, float rad)
+	{
+		SetPosition(rows[3] - point);
+		*this = *this * Matrix44<T>::CreateRotateAroundY(rad);
+		SetPosition(rows[3] + point);
+	}
+
+	template<typename T>
+	void Matrix44<T>::RotateAroundPointZ(const Vector4<T>& point, float rad)
+	{
+		SetPosition(rows[3] - point);
+		*this = *this * Matrix44<T>::CreateRotateAroundZ(rad);
+		SetPosition(rows[3] + point);
+	}
 
 	template<typename T>
 	Matrix44<T> Matrix44<T>::CreateScaleMatrix(const float x = 1.f, const float y = 1.f, const float z = 1.f, const float w = 1.f)
