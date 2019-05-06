@@ -11,7 +11,6 @@
 #include "Utilities.h"
 #include "Window.h"
 
-
 #include <cassert>
 #include <windows.h>
 #include <vulkan/vulkan.h>
@@ -28,9 +27,18 @@ VkPipeline _pipeline = nullptr;
 VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
 VkRect2D _Scissor = {};
+
+
+
 VkDescriptorSetLayout _descriptorLayout = nullptr;
+VkDescriptorSetLayout _descriptorLayout2 = nullptr;
+
 VkDescriptorPool _descriptorPool = nullptr;
 VkDescriptorSet _descriptorSet = nullptr;
+VkDescriptorSet _descriptorSet2 = nullptr;
+
+
+
 
 
 Core::Matrix44f _worldMatrix;
@@ -45,16 +53,12 @@ VkDeviceMemory _vertexBufferMemory;
 VkBuffer _cubeBuffer;
 VkDeviceMemory _cubeBufferMemory;
 
-
 VkBuffer _MatrixBuffer;
 VkDeviceMemory _matrixBufferMemory;
 
 Window::Size _size;
-Core::Vector4f _triangle[3] = {
-	{ 0.0f, -0.75f, 0.f, 1.f },
-	{ 0.25f, 0.5f, 0.f, 1.f },
-	{ -0.25f, 0.5f, 0.f, 1.f }
-};
+
+constexpr int _descriptorCount = 2;
 
 struct Vertex
 {
@@ -62,76 +66,82 @@ struct Vertex
 	Core::Vector4f color;
 };
 
+constexpr Vertex _triangle[3] = {
+	{ { 0.0f, -0.75f, 0.f }, { 1.f, 0.f, 0.f } },
+	{ { 0.25f, 0.5f, 0.f }, { 0.f, 1.f, 0.f } },
+	{ { -0.25f, 0.5f, 0.f }, { 0.f, 0.f, 1.f } },
+};
+
 constexpr Vertex _cube[] = {
 	//front
-	{ { -1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
-	{ {  1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
-	{ {  1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ { -1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ { 1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
 
-	{ { -1.f, -1.f, -1.f }, { 1.f,0.f,0.f } },
-	{ {  1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
-	{ { -1.f,  1.f, -1.f }, { 1.f,0.f,0.f } },
+	{ { -1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ { -1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
 
 	//right
 	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, -1.f,  1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f,  1.f,  1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, 1.f, 1.f }, { 0.f, 1.f, 0.f } },
 
 	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, 1.f,   1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, 1.f,  -1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+	{ { 1.f, 1.f, -1.f }, { 0.f, 1.f, 0.f } },
 
 	//back
-	{ {	 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
 	{ { -1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { -1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { -1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
 
-	{ {  1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { -1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ {  1.f,  1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { -1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ { 1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
 
 	//left
-	{ { -1.f, -1.f,  1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, -1.f, 1.f }, { 1.f, 1.f, 0.f } },
 	{ { -1.f, -1.f, -1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f,  1.f, -1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 0.f } },
 
-	{ { -1.f, -1.f,  1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f,  1.f, -1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f,  1.f, 1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, -1.f, 1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 0.f } },
+	{ { -1.f, 1.f, 1.f }, { 1.f, 1.f, 0.f } },
 
 	//top
 	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
-	{ {  1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
-	{ {  1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
+	{ { 1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
+	{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
 
-	{ { 1.f, 1.f, 1.f },{ 1.f, 1.f, 1.f } },
+	{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
 	{ { -1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
-	{ { -1.f, 1.f, -1.f },{ 1.f, 1.f, 1.f } },
+	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
 
 	//bottom
-	{ { 1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
-	{ { -1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
-	{ { 1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
+	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
+	{ { -1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
+	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
 
-	{ { -1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
-	{ { 1.f, -1.f, 1.f },{ 0.f, 1.f, 1.f } },
-	{ { -1.f, -1.f, -1.f },{ 0.f, 1.f, 1.f } },
+	{ { -1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
+	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
+	{ { -1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
 
 };
 #include <vector>
 namespace Graphics
 {
-	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device);
-	VkDeviceMemory GPUAllocateMemory(const VkMemoryRequirements& memRequirements, VkDevice logicalDevice, VkPhysicalDevice physDevice)
+	uint32 findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device );
+	VkDeviceMemory GPUAllocateMemory( const VkMemoryRequirements& memRequirements, VkDevice logicalDevice, VkPhysicalDevice physDevice )
 	{
 		VkDeviceMemory memory;
 		VkMemoryAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, physDevice);
+		allocInfo.memoryTypeIndex = findMemoryType( memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, physDevice );
 
-		if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS)
-			assert(!"Failed to allocate memory on GPU!");
+		if( vkAllocateMemory( logicalDevice, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
+			assert( !"Failed to allocate memory on GPU!" );
 
 		return memory;
 	}
@@ -146,58 +156,57 @@ namespace Graphics
 	{
 
 		auto device = m_LogicalDevice->GetDevice();
-		DestroyVKUniformBuffer(&_ViewProjection);
+		DestroyConstantBuffer( &_ViewProjection );
+		DestroyConstantBuffer( &_Model );
 
-		vkDestroyBuffer(device, _cubeBuffer, nullptr);
-		vkDestroyBuffer(device, _VertexBuffer, nullptr);
-		vkDestroyBuffer(device, _MatrixBuffer, nullptr);
-		vkDestroyShaderModule(device, vertModule, nullptr);
-		vkDestroyShaderModule(device, fragModule, nullptr);
-		vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
-		vkDestroyPipeline(device, _pipeline, nullptr);
+		vkDestroyBuffer( device, _cubeBuffer, nullptr );
+		vkDestroyBuffer( device, _VertexBuffer, nullptr );
+		vkDestroyBuffer( device, _MatrixBuffer, nullptr );
+		vkDestroyShaderModule( device, vertModule, nullptr );
+		vkDestroyShaderModule( device, fragModule, nullptr );
+		vkDestroyPipelineLayout( device, _pipelineLayout, nullptr );
+		vkDestroyPipeline( device, _pipeline, nullptr );
 
-		vkDestroySemaphore(device, m_DrawDone, nullptr);
-		vkDestroySemaphore(device, m_AcquireNextImageSemaphore, nullptr);
-		vkDestroyCommandPool(device, m_CmdPool, nullptr);
+		vkDestroySemaphore( device, m_DrawDone, nullptr );
+		vkDestroySemaphore( device, m_AcquireNextImageSemaphore, nullptr );
+		vkDestroyCommandPool( device, m_CmdPool, nullptr );
 
-		for (VkFramebuffer buffer : m_FrameBuffers)
-			vkDestroyFramebuffer(device, buffer, nullptr);
+		for( VkFramebuffer buffer : m_FrameBuffers )
+			vkDestroyFramebuffer( device, buffer, nullptr );
 	}
 
-
-
-	bool vkGraphicsDevice::Init(const Window& window)
+	bool vkGraphicsDevice::Init( const Window& window )
 	{
 		_size = window.GetInnerSize();
 
-		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * (3.1415f / 180.f));
+		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( 0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * ( 3.1415f / 180.f ) );
 		_translationMatrix = Core::Matrix44f::Identity();
-		_translationMatrix = Core::Matrix44f::Inverse(_translationMatrix);
+		_translationMatrix = Core::Matrix44f::Inverse( _translationMatrix );
 		_worldMatrix = Core::Matrix44f::Identity();
-		_worldMatrix.SetPosition({ 0.f, 0.f, 5.0f });
+		_worldMatrix.SetPosition( { 0.f, 0.f, 5.0f } );
 
 		_worldMatrix2 = Core::Matrix44f::Identity();
-		_worldMatrix2.SetPosition({ 0.f, 0.f, 2.f });
+		_worldMatrix2.SetPosition( { 0.f, 0.f, 2.f } );
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
 
 		m_PhysicalDevice = std::make_unique<VlkPhysicalDevice>();
-		m_PhysicalDevice->Init(m_Instance.get());
+		m_PhysicalDevice->Init( m_Instance.get() );
 
 		m_LogicalDevice = std::make_unique<VlkDevice>();
-		m_LogicalDevice->Init(m_PhysicalDevice.get());
+		m_LogicalDevice->Init( m_PhysicalDevice.get() );
 
 		m_Swapchain = std::make_unique<VlkSwapchain>();
-		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
+		m_Swapchain->Init( m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window );
 
 		CreateVertexBuffer();
 
-		_ViewProjection.RegVar(&_worldMatrix);
-		_ViewProjection.RegVar(&_ViewProjectionMatrix);
+		_Model.RegVar( &_worldMatrix );
+		CreateConstantBuffer( &_Model );
 
-
-		CreateVKUniformBuffer(&_ViewProjection);
+		_ViewProjection.RegVar( &_ViewProjectionMatrix );
+		CreateConstantBuffer( &_ViewProjection );
 
 		CreateCube();
 
@@ -205,69 +214,29 @@ namespace Graphics
 		CreateCommandBuffer();
 		CreateRenderPass();
 
-
 		CreateFramebuffers();
 
-		vertModule = LoadShader("Data/Shaders/vertex.vert", m_LogicalDevice->GetDevice());
-		fragModule = LoadShader("Data/Shaders/frag.frag", m_LogicalDevice->GetDevice());
+		vertModule = LoadShader( "Data/Shaders/vertex.vert", m_LogicalDevice->GetDevice() );
+		fragModule = LoadShader( "Data/Shaders/frag.frag", m_LogicalDevice->GetDevice() );
 
 		SetupViewport();
 		SetupScissorArea();
 		CreateDescriptorLayout();
 		CreatePipelineLayout();
 		CreateGraphicsPipeline();
-		
-		m_AcquireNextImageSemaphore = CreateVkSemaphore(m_LogicalDevice->GetDevice());
-		m_DrawDone = CreateVkSemaphore(m_LogicalDevice->GetDevice());
+
+		m_AcquireNextImageSemaphore = CreateVkSemaphore( m_LogicalDevice->GetDevice() );
+		m_DrawDone = CreateVkSemaphore( m_LogicalDevice->GetDevice() );
 
 
-		VkClearValue clearValue = {};
-		clearValue.color = _clearColor;
 
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = _renderPass;
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { (uint32)_size.m_Width, (uint32)_size.m_Height };
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearValue;
+		VkFenceCreateInfo fenceCreateInfo = {};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-		VkCommandBufferBeginInfo cmdInfo = {};
-		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		if (vkCreateFence(m_LogicalDevice->GetDevice(), &fenceCreateInfo, nullptr, &m_CommandFence) != VK_SUCCESS)
+			assert(!"Failed to create fence!");
+	
 
-		for (size_t i = 0; i < m_CmdBuffers.size(); ++i)
-		{
-
-			VkFramebuffer& frameBuffer = m_FrameBuffers[i];
-			VkCommandBuffer& commandBuffer = m_CmdBuffers[i];
-
-
-			if (vkBeginCommandBuffer(commandBuffer, &cmdInfo) != VK_SUCCESS)
-				assert(!"Failed to begin CommandBuffer!");
-			renderPassInfo.framebuffer = frameBuffer;
-
-			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
-
-			//VkBuffer vertexBuffers[] = { _VertexBuffer };
-			VkDeviceSize offsets = { 0 };
-			//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
-
-			//_Model.Bind(m_LogicalDevice->GetDevice(), 0);
-			//vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-			//_Model2.Bind(m_LogicalDevice->GetDevice(), 0);
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_cubeBuffer, &offsets);
-			vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
-
-
-			vkCmdEndRenderPass(commandBuffer);
-
-			if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-				assert(!"Failed to end CommandBuffer!");
-		}
 
 		return true;
 	}
@@ -293,18 +262,20 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	void vkGraphicsDevice::DrawFrame(float dt)
+	void vkGraphicsDevice::DrawFrame( float dt )
 	{
-		
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * dt);
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX((45.f * (3.1415f / 180.f)) * dt);
 
-		if (vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE/*fence*/, &m_Index) != VK_SUCCESS)
-			assert(!"Failed to acquire next image!");
 
-		_ViewProjectionMatrix = _translationMatrix*_projectionMatrix;
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY( ( 90.f * ( 3.1415f / 180.f ) ) * dt );
+		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX( ( 45.f * ( 3.1415f / 180.f ) ) * dt );
 
-		BindVKUniformBuffer(&_ViewProjection, 0);
+		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
+			assert( !"Failed to acquire next image!" );
+
+		_ViewProjectionMatrix = _translationMatrix * _projectionMatrix;
+
+		BindConstantBuffer(&_Model, 0);
+		BindConstantBuffer(&_ViewProjection, 0);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
 		VkSubmitInfo submitInfo = {};
@@ -320,8 +291,8 @@ namespace Graphics
 		submitInfo.pWaitSemaphores = &m_AcquireNextImageSemaphore;
 		submitInfo.waitSemaphoreCount = 1;
 
-		if (vkQueueSubmit(m_LogicalDevice->GetQueue(), 1, &submitInfo, nullptr) != VK_SUCCESS)
-			assert(!"Failed to submit the queue!");
+		if( vkQueueSubmit( m_LogicalDevice->GetQueue(), 1, &submitInfo, m_CommandFence ) != VK_SUCCESS )
+			assert( !"Failed to submit the queue!" );
 
 		VkSwapchainKHR swapchain = m_Swapchain->GetSwapchain();
 
@@ -333,67 +304,13 @@ namespace Graphics
 		presentInfo.pWaitSemaphores = &m_DrawDone;
 		presentInfo.waitSemaphoreCount = 1;
 
-		if (vkQueuePresentKHR(m_LogicalDevice->GetQueue(), &presentInfo) != VK_SUCCESS)
-			assert(!"Failed to present!");
-	}
+		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
+			assert( !"Failed to present!" );
 
-	void vkGraphicsDevice::CreateVKUniformBuffer(ConstantBuffer* buffer)
-	{
-		VkBufferCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.size = buffer->GetSize();
-		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		auto lDevice = m_LogicalDevice->GetDevice();
-		auto pDevice = m_PhysicalDevice->GetDevice();
-
-		VkBuffer vulkan_buffer = nullptr;
-		if (vkCreateBuffer(lDevice, &createInfo, nullptr, &vulkan_buffer) != VK_SUCCESS)
-			assert(!"Failed to create vertex buffer!");
-
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(lDevice, vulkan_buffer, &memRequirements);
-
-		VkDeviceMemory deviceMem = GPUAllocateMemory(memRequirements, lDevice, pDevice);
-
-		if (vkBindBufferMemory(lDevice, vulkan_buffer, deviceMem, 0) != VK_SUCCESS)
-			assert(!"Failed to bind buffer memory!");
-
-
-		buffer->SetBuffer(vulkan_buffer);
-		buffer->SetDeviceMemory(deviceMem);
-	}
-
-
-	void vkGraphicsDevice::DestroyVKUniformBuffer(ConstantBuffer* buffer)
-	{
-		vkDestroyBuffer(m_LogicalDevice->GetDevice(), static_cast<VkBuffer>(buffer->GetBuffer()), nullptr);
-	}
-
-
-	void vkGraphicsDevice::BindVKUniformBuffer(ConstantBuffer* buffer, int offset)
-	{
-		auto lDevice = m_LogicalDevice->GetDevice();
-
-		VkDeviceMemory deviceMem = static_cast<VkDeviceMemory>(buffer->GetDeviceMemory());
-		void* data = nullptr;
-		if (vkMapMemory(lDevice, deviceMem, offset, buffer->GetSize(), 0, &data) != VK_SUCCESS)
-			assert(!"Failed to map memory!");
-		
-		int8* pMem = static_cast<int8*>(data);
-		int32 step = 0;
-		for (auto it : buffer->GetVariables())
-		{
-			memcpy(&pMem[step], static_cast<int8*>(it.var), it.size);
-			step += it.size;
-		}
-		vkUnmapMemory(lDevice, deviceMem);
+		SetupRenderCommands(m_Index ^ 1);
 	}
 
 	//_____________________________________________
-
 
 	void vkGraphicsDevice::CreateRenderPass()
 	{
@@ -437,8 +354,8 @@ namespace Graphics
 		rpInfo.dependencyCount = 1;
 		rpInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass) != VK_SUCCESS)
-			assert(!"Failed to create renderpass");
+		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass ) != VK_SUCCESS )
+			assert( !"Failed to create renderpass" );
 	}
 	//_____________________________________________
 
@@ -450,8 +367,8 @@ namespace Graphics
 		poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		poolCreateInfo.queueFamilyIndex = m_PhysicalDevice->GetQueueFamilyIndex();
 
-		if (vkCreateCommandPool(m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool) != VK_SUCCESS)
-			assert(!"failed to create VkCommandPool!");
+		if( vkCreateCommandPool( m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool ) != VK_SUCCESS )
+			assert( !"failed to create VkCommandPool!" );
 	}
 	//_____________________________________________
 
@@ -462,10 +379,10 @@ namespace Graphics
 		cmdBufAllocInfo.commandPool = m_CmdPool;
 		cmdBufAllocInfo.commandBufferCount = (uint32)m_Swapchain->GetNofImages();
 		cmdBufAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		m_CmdBuffers.resize(m_Swapchain->GetNofImages());
+		m_CmdBuffers.resize( m_Swapchain->GetNofImages() );
 
-		if (vkAllocateCommandBuffers(m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data()) != VK_SUCCESS)
-			assert(!"Failed to create VkCommandBuffer!");
+		if( vkAllocateCommandBuffers( m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data() ) != VK_SUCCESS )
+			assert( !"Failed to create VkCommandBuffer!" );
 	}
 	//_____________________________________________
 
@@ -516,11 +433,10 @@ namespace Graphics
 		blendCreateInfo.pAttachments = &blendAttachState;
 
 		auto bindDesc = CreateBindDesc();
-		auto attrDesc = CreateAttrDesc(0, 0);
-		auto attrDesc2 = CreateAttrDesc(1, 16);
+		auto attrDesc = CreateAttrDesc( 0, 0 );
+		auto attrDesc2 = CreateAttrDesc( 1, 16 );
 
 		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
-
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -531,15 +447,23 @@ namespace Graphics
 		vertexInputInfo.pVertexBindingDescriptions = &bindDesc;
 		vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
-		CreateDescriptorLayout();
 		CreateDescriptorPool();
 		CreateDescriptorSet();
 
-
 		VkDescriptorBufferInfo bInfo = {};
-		bInfo.buffer = static_cast<VkBuffer>(_ViewProjection.GetBuffer());
+		bInfo.buffer = static_cast<VkBuffer>(_Model.GetBuffer());
 		bInfo.offset = 0;
-		bInfo.range = _ViewProjection.GetSize();
+		bInfo.range = _Model.GetSize();
+
+		VkDescriptorBufferInfo bInfo2 = {};
+		bInfo2.buffer = static_cast<VkBuffer>(_ViewProjection.GetBuffer());
+		bInfo2.offset = 0;
+		bInfo2.range = _ViewProjection.GetSize();
+
+		VkDescriptorBufferInfo bufferArray[] = {
+			bInfo,
+			bInfo2,
+		};
 
 		VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -547,10 +471,8 @@ namespace Graphics
 		descWrite.dstBinding = 0;
 		descWrite.dstArrayElement = 0;
 		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descWrite.descriptorCount = 1;
-		descWrite.pBufferInfo = &bInfo;
-		descWrite.pImageInfo = nullptr;
-		descWrite.pTexelBufferView = nullptr;
+		descWrite.descriptorCount = ARRSIZE(bufferArray);
+		descWrite.pBufferInfo = bufferArray;
 
 		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
 
@@ -585,10 +507,10 @@ namespace Graphics
 		pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
 		pipelineInfo.pStages = ssci;
-		pipelineInfo.stageCount = ARRSIZE(ssci);
+		pipelineInfo.stageCount = ARRSIZE( ssci );
 
-		if (vkCreateGraphicsPipelines(m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS)
-			assert(!"Failed to create pipeline!");
+		if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline ) != VK_SUCCESS )
+			assert( !"Failed to create pipeline!" );
 	}
 
 	void vkGraphicsDevice::CreateDescriptorLayout()
@@ -598,18 +520,25 @@ namespace Graphics
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr;
+		
+		VkDescriptorSetLayoutBinding uboLayoutBinding2 = {};
+		uboLayoutBinding2.binding = 1;
+		uboLayoutBinding2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding2.descriptorCount = 1;
+		uboLayoutBinding2.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+		VkDescriptorSetLayoutBinding bindings[] = {
+			uboLayoutBinding,
+			uboLayoutBinding2
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &uboLayoutBinding;
-	
+		layoutInfo.bindingCount = ARRSIZE(bindings);
+		layoutInfo.pBindings = bindings;
 
-		if (vkCreateDescriptorSetLayout(m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &_descriptorLayout) != VK_SUCCESS)
-			assert(!"Failed to create Descriptor layout");
-
+		if( vkCreateDescriptorSetLayout( m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &_descriptorLayout ) != VK_SUCCESS )
+			assert( !"Failed to create Descriptor layout" );
 	}
 
 	void vkGraphicsDevice::CreateDescriptorPool()
@@ -617,16 +546,16 @@ namespace Graphics
 
 		VkDescriptorPoolSize poolSize = {};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
-		
+		poolSize.descriptorCount = 2; // (uint32_t)m_Swapchain->GetNofImages();
+
 		VkDescriptorPoolCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		createInfo.poolSizeCount = 1;
 		createInfo.pPoolSizes = &poolSize;
 		createInfo.maxSets = (uint32_t)m_Swapchain->GetNofImages();
 
-		if (vkCreateDescriptorPool(m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_descriptorPool) != VK_SUCCESS)
-			assert(!"Failed to create descriptorPool");
+		if( vkCreateDescriptorPool( m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_descriptorPool ) != VK_SUCCESS )
+			assert( !"Failed to create descriptorPool" );
 	}
 
 	void vkGraphicsDevice::CreateDescriptorSet()
@@ -635,9 +564,16 @@ namespace Graphics
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = _descriptorPool;
 		allocInfo.descriptorSetCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
-		allocInfo.pSetLayouts = &_descriptorLayout;
-		if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet) != VK_SUCCESS)
-			assert(!"failed to allocate descriptor sets!");
+
+		VkDescriptorSetLayout layouts[] = {
+			_descriptorLayout,
+		};
+
+
+		allocInfo.pSetLayouts = layouts;
+
+		if( vkAllocateDescriptorSets( m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet ) != VK_SUCCESS )
+			assert( !"failed to allocate descriptor sets!" );
 	}
 
 	//_____________________________________________
@@ -646,20 +582,25 @@ namespace Graphics
 	{
 		VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineCreateInfo.setLayoutCount = 1;
-		pipelineCreateInfo.pSetLayouts = &_descriptorLayout;
 
-		if (vkCreatePipelineLayout(m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout) != VK_SUCCESS)
-			assert(!"Failed to create pipelineLayout");
+		VkDescriptorSetLayout layouts[] = {
+			_descriptorLayout,
+		};
+
+		pipelineCreateInfo.setLayoutCount = ARRSIZE(layouts);
+		pipelineCreateInfo.pSetLayouts = layouts;
+
+		if( vkCreatePipelineLayout( m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout ) != VK_SUCCESS )
+			assert( !"Failed to create pipelineLayout" );
 	}
 	//_____________________________________________
 
 	void vkGraphicsDevice::CreateFramebuffers()
 	{
-		m_FrameBuffers.resize(m_Swapchain->GetNofImages());
+		m_FrameBuffers.resize( m_Swapchain->GetNofImages() );
 		auto& list = m_Swapchain->GetImageList();
 		auto& viewList = m_Swapchain->GetImageViewList();
-		for (size_t i = 0; i < m_Swapchain->GetNofImages(); ++i)
+		for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
 		{
 			VkImageViewCreateInfo vcInfo = {};
 			vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -667,9 +608,9 @@ namespace Graphics
 			vcInfo.format = m_Swapchain->GetFormat().format;
 			vcInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			vcInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY,
-				VK_COMPONENT_SWIZZLE_IDENTITY,
-				VK_COMPONENT_SWIZZLE_IDENTITY,
-				VK_COMPONENT_SWIZZLE_IDENTITY };
+								  VK_COMPONENT_SWIZZLE_IDENTITY,
+								  VK_COMPONENT_SWIZZLE_IDENTITY,
+								  VK_COMPONENT_SWIZZLE_IDENTITY };
 			VkImageSubresourceRange& srr = vcInfo.subresourceRange;
 			srr.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			srr.baseMipLevel = 0;
@@ -677,8 +618,8 @@ namespace Graphics
 			srr.baseArrayLayer = 0;
 			srr.layerCount = 1;
 
-			if (vkCreateImageView(m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &viewList[i]) != VK_SUCCESS)
-				assert(!"Failed to create ImageView!");
+			if( vkCreateImageView( m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &viewList[i] ) != VK_SUCCESS )
+				assert( !"Failed to create ImageView!" );
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -689,31 +630,30 @@ namespace Graphics
 			fbInfo.height = (uint32)_size.m_Height;
 			fbInfo.layers = 1;
 
-			if (vkCreateFramebuffer(m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i]) != VK_SUCCESS)
-				assert(!"Failed to create framebuffer!");
+			if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
+				assert( !"Failed to create framebuffer!" );
 		}
 	}
 
-	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device)
+	uint32 findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device )
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+		vkGetPhysicalDeviceMemoryProperties( device, &memProperties );
 
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		for( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
 		{
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & propertyFlags ) == propertyFlags)
+			if( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[i].propertyFlags & propertyFlags ) == propertyFlags )
 			{
 				return i;
 			}
 		}
-		assert(!"Failed to find suitable memory type!");
+		assert( !"Failed to find suitable memory type!" );
 		return 0;
 	}
 
 	void vkGraphicsDevice::CreateVertexBuffer()
 	{
-		const int32 _dataSize = sizeof(_triangle);
+		const int32 _dataSize = sizeof( _triangle );
 
 		VkBufferCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -721,20 +661,18 @@ namespace Graphics
 		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-
-		CreateBuffer(createInfo, &_VertexBuffer, &_vertexBufferMemory);
+		CreateBuffer( createInfo, &_VertexBuffer, &_vertexBufferMemory );
 
 		void* data = nullptr;
-		if (vkMapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
-			assert(!"Failed to map memory!");
-		memcpy(data, _triangle, _dataSize);
-		vkUnmapMemory(m_LogicalDevice->GetDevice(), _vertexBufferMemory);
-
+		if( vkMapMemory( m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, _dataSize, 0, &data ) != VK_SUCCESS )
+			assert( !"Failed to map memory!" );
+		memcpy( data, _triangle, _dataSize );
+		vkUnmapMemory( m_LogicalDevice->GetDevice(), _vertexBufferMemory );
 	}
 
 	void vkGraphicsDevice::CreateCube()
 	{
-		const int32 _dataSize = sizeof(_cube);
+		const int32 _dataSize = sizeof( _cube );
 
 		VkBufferCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -742,26 +680,25 @@ namespace Graphics
 		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-
-		CreateBuffer(createInfo, &_cubeBuffer, &_cubeBufferMemory);
+		CreateBuffer( createInfo, &_cubeBuffer, &_cubeBufferMemory );
 
 		void* data = nullptr;
-		if (vkMapMemory(m_LogicalDevice->GetDevice(), _cubeBufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
-			assert(!"Failed to map memory!");
-		memcpy(data, _cube, _dataSize);
-		vkUnmapMemory(m_LogicalDevice->GetDevice(), _cubeBufferMemory);
+		if( vkMapMemory( m_LogicalDevice->GetDevice(), _cubeBufferMemory, 0, _dataSize, 0, &data ) != VK_SUCCESS )
+			assert( !"Failed to map memory!" );
+		memcpy( data, _cube, _dataSize );
+		vkUnmapMemory( m_LogicalDevice->GetDevice(), _cubeBufferMemory );
 	}
 
 	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
 	{
 		VkVertexInputBindingDescription bindingDescription = {};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.stride = sizeof( Vertex );
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		return bindingDescription;		
+		return bindingDescription;
 	}
 
-	VkVertexInputAttributeDescription vkGraphicsDevice::CreateAttrDesc(int location, int offset)
+	VkVertexInputAttributeDescription vkGraphicsDevice::CreateAttrDesc( int location, int offset )
 	{
 		VkVertexInputAttributeDescription attrDesc = {};
 		attrDesc.binding = 0;
@@ -771,59 +708,156 @@ namespace Graphics
 		return attrDesc;
 	}
 
-
 	void vkGraphicsDevice::CreateMatrixBuffer()
 	{
 		VkBufferCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.size = sizeof(Core::Matrix44f) * 3;
+		createInfo.size = sizeof( Core::Matrix44f ) * 3;
 		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		CreateBuffer(createInfo, &_MatrixBuffer, &_matrixBufferMemory);		
-		
+		CreateBuffer( createInfo, &_MatrixBuffer, &_matrixBufferMemory );
 	}
 
-	void vkGraphicsDevice::CreateBuffer(const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory)
+	void vkGraphicsDevice::CreateBuffer( const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory )
 	{
-		if (vkCreateBuffer(m_LogicalDevice->GetDevice(), &createInfo, nullptr, buffer) != VK_SUCCESS)
-			assert(!"Failed to create vertex buffer!");
+		if( vkCreateBuffer( m_LogicalDevice->GetDevice(), &createInfo, nullptr, buffer ) != VK_SUCCESS )
+			assert( !"Failed to create vertex buffer!" );
 
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_LogicalDevice->GetDevice(), *buffer, &memRequirements);
+		vkGetBufferMemoryRequirements( m_LogicalDevice->GetDevice(), *buffer, &memRequirements );
 
-		*memory = GPUAllocateMemory(memRequirements, m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
+		*memory = GPUAllocateMemory( memRequirements, m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice() );
 
-		if (vkBindBufferMemory(m_LogicalDevice->GetDevice(), *buffer, *memory, 0) != VK_SUCCESS)
-			assert(!"Failed to bind buffer memory!");
+		if( vkBindBufferMemory( m_LogicalDevice->GetDevice(), *buffer, *memory, 0 ) != VK_SUCCESS )
+			assert( !"Failed to bind buffer memory!" );
 	}
 
-	VkSemaphore vkGraphicsDevice::CreateVkSemaphore(VkDevice pDevice)
+	VkSemaphore vkGraphicsDevice::CreateVkSemaphore( VkDevice pDevice )
 	{
 		VkSemaphore semaphore = nullptr;
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		if (vkCreateSemaphore(pDevice, &semaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS)
-			assert(!"Failed to create VkSemaphore");
+		if( vkCreateSemaphore( pDevice, &semaphoreCreateInfo, nullptr, &semaphore ) != VK_SUCCESS )
+			assert( !"Failed to create VkSemaphore" );
 
 		return semaphore;
 	}
 	//_____________________________________________
 
-	VkShaderModule vkGraphicsDevice::LoadShader(const char* filepath, VkDevice pDevice)
+	VkShaderModule vkGraphicsDevice::LoadShader( const char* filepath, VkDevice pDevice )
 	{
-		Core::File shader(filepath, Core::FileMode::READ_FILE);
+		Core::File shader( filepath, Core::FileMode::READ_FILE );
 		VkShaderModuleCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = shader.GetSize();
 		createInfo.pCode = (const uint32_t*)shader.GetBuffer();
 
 		VkShaderModule shaderModule = nullptr;
-		if (vkCreateShaderModule(pDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-			assert(!"Failed to create VkShaderModule!");
+		if( vkCreateShaderModule( pDevice, &createInfo, nullptr, &shaderModule ) != VK_SUCCESS )
+			assert( !"Failed to create VkShaderModule!" );
 
 		return shaderModule;
 	}
+
+	void vkGraphicsDevice::BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset)
+	{
+		auto lDevice = m_LogicalDevice->GetDevice();
+
+		VkDeviceMemory deviceMem = static_cast<VkDeviceMemory>(constantBuffer->GetDeviceMemory());
+		void* data = nullptr;
+		if (vkMapMemory(lDevice, deviceMem, offset, constantBuffer->GetSize(), 0, &data) != VK_SUCCESS)
+			assert(!"Failed to map memory!");
+
+		int8* pMem = static_cast<int8*>(data);
+		int32 step = 0;
+		for (auto it : constantBuffer->GetVariables())
+		{
+			memcpy(&pMem[step], static_cast<int8*>(it.var), it.size);
+			step += it.size;
+		}
+		vkUnmapMemory(lDevice, deviceMem);
+	}
+
+	void vkGraphicsDevice::DestroyConstantBuffer(ConstantBuffer* constantBuffer)
+	{
+		vkDestroyBuffer(m_LogicalDevice->GetDevice(), static_cast<VkBuffer>(constantBuffer->GetBuffer()), nullptr);
+	}
+
 	//_____________________________________________
+
+	void vkGraphicsDevice::CreateConstantBuffer(ConstantBuffer* constantBuffer)
+	{
+		VkBufferCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		createInfo.size = constantBuffer->GetSize();
+		createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		auto lDevice = m_LogicalDevice->GetDevice();
+		auto pDevice = m_PhysicalDevice->GetDevice();
+
+		VkBuffer vulkan_buffer = nullptr;
+		if (vkCreateBuffer(lDevice, &createInfo, nullptr, &vulkan_buffer) != VK_SUCCESS)
+			assert(!"Failed to create vertex buffer!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(lDevice, vulkan_buffer, &memRequirements);
+
+		VkDeviceMemory deviceMem = GPUAllocateMemory(memRequirements, lDevice, pDevice);
+
+		if (vkBindBufferMemory(lDevice, vulkan_buffer, deviceMem, 0) != VK_SUCCESS)
+			assert(!"Failed to bind buffer memory!");
+
+		constantBuffer->SetBuffer(vulkan_buffer);
+		constantBuffer->SetDeviceMemory(deviceMem);
+	}
+
+	void vkGraphicsDevice::SetupRenderCommands(int index)
+	{
+		vkWaitForFences(m_LogicalDevice->GetDevice(), 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(m_LogicalDevice->GetDevice(), 1, &m_CommandFence);
+
+		VkClearValue clearValue = {};
+		clearValue.color = _clearColor;
+
+		VkRenderPassBeginInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _renderPass;
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = { (uint32)_size.m_Width, (uint32)_size.m_Height };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearValue;
+
+		VkCommandBufferBeginInfo cmdInfo = {};
+		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		VkFramebuffer& frameBuffer = m_FrameBuffers[index];
+		VkCommandBuffer& commandBuffer = m_CmdBuffers[index];
+
+		if (vkBeginCommandBuffer(commandBuffer, &cmdInfo) != VK_SUCCESS)
+			assert(!"Failed to begin CommandBuffer!");
+		renderPassInfo.framebuffer = frameBuffer;
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
+
+		VkBuffer vertexBuffers[] = { _VertexBuffer };
+		VkDeviceSize offsets = { 0 };
+
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, &offsets);
+		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_cubeBuffer, &offsets);
+		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffer);
+
+		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+			assert(!"Failed to end CommandBuffer!");
+	}
 
 }; //namespace Graphics

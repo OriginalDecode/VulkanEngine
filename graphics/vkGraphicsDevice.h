@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GraphicsDevice.h"
+
 #include "Core/utilities/utilities.h"
 #include "Core/Defines.h"
 
@@ -10,40 +12,36 @@
 class Window;
 //struct VkWin32SurfaceCreateInfoKHR;
 
-
 namespace Graphics
 {
 	class ConstantBuffer;
-    class VlkInstance;
-    class VlkPhysicalDevice;
-    class VlkDevice;
+	class VlkInstance;
+	class VlkPhysicalDevice;
+	class VlkDevice;
 	class VlkSwapchain;
-    class vkGraphicsDevice
-    {
-    public:
-        vkGraphicsDevice();
-        ~vkGraphicsDevice();
 
-        bool Init( const Window& window );
+	class vkGraphicsDevice final : public IGraphicsDevice
+	{
+	public:
+		vkGraphicsDevice();
+		~vkGraphicsDevice();
 
+		bool Init( const Window& window );
 
-
-        void DrawFrame(float dt);
-
+		void DrawFrame( float dt );
 
 		VlkInstance& GetVlkInstance() { return *m_Instance; }
 		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
 
-		void CreateVKUniformBuffer(ConstantBuffer* buffer);
-		void DestroyVKUniformBuffer(ConstantBuffer* buffer);
-		void BindVKUniformBuffer(ConstantBuffer* buffer, int offset);
+		virtual void BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset) override;
+		virtual void CreateConstantBuffer(ConstantBuffer* constantBuffer) override;
+		virtual void DestroyConstantBuffer(ConstantBuffer* constantBuffer) override;
 
-    private:
-  
-        std::unique_ptr<VlkInstance> m_Instance;
-        std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
-        std::unique_ptr<VlkDevice> m_LogicalDevice;
-        std::unique_ptr<VlkSwapchain> m_Swapchain;
+	private:
+		std::unique_ptr<VlkInstance> m_Instance;
+		std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
+		std::unique_ptr<VlkDevice> m_LogicalDevice;
+		std::unique_ptr<VlkSwapchain> m_Swapchain;
 
 		std::vector<VkCommandBuffer> m_CmdBuffers;
 		VkCommandPool m_CmdPool = nullptr;
@@ -51,9 +49,11 @@ namespace Graphics
 		VkSemaphore m_AcquireNextImageSemaphore = nullptr;
 
 		VkSemaphore m_DrawDone = nullptr;
+		VkFence m_CommandFence = nullptr;
 		VkFence m_FrameFence[2]{ nullptr, nullptr };
 		uint32 m_Index = 0;
 
+		void SetupRenderCommands(int index);
 
 		void SetupScissorArea();
 		void SetupViewport();
@@ -71,43 +71,43 @@ namespace Graphics
 		void CreateVertexBuffer();
 		void CreateCube();
 		VkVertexInputBindingDescription CreateBindDesc();
-		VkVertexInputAttributeDescription CreateAttrDesc(int location, int offset);
+		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
 
 		void CreateMatrixBuffer();
 
+		void CreateBuffer( const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory );
 
-		void CreateBuffer(const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory);
-
-
-		VkSemaphore CreateVkSemaphore(VkDevice pDevice);
-		VkShaderModule LoadShader(const char* filepath, VkDevice pDevice);
-
-
-    };
+		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
+		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
+	};
 
 	class ConstantBuffer
 	{
 	public:
-
 		struct Variable
 		{
 			Variable() = default;
-			Variable(void* var, uint32 size) : var(var), size(size) {}
+			Variable( void* var, uint32 size )
+				: var( var )
+				, size( size )
+			{
+			}
 			void* var = nullptr;
 			uint32 size = 0;
 		};
 
-		void SetBuffer(void* buffer) { m_Buffer = buffer; }
-		void SetDeviceMemory(void* memory) { m_DeviceMemory = memory; }
+		void SetBuffer( void* buffer ) { m_Buffer = buffer; }
+		void SetDeviceMemory( void* memory ) { m_DeviceMemory = memory; }
 
-		template<typename T>
-		void RegVar(T* var);
+		template <typename T>
+		void RegVar( T* var );
 
 		void* GetBuffer() { return m_Buffer; }
 		void* GetDeviceMemory() { return m_DeviceMemory; }
 		uint32 GetSize() const { return m_BufferSize; }
 		void* GetData() { return m_Vars.data(); }
 		const std::vector<Variable>& GetVariables() const { return m_Vars; }
+
 	private:
 		uint32 m_BufferSize = 0;
 		std::vector<Variable> m_Vars;
@@ -115,11 +115,11 @@ namespace Graphics
 		void* m_DeviceMemory = nullptr;
 	};
 
-	template<typename T>
-	void ConstantBuffer::RegVar(T* var)
+	template <typename T>
+	void ConstantBuffer::RegVar( T* var )
 	{
-		m_Vars.push_back({ var, sizeof(T) });
-		m_BufferSize += sizeof(T);
+		m_Vars.push_back( { var, sizeof( T ) } );
+		m_BufferSize += sizeof( T );
 	}
 
 }; // namespace Graphics

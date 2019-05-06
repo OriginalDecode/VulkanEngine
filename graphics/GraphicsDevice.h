@@ -34,8 +34,13 @@ namespace Graphics
 	class IGraphicsDevice
 	{
 		public:
-			IGraphicsDevice();
-			~IGraphicsDevice();
+			IGraphicsDevice() = default;
+			virtual ~IGraphicsDevice() = default;
+
+			virtual void BindConstantBuffer(class ConstantBuffer* constantBuffer, uint32 offset) = 0;
+			virtual void CreateConstantBuffer(class ConstantBuffer* constantBuffer) = 0;
+			virtual void DestroyConstantBuffer(class ConstantBuffer* constantBuffer) = 0;
+
 		private:
 	};
 

@@ -1,6 +1,11 @@
-cbuffer viewProjection : register(b0)
+
+cbuffer model : register (b0)
 {
     row_major float4x4 World;
+};
+
+cbuffer viewProjection : register (b1)
+{
     row_major float4x4 viewProjection;
 };
 
