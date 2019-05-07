@@ -25,6 +25,7 @@ elif system=="Windows":
 
 parser.add_argument("--clean", action='store_true', help="tell the script to clean the tree")
 parser.add_argument("-v", dest="verbosity", help="set the verbosity of the compiler. values=[ q[uiet], m[inimal], n[ormal], d[etailed], diag[nostic]")
+parser.add_argument("-p", "--project", dest="project", help="Configures a project, engine|unit_test", metavar="")
 
 
 args = parser.parse_args()
@@ -108,7 +109,7 @@ def configure():
     if args.config != None:
         print(white("===Starting configure==="))
         if system == "Windows":
-            sysCall("premake5 --platform=windows")
+            sysCall("premake5 --platform=windows --project=" + args.project)
         elif system == "Linux":
             sysCall("./premake5 --platform=linux")
         print(green("===Configure done==="))
