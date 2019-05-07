@@ -326,8 +326,8 @@ namespace Graphics
 
 		_ViewProjectionMatrix = _translationMatrix * _projectionMatrix;
 
-		BindConstantBuffer(&_Model, 0);
-		BindConstantBuffer(&_Model2, 0);
+		//BindConstantBuffer(&_Model, 0);
+		//BindConstantBuffer(&_Model2, 0);
 		BindConstantBuffer(&_ViewProjection, 0);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
@@ -503,25 +503,10 @@ namespace Graphics
 		CreateDescriptorPool();
 		CreateDescriptorSet();
 
-		VkDescriptorBufferInfo bInfo = {};
-		bInfo.buffer = static_cast<VkBuffer>(_Model.GetBuffer());
-		bInfo.offset = 0;
-		bInfo.range = _Model.GetSize();
-
 		VkDescriptorBufferInfo bInfo2 = {};
 		bInfo2.buffer = static_cast<VkBuffer>(_ViewProjection.GetBuffer());
 		bInfo2.offset = 0;
 		bInfo2.range = _ViewProjection.GetSize();
-
-		VkDescriptorBufferInfo bInfo3 = {};
-		bInfo3.buffer = static_cast<VkBuffer>(_Model2.GetBuffer());
-		bInfo3.offset = 0;
-		bInfo3.range = _Model2.GetSize();
-
-		VkDescriptorBufferInfo bufferArray[] = {
-			bInfo,
-			bInfo2,
-		};
 
 		VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -529,13 +514,8 @@ namespace Graphics
 		descWrite.dstBinding = 0;
 		descWrite.dstArrayElement = 0;
 		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descWrite.descriptorCount = ARRSIZE(bufferArray);
-		descWrite.pBufferInfo = bufferArray;
-
-		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
-
-		descWrite.dstSet = _descriptorSet2;
-		bufferArray[0] = bInfo3;
+		descWrite.descriptorCount = 1;
+		descWrite.pBufferInfo = &bInfo2;
 
 		vkUpdateDescriptorSets(m_LogicalDevice->GetDevice(), 1, &descWrite, 0, nullptr);
 
@@ -584,15 +564,8 @@ namespace Graphics
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		
-		VkDescriptorSetLayoutBinding uboLayoutBinding2 = {};
-		uboLayoutBinding2.binding = 1;
-		uboLayoutBinding2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding2.descriptorCount = 1;
-		uboLayoutBinding2.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
 		VkDescriptorSetLayoutBinding bindings[] = {
 			uboLayoutBinding,
-			uboLayoutBinding2
 		};
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
@@ -609,7 +582,7 @@ namespace Graphics
 
 		VkDescriptorPoolSize poolSize = {};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = 2; // (uint32_t)m_Swapchain->GetNofImages();
+		poolSize.descriptorCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
 
 		VkDescriptorPoolCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -639,8 +612,8 @@ namespace Graphics
 			assert( !"failed to allocate descriptor sets!" );
 
 
-		if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet2) != VK_SUCCESS)
-			assert(!"failed to allocate descriptor sets!");
+		//if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet2) != VK_SUCCESS)
+		//	assert(!"failed to allocate descriptor sets!");
 	}
 
 	//_____________________________________________
@@ -654,8 +627,21 @@ namespace Graphics
 			_descriptorLayout,
 		};
 
+
+		VkPushConstantRange pcr0 = {};
+		pcr0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pcr0.offset = 0;
+		pcr0.size = sizeof(_worldMatrix);
+
+		VkPushConstantRange pcra[] = {
+			pcr0,
+		};
+
 		pipelineCreateInfo.setLayoutCount = ARRSIZE(layouts);
 		pipelineCreateInfo.pSetLayouts = layouts;
+
+		pipelineCreateInfo.pushConstantRangeCount = ARRSIZE(pcra);
+		pipelineCreateInfo.pPushConstantRanges = pcra;
 
 		if( vkCreatePipelineLayout( m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout ) != VK_SUCCESS )
 			assert( !"Failed to create pipelineLayout" );
@@ -865,14 +851,18 @@ namespace Graphics
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet2, 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 
 		VkDeviceSize offsets = { 0 };
+
+
+		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_worldMatrix), &_worldMatrix);
 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cube1._cubeBuffer, &offsets);
 		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
+
+		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_worldMatrix), &_worldMatrix2);
 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cube0._cubeBuffer, &offsets);
 		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
