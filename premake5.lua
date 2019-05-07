@@ -1,6 +1,5 @@
 
 -- local fnc = require "test"
-require "lua"
 
 newoption {
     trigger = "platform",
@@ -12,9 +11,31 @@ newoption {
     }
 }
 
---beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
-workspace "Engine" --this is the solution name in a vs project if no filename specified
+newoption {
+    trigger = "project",
+    value = "Project",
+    description = "Set project flag",
+    allowed = {
+        { "unit_test", "unit test" },
+        { "engine", "engine" }
+    }
+}
 
+--beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
+if _OPTIONS["project"] == nil then
+    print("No project set, will not configure")
+    return 
+end 
+
+if _OPTIONS["project"] == "engine" then
+    print("configuring Engine")
+workspace "Engine" --this is the solution name in a vs project if no filename specified
+elseif _OPTIONS["project"] == "unit_test" then
+    print("configuring UnitTest")
+workspace "UnitTest"
+else
+return
+end
     -- fnc.setWorkspace("Engine")
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
@@ -57,18 +78,31 @@ workspace "Engine" --this is the solution name in a vs project if no filename sp
         defines {"NDEBUG"}
         optimize "On"
 
-    
-    project "Executable" --project name
-        targetname "%{wks.name}_%{cfg.buildcfg}"
-        kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-        location ("./executable")
-        
-        dependson { "Core", "Graphics" }
-        links { "Graphics", "Core" } --libraries to link
-        
-        files { "executable/*.cpp" }
+    if _OPTIONS["project"] ~= nil then
+        if _OPTIONS["project"] == "engine" then
+            project "Executable" --project name
+                targetname "%{wks.name}_%{cfg.buildcfg}"
+                kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
+                location ("./executable")
 
-        
+                dependson { "Core", "Graphics" }
+                links { "Graphics", "Core" } --libraries to link
+
+                files { "executable/*.cpp" }
+        else
+            project "UnitTest" --project name
+                targetname "%{wks.name}_%{cfg.buildcfg}"
+                kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
+                location ("./unit_test")
+
+                dependson { "Core", "Graphics" }
+                links { "Graphics", "Core" } --libraries to link
+
+                files { "unit_test/*.cpp" }
+        end
+    else
+        print("No project set")
+    end
 
     project "Graphics"
         kind "StaticLib"
