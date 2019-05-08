@@ -326,8 +326,6 @@ namespace Graphics
 
 		_ViewProjectionMatrix = _translationMatrix * _projectionMatrix;
 
-		//BindConstantBuffer(&_Model, 0);
-		//BindConstantBuffer(&_Model2, 0);
 		BindConstantBuffer(&_ViewProjection, 0);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
@@ -636,6 +634,14 @@ namespace Graphics
 		VkPushConstantRange pcra[] = {
 			pcr0,
 		};
+
+		int size = 0;
+		for (const VkPushConstantRange& el : pcra)
+		{
+			size += el.size;
+		}
+
+		assert(size < 128 && "Dangerous to exceed 128 byte on push constant range!");
 
 		pipelineCreateInfo.setLayoutCount = ARRSIZE(layouts);
 		pipelineCreateInfo.pSetLayouts = layouts;

@@ -80,31 +80,31 @@ end
         defines {"NDEBUG"}
         optimize "On"
 
-    if _OPTIONS["project"] ~= nil then
-        if _OPTIONS["project"] == "engine" then
-            project "Executable" --project name
-                targetname "%{wks.name}_%{cfg.buildcfg}"
-                kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-                location ("./executable")
+if _OPTIONS["project"] ~= nil then
+    if _OPTIONS["project"] == "engine" then
+        project "Executable" --project name
+            targetname "%{wks.name}_%{cfg.buildcfg}"
+            kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
+            location ("./executable")
 
-                dependson { "Core", "Graphics" }
-                links { "Graphics", "Core" } --libraries to link
+            dependson { "Core", "Graphics" }
+            links { "Graphics", "Core" } --libraries to link
 
-                files { "executable/*.cpp" }
-        elseif _OPTIONS["project"] == "unit_test" then
-            project "UnitTest" --project name
-                targetname "%{wks.name}_%{cfg.buildcfg}Test"
-                kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-                location ("./unit_test")
+            files { "executable/*.cpp" }
+    elseif _OPTIONS["project"] == "unit_test" then
+        project "UnitTest" --project name
+            targetname "%{wks.name}_%{cfg.buildcfg}Test"
+            kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
+            location ("./unit_test")
 
-                dependson { "Core", "Graphics" }
-                links { "Graphics", "Core", "gtest_%{cfg.buildcfg}" } --libraries to link
+            dependson { "Core", "Graphics" }
+            links { "Graphics", "Core", "gtest_%{cfg.buildcfg}" } --libraries to link
 
-                files { "unit_test/*.cpp" }
-        end
-    else
-        print("No project set")
+            files { "unit_test/*.cpp" }
     end
+else
+    print("No project set")
+end
 
     project "Graphics"
         kind "StaticLib"
