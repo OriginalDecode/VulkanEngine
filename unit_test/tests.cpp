@@ -39,6 +39,18 @@ TEST( Vector4, Length2 )
 	ASSERT_EQ( vector.Length2(), constexpr_result );
 }
 
+TEST( Vector4, dot )
+{
+	constexpr float a = 193.f, b = 284.f, c = 321.f, d = 461.f;
+	constexpr float e = 913.f, f = 378.f, g = 245.f, h = 560.f;
+	constexpr float dot_result = ( a * e ) + ( b * f ) + ( c * g ) + ( d * h );
+
+	Core::Vector4<float> first( a, b, c, d );
+	Core::Vector4<float> second( e, f, g, h );
+
+	ASSERT_EQ( Core::Dot( first, second ), dot_result );
+}
+
 GTEST_API_ int main( int argc, char** argv )
 {
 	printf( "Running main() from %s\n", __FILE__ );
