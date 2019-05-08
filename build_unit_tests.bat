@@ -1,3 +1,3 @@
 @echo off
 
-python buildscript.py -b=UnitTest.sln -v=m -bc="Release"
+python buildscript.py -b=UnitTest.sln -v=m

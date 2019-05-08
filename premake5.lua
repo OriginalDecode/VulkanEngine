@@ -54,7 +54,7 @@ end
     architecture "x64"
     includedirs { ".\\" }
     -- libdirs { "" }
-    flags { "FatalWarnings", "StaticRuntime" }
+    flags { "StaticRuntime" }
     warnings "Extra"
 
     objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
@@ -71,8 +71,7 @@ end
 
     filter "kind:WindowedApp"
         targetdir "%{wks.location}/../bin"
-
-
+    
     filter "configurations:Debug"
         defines { "DEBUG" }
         symbols "On"
@@ -94,14 +93,12 @@ end
                 files { "executable/*.cpp" }
         elseif _OPTIONS["project"] == "unit_test" then
             project "UnitTest" --project name
-                targetname "%{wks.name}_%{cfg.buildcfg}"
+                targetname "%{wks.name}_%{cfg.buildcfg}Test"
                 kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
                 location ("./unit_test")
 
                 dependson { "Core", "Graphics" }
                 links { "Graphics", "Core", "gtest_%{cfg.buildcfg}" } --libraries to link
-
-                filter "*"
 
                 files { "unit_test/*.cpp" }
         end

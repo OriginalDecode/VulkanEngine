@@ -2,9 +2,9 @@
     "files.exclude": {
         "**/*.vcxproj*": true,
         "**/*.cmake": true,
-        "**/ALL_BUILD/":true,
-        "**/ZERO_CHECK/":true,
-        "**/*.dir":true,
+        "**/ALL_BUILD/": true,
+        "**/ZERO_CHECK/": true,
+        "**/*.dir": true,
     },
     "files.associations": {
         "*.al": "python",
@@ -23,5 +23,6 @@
     },
     "python.linting.enabled": true,
     "editor.renderWhitespace": "all",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "catch2TestExplorer.executables": "unit_test/bin/**/*Test.exe"
 }
