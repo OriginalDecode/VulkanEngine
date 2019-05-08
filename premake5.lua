@@ -36,26 +36,29 @@ workspace "UnitTest"
 else
 return
 end
-    -- fnc.setWorkspace("Engine")
-    -- fnc.addConfig("Debug")
-    -- fnc.addConfig("Release")
-    -- fnc.setPlatform("Windows")
+
+-- fnc.setWorkspace("Engine")
+-- fnc.addConfig("Debug")
+-- fnc.addConfig("Release")
+-- fnc.setPlatform("Windows")
     configurations { "Debug" , "Release" }
+
     platforms { _OPTIONS["platform"] }
     debugdir "%{wks.location}../bin"
-    -- language "C++"
+-- language "C++"
     cppdialect "C++14"
     disablewarnings { "4201" }
-    -- flags { "C++14" }
+-- flags { "C++14" }
 --filename "whiteroom"
-    -- platforms { "Windows" }
+-- platforms { "Windows" }
     architecture "x64"
     includedirs { ".\\" }
     -- libdirs { "" }
-    flags { "FatalWarnings" }
+    flags { "FatalWarnings", "StaticRuntime" }
     warnings "Extra"
 
     objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
+    -- staticruntime "on"
 
     filter "platforms:Windows"
         defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
@@ -89,14 +92,16 @@ end
                 links { "Graphics", "Core" } --libraries to link
 
                 files { "executable/*.cpp" }
-        else
+        elseif _OPTIONS["project"] == "unit_test" then
             project "UnitTest" --project name
                 targetname "%{wks.name}_%{cfg.buildcfg}"
                 kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
                 location ("./unit_test")
 
                 dependson { "Core", "Graphics" }
-                links { "Graphics", "Core" } --libraries to link
+                links { "Graphics", "Core", "gtest_%{cfg.buildcfg}" } --libraries to link
+
+                filter "*"
 
                 files { "unit_test/*.cpp" }
         end
