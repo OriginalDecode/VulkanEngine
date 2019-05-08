@@ -1,6 +1,10 @@
 #include <cstdio>
 #include "gtest/gtest.h"
 
+#include "Core/math/Vector4.h"
+#include "Core/math/Vector3.h"
+#include "Core/math/Vector2.h"
+
 /*
 	different macros for unit tests
 
@@ -19,9 +23,20 @@
 
 */
 
-TEST( OverarchingTest, Testname )
+TEST( Vector4, Length )
 {
-	ASSERT_EQ( 1, 0 );
+	constexpr float a = 193.f, b = 284.f, c = 321.f, d = 461.f;
+	constexpr float constexpr_result = ( a * a ) + ( b * b ) + ( c * c ) + ( d * d );
+	Core::Vector4<float> vector( a, b, c, d );
+	ASSERT_EQ( vector.Length(), sqrtf( constexpr_result ) );
+}
+
+TEST( Vector4, Length2 )
+{
+	constexpr float a = 193.f, b = 284.f, c = 321.f, d = 461.f;
+	constexpr float constexpr_result = ( a * a ) + ( b * b ) + ( c * c ) + ( d * d );
+	Core::Vector4<float> vector( a, b, c, d );
+	ASSERT_EQ( vector.Length2(), constexpr_result );
 }
 
 GTEST_API_ int main( int argc, char** argv )
