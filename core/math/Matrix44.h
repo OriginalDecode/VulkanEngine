@@ -5,6 +5,7 @@
 #include <cassert>
 #include <xmmintrin.h>
 #include <math.h>
+#include <utility>
 
 namespace Core
 {
