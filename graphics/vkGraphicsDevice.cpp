@@ -23,8 +23,6 @@ VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 VkRenderPass _renderPass = nullptr;
 
 std::vector<VkFramebuffer> m_FrameBuffers;
-VkShaderModule vertModule = nullptr;
-VkShaderModule fragModule = nullptr;
 VkPipeline _pipeline = nullptr;
 VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
@@ -210,6 +208,22 @@ namespace Graphics
 
 	};
 
+	struct Shader
+	{
+		void* m_ShaderBlob = nullptr;
+
+		void Create(void* blob)
+		{
+			m_ShaderBlob = blob;
+		}
+		
+		void* GetBlob() { return m_ShaderBlob; }
+
+	};
+
+	Shader _vertexShader;
+	Shader _fragmentShader;
+
 	std::vector<Cube> _Cubes;
 
 	ConstantBuffer _ViewProjection;
@@ -225,8 +239,10 @@ namespace Graphics
 		for (Cube& cube : _Cubes)
 			cube.destroy(m_LogicalDevice->GetDevice());
 
-		vkDestroyShaderModule( device, vertModule, nullptr );
-		vkDestroyShaderModule( device, fragModule, nullptr );
+
+		DestroyShader(&_vertexShader);
+		DestroyShader(&_fragmentShader);
+
 		vkDestroyPipelineLayout( device, _pipelineLayout, nullptr );
 		vkDestroyPipeline( device, _pipeline, nullptr );
 
@@ -264,8 +280,8 @@ namespace Graphics
 
 		CreateFramebuffers();
 
-		vertModule = LoadShader( "Data/Shaders/vertex.vert", m_LogicalDevice->GetDevice() );
-		fragModule = LoadShader( "Data/Shaders/frag.frag", m_LogicalDevice->GetDevice() );
+		LoadShader(&_vertexShader, "Data/Shaders/vertex.vert");
+		LoadShader(&_fragmentShader, "Data/Shaders/frag.frag");
 
 		SetupViewport();
 		SetupScissorArea();
@@ -543,13 +559,13 @@ namespace Graphics
 		VkPipelineShaderStageCreateInfo vertexStageInfo = {};
 		vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertexStageInfo.module = vertModule;
+		vertexStageInfo.module = (VkShaderModule)_vertexShader.GetBlob();
 		vertexStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo fragStageInfo = {};
 		fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageInfo.module = fragModule;
+		fragStageInfo.module = (VkShaderModule)_fragmentShader.GetBlob();
 		fragStageInfo.pName = "main";
 
 		VkPipelineShaderStageCreateInfo ssci[] = { vertexStageInfo, fragStageInfo };
@@ -748,6 +764,13 @@ namespace Graphics
 		return shaderModule;
 	}
 
+	void vkGraphicsDevice::LoadShader(void* shader, const char* filepath)
+	{
+		Shader* s = static_cast<Shader*>(shader);
+		s->Create(LoadShader(filepath, m_LogicalDevice->GetDevice()));
+
+	}
+
 	void vkGraphicsDevice::BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset)
 	{
 		auto lDevice = m_LogicalDevice->GetDevice();
@@ -840,6 +863,11 @@ namespace Graphics
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 			assert(!"Failed to end CommandBuffer!");
+	}
+
+	void vkGraphicsDevice::DestroyShader(Shader* pShader)
+	{
+		vkDestroyShaderModule(m_LogicalDevice->GetDevice(), (VkShaderModule)pShader->GetBlob(), nullptr);
 	}
 
 }; //namespace Graphics

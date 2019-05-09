@@ -37,6 +37,8 @@ namespace Graphics
 		virtual void CreateConstantBuffer(ConstantBuffer* constantBuffer) override;
 		virtual void DestroyConstantBuffer(ConstantBuffer* constantBuffer) override;
 
+		void LoadShader(void* shader, const char* filepath);
+		void DestroyShader(struct Shader* pShader);
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;
 		std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
@@ -74,6 +76,9 @@ namespace Graphics
 
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
+
+		
+
 	};
 
 	class ConstantBuffer
