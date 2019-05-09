@@ -15,6 +15,8 @@
 #include <windows.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
+#include "Core/utilities/Randomizer.h"
+#include "Camera.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -28,33 +30,14 @@ VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
 VkRect2D _Scissor = {};
 
-
-
 VkDescriptorSetLayout _descriptorLayout = nullptr;
-VkDescriptorSetLayout _descriptorLayout2 = nullptr;
-
 VkDescriptorPool _descriptorPool = nullptr;
 VkDescriptorSet _descriptorSet = nullptr;
-VkDescriptorSet _descriptorSet2 = nullptr;
 
 
-
-
-
-Core::Matrix44f _worldMatrix;
-Core::Matrix44f _worldMatrix2;
-Core::Matrix44f _projectionMatrix;
-Core::Matrix44f _translationMatrix;
-Core::Matrix44f _ViewProjectionMatrix;
-
-VkBuffer _VertexBuffer;
-VkDeviceMemory _vertexBufferMemory;
-
-
+Graphics::Camera _Camera;
 
 Window::Size _size;
-
-constexpr int _descriptorCount = 2;
 
 struct Vertex
 {
@@ -127,7 +110,25 @@ constexpr Vertex _cube[] = {
 
 namespace Graphics
 {
-	uint32 findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device );
+
+	// This should be a memory allocator class 
+
+	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+			{
+				return i;
+			}
+		}
+		assert(!"Failed to find suitable memory type!");
+		return 0;
+	}
+
 	VkDeviceMemory GPUAllocateMemory( const VkMemoryRequirements& memRequirements, VkDevice logicalDevice, VkPhysicalDevice physDevice )
 	{
 		VkDeviceMemory memory;
@@ -155,20 +156,37 @@ namespace Graphics
 		if (vkBindBufferMemory(device, *buffer, *memory, 0) != VK_SUCCESS)
 			assert(!"Failed to bind buffer memory!");
 	}
+	// to here
 
-	struct cube
+	struct Cube
 	{
-		VkBuffer _cubeBuffer;
-		VkDeviceMemory _cubeBufferMemory;
+		VkBuffer m_Buffer;
+		VkDeviceMemory m_BufferMemory;
+
+		int m_Rotation = 0;
+
+		Core::Matrix44f m_Orientation;
+
+		void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+		{
+			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f), &m_Orientation);
+			VkDeviceSize offset[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_Buffer, offset);
+			vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
+		}
 
 		void destroy(VkDevice device)
 		{
-			vkDestroyBuffer(device, _cubeBuffer, nullptr);
+			vkDestroyBuffer(device, m_Buffer, nullptr);
 		}
 
 		void init(VkDevice device, VkPhysicalDevice physicalDevice)
 		{
+			m_Orientation = Core::Matrix44f::Identity();
 			const int32 _dataSize = sizeof(_cube);
+
+			m_Rotation = Core::Rand<int>(0, 2);
+
 
 			VkBufferCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -176,21 +194,24 @@ namespace Graphics
 			createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			CreateBuffer(createInfo, &_cubeBuffer, &_cubeBufferMemory, device, physicalDevice);
+			CreateBuffer(createInfo, &m_Buffer, &m_BufferMemory, device, physicalDevice);
 
 			void* data = nullptr;
-			if (vkMapMemory(device, _cubeBufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
+			if (vkMapMemory(device, m_BufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
 				assert(!"Failed to map memory!");
 			memcpy(data, _cube, _dataSize);
-			vkUnmapMemory(device, _cubeBufferMemory);
+			vkUnmapMemory(device, m_BufferMemory);
 		}
+
+		void setPosition(const Core::Vector4f &position)
+		{
+			m_Orientation.SetPosition(position);
+		}
+
 	};
 
-	cube cube0;
-	cube cube1;
+	std::vector<Cube> _Cubes;
 
-	ConstantBuffer _Model;
-	ConstantBuffer _Model2;
 	ConstantBuffer _ViewProjection;
 
 	vkGraphicsDevice::vkGraphicsDevice() = default;
@@ -200,13 +221,10 @@ namespace Graphics
 
 		auto device = m_LogicalDevice->GetDevice();
 		DestroyConstantBuffer( &_ViewProjection );
-		DestroyConstantBuffer( &_Model );
-		DestroyConstantBuffer( &_Model2 );
 
-		cube0.destroy(device);
-		cube1.destroy(device);
+		for (Cube& cube : _Cubes)
+			cube.destroy(m_LogicalDevice->GetDevice());
 
-		vkDestroyBuffer( device, _VertexBuffer, nullptr );
 		vkDestroyShaderModule( device, vertModule, nullptr );
 		vkDestroyShaderModule( device, fragModule, nullptr );
 		vkDestroyPipelineLayout( device, _pipelineLayout, nullptr );
@@ -223,15 +241,7 @@ namespace Graphics
 	bool vkGraphicsDevice::Init( const Window& window )
 	{
 		_size = window.GetInnerSize();
-
-		_projectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( 0.01f, 100.f, _size.m_Height / _size.m_Width, 90.f * ( 3.1415f / 180.f ) );
-		_translationMatrix = Core::Matrix44f::Identity();
-		_translationMatrix = Core::Matrix44f::Inverse( _translationMatrix );
-		_worldMatrix = Core::Matrix44f::Identity();
-		_worldMatrix.SetPosition( { 0.f, 0.f, 15.0f } );
-
-		_worldMatrix2 = Core::Matrix44f::Identity();
-		_worldMatrix2.SetPosition( { 5.f, 0.f, 10.f } );
+		_Camera.InitPerspectiveProjection(_size.m_Width, _size.m_Height, 0.01f, 100.f, 90.f);
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -245,19 +255,8 @@ namespace Graphics
 		m_Swapchain = std::make_unique<VlkSwapchain>();
 		m_Swapchain->Init( m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window );
 
-		//CreateVertexBuffer();
-
-		_Model.RegVar( &_worldMatrix );
-		CreateConstantBuffer( &_Model );
-
-		_Model2.RegVar(&_worldMatrix2);
-		CreateConstantBuffer(&_Model2);
-
-		_ViewProjection.RegVar( &_ViewProjectionMatrix );
+		_ViewProjection.RegVar( _Camera.GetViewProjectionPointer() );
 		CreateConstantBuffer( &_ViewProjection );
-
-		cube0.init(m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
-		cube1.init(m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
 
 		CreateCommandPool();
 		CreateCommandBuffer();
@@ -278,14 +277,32 @@ namespace Graphics
 		m_DrawDone = CreateVkSemaphore( m_LogicalDevice->GetDevice() );
 
 
+		const float xValue = -22.f;
+		const float yValue = -12.f;
+		const float zValue = 25.f;
+		Core::Vector4f position{ xValue, yValue, zValue };
+
+		for (int i = 0; i < 128; i++)
+		{
+			_Cubes.push_back(Cube());
+			Cube& last = _Cubes.back();
+			last.init(m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
+			last.setPosition(position);
+
+			position.x += 5.f;
+			if (i % 10 == 0 && i != 0)
+			{
+				position.y += 5.f;
+				position.x = xValue;
+			}
+		}
+
 
 		VkFenceCreateInfo fenceCreateInfo = {};
 		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
 		if (vkCreateFence(m_LogicalDevice->GetDevice(), &fenceCreateInfo, nullptr, &m_CommandFence) != VK_SUCCESS)
 			assert(!"Failed to create fence!");
-	
-
 
 		return true;
 	}
@@ -313,19 +330,20 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
-
-
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundY( ( 90.f * ( 3.1415f / 180.f ) ) * dt );
-		_worldMatrix = _worldMatrix * Core::Matrix44f::CreateRotateAroundX( ( 45.f * ( 3.1415f / 180.f ) ) * dt );
-
-		_worldMatrix2.RotateAroundPointX(_worldMatrix.GetTranslation(), 45.f * (3.1415f / 180.f) * dt);
-
+		for (Cube& cube : _Cubes)
+		{
+			if (cube.m_Rotation == 0)
+				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundX((90.f * (3.1415f / 180.f)) * dt);
+			else if (cube.m_Rotation == 1)
+				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * dt);
+			else if(cube.m_Rotation == 2)
+				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundZ((90.f * (3.1415f / 180.f)) * dt);
+		}
 
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
-		_ViewProjectionMatrix = _translationMatrix * _projectionMatrix;
-
+		_Camera.Update();
 		BindConstantBuffer(&_ViewProjection, 0);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; //associated with having semaphores
@@ -608,10 +626,6 @@ namespace Graphics
 
 		if( vkAllocateDescriptorSets( m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet ) != VK_SUCCESS )
 			assert( !"failed to allocate descriptor sets!" );
-
-
-		//if (vkAllocateDescriptorSets(m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet2) != VK_SUCCESS)
-		//	assert(!"failed to allocate descriptor sets!");
 	}
 
 	//_____________________________________________
@@ -629,19 +643,11 @@ namespace Graphics
 		VkPushConstantRange pcr0 = {};
 		pcr0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pcr0.offset = 0;
-		pcr0.size = sizeof(_worldMatrix);
+		pcr0.size = sizeof(Core::Matrix44f);
 
 		VkPushConstantRange pcra[] = {
 			pcr0,
 		};
-
-		int size = 0;
-		for (const VkPushConstantRange& el : pcra)
-		{
-			size += el.size;
-		}
-
-		assert(size < 128 && "Dangerous to exceed 128 byte on push constant range!");
 
 		pipelineCreateInfo.setLayoutCount = ARRSIZE(layouts);
 		pipelineCreateInfo.pSetLayouts = layouts;
@@ -693,39 +699,6 @@ namespace Graphics
 				assert( !"Failed to create framebuffer!" );
 		}
 	}
-
-	uint32 findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device )
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties( device, &memProperties );
-
-		for( uint32_t i = 0; i < memProperties.memoryTypeCount; i++ )
-		{
-			if( ( typeFilter & ( 1 << i ) ) && ( memProperties.memoryTypes[i].propertyFlags & propertyFlags ) == propertyFlags )
-			{
-				return i;
-			}
-		}
-		assert( !"Failed to find suitable memory type!" );
-		return 0;
-	}
-
-	/*void vkGraphicsDevice::CreateVertexBuffer()
-	{
-		const int32 _dataSize = sizeof( _triangle );
-
-		VkBufferCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		createInfo.size = _dataSize;
-		createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		void* data = nullptr;
-		if( vkMapMemory( m_LogicalDevice->GetDevice(), _vertexBufferMemory, 0, _dataSize, 0, &data ) != VK_SUCCESS )
-			assert( !"Failed to map memory!" );
-		memcpy( data, _triangle, _dataSize );
-		vkUnmapMemory( m_LogicalDevice->GetDevice(), _vertexBufferMemory );
-	}*/
 
 	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
 	{
@@ -859,19 +832,9 @@ namespace Graphics
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 
-		VkDeviceSize offsets = { 0 };
+		for (Cube& cube : _Cubes)
+			cube.Draw(commandBuffer, _pipelineLayout);
 
-
-		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_worldMatrix), &_worldMatrix);
-
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cube1._cubeBuffer, &offsets);
-		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
-
-
-		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_worldMatrix), &_worldMatrix2);
-
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &cube0._cubeBuffer, &offsets);
-		vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
