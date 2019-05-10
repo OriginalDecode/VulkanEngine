@@ -61,7 +61,7 @@ namespace Graphics
 
 		void SetupScissorArea();
 		void SetupViewport();
-		void CreateRenderPass();
+		VkRenderPass CreateRenderPass();
 		void CreateCommandPool();
 		void CreateCommandBuffer();
 		VkPipeline CreateGraphicsPipeline();
@@ -72,8 +72,8 @@ namespace Graphics
 
 		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount);
 		VkImageView CreateImageView(VkFormat format, VkImage image);
-		void CreateFramebuffers();
-
+		VkFramebuffer CreateFramebuffer(VkImageView view, int32 attachmentCount, const Window& window);
+	
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
 

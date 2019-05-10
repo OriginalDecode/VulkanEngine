@@ -275,9 +275,20 @@ namespace Graphics
 
 		CreateCommandPool();
 		CreateCommandBuffer();
-		CreateRenderPass();
+		_renderPass = CreateRenderPass();
 
-		CreateFramebuffers();
+		
+		m_FrameBuffers.resize(m_Swapchain->GetNofImages());
+		auto& list = m_Swapchain->GetImageList();
+		auto& viewList = m_Swapchain->GetImageViewList();
+		for (int i = 0; i < m_FrameBuffers.size(); i++)
+		{
+			viewList[i] = CreateImageView(m_Swapchain->GetFormat().format, list[i]);
+			m_FrameBuffers[i] = CreateFramebuffer(viewList[i], 1, window);
+		}
+		
+		//CreateFramebuffers();
+
 
 		LoadShader(&_vertexShader, "Data/Shaders/vertex.vert");
 		LoadShader(&_fragmentShader, "Data/Shaders/frag.frag");
@@ -416,7 +427,7 @@ namespace Graphics
 
 	//_____________________________________________
 
-	void vkGraphicsDevice::CreateRenderPass()
+	VkRenderPass vkGraphicsDevice::CreateRenderPass()
 	{
 
 		VkAttachmentDescription attDesc = {};
@@ -458,8 +469,11 @@ namespace Graphics
 		rpInfo.dependencyCount = 1;
 		rpInfo.pDependencies = &dependency;
 
-		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &_renderPass ) != VK_SUCCESS )
+		VkRenderPass renderpass;
+		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &renderpass) != VK_SUCCESS )
 			assert( !"Failed to create renderpass" );
+
+		return renderpass;
 	}
 	//_____________________________________________
 
@@ -706,28 +720,46 @@ namespace Graphics
 	}
 
 
-	void vkGraphicsDevice::CreateFramebuffers()
+	VkFramebuffer vkGraphicsDevice::CreateFramebuffer(VkImageView view, int32 attachmentCount, const Window& window)
 	{
-		m_FrameBuffers.resize( m_Swapchain->GetNofImages() );
-		auto& list = m_Swapchain->GetImageList();
-		auto& viewList = m_Swapchain->GetImageViewList();
-		for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
-		{
-			viewList[i] = CreateImageView(m_Swapchain->GetFormat().format, list[i]);
 
-			VkFramebufferCreateInfo fbInfo = {};
-			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fbInfo.renderPass = _renderPass;
-			fbInfo.attachmentCount = 1;
-			fbInfo.pAttachments = &viewList[i];
-			fbInfo.width = (uint32)_size.m_Width;
-			fbInfo.height = (uint32)_size.m_Height;
-			fbInfo.layers = 1;
+		VkFramebufferCreateInfo fbInfo = {};
+		fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		fbInfo.renderPass = _renderPass;
+		fbInfo.attachmentCount = attachmentCount;
+		fbInfo.pAttachments = &view;
+		fbInfo.width = (uint32)window.GetInnerSize().m_Width;
+		fbInfo.height = (uint32)window.GetInnerSize().m_Height;
+		fbInfo.layers = 1;
 
-			if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
-				assert( !"Failed to create framebuffer!" );
-		}
+		VkFramebuffer framebuffer;
+		if (vkCreateFramebuffer(m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &framebuffer) != VK_SUCCESS)
+			assert(!"Failed to create framebuffer!");
+		return framebuffer;
 	}
+
+
+
+	//void vkGraphicsDevice::CreateFramebuffers()
+	//{
+	//
+	//	for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
+	//	{
+	//		viewList[i] = CreateImageView(m_Swapchain->GetFormat().format, list[i]);
+
+	//		VkFramebufferCreateInfo fbInfo = {};
+	//		fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	//		fbInfo.renderPass = _renderPass;
+	//		fbInfo.attachmentCount = 1;
+	//		fbInfo.pAttachments = &viewList[i];
+	//		fbInfo.width = (uint32)_size.m_Width;
+	//		fbInfo.height = (uint32)_size.m_Height;
+	//		fbInfo.layers = 1;
+
+	//		if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
+	//			assert( !"Failed to create framebuffer!" );
+	//	}
+	//}
 
 	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
 	{
