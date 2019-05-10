@@ -22,7 +22,6 @@ VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
 VkRenderPass _renderPass = nullptr;
 
-std::vector<VkFramebuffer> m_FrameBuffers;
 VkPipeline _pipeline = nullptr;
 VkPipelineLayout _pipelineLayout = nullptr;
 VkViewport _Viewport = {};
@@ -285,9 +284,29 @@ namespace Graphics
 
 		SetupViewport();
 		SetupScissorArea();
-		CreateDescriptorLayout();
-		CreatePipelineLayout();
-		CreateGraphicsPipeline();
+
+
+		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.descriptorCount = 1;
+		VkDescriptorSetLayoutBinding bindings[] = {
+			uboLayoutBinding,
+		};
+
+		_descriptorLayout = CreateDescriptorLayout(bindings, ARRSIZE(bindings));
+
+		VkDescriptorSetLayout descriptorLayouts[] = {
+			_descriptorLayout,
+		};
+
+		VkPushConstantRange pushRangeList[] = {
+			{ VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f) },
+		};
+
+		_pipelineLayout = CreatePipelineLayout(descriptorLayouts, ARRSIZE(descriptorLayouts), pushRangeList, ARRSIZE(pushRangeList));
+		_pipeline = CreateGraphicsPipeline();
 
 		m_AcquireNextImageSemaphore = CreateVkSemaphore( m_LogicalDevice->GetDevice() );
 		m_DrawDone = CreateVkSemaphore( m_LogicalDevice->GetDevice() );
@@ -471,7 +490,7 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	void vkGraphicsDevice::CreateGraphicsPipeline()
+	VkPipeline vkGraphicsDevice::CreateGraphicsPipeline()
 	{
 		VkPipelineViewportStateCreateInfo vpCreateInfo = {};
 		vpCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -521,15 +540,16 @@ namespace Graphics
 		auto attrDesc = CreateAttrDesc( 0, 0 );
 		auto attrDesc2 = CreateAttrDesc( 1, 16 );
 
+		VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
 		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = 2;
+		vertexInputInfo.vertexBindingDescriptionCount = ARRSIZE(bindDescArr);
+		vertexInputInfo.vertexAttributeDescriptionCount = ARRSIZE(descriptions);
 
-		vertexInputInfo.pVertexBindingDescriptions = &bindDesc;
+		vertexInputInfo.pVertexBindingDescriptions = bindDescArr;
 		vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
 		CreateDescriptorPool();
@@ -581,32 +601,27 @@ namespace Graphics
 		pipelineInfo.pRasterizationState = &rastCreateInfo;
 		pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
+		
 		pipelineInfo.pStages = ssci;
 		pipelineInfo.stageCount = ARRSIZE( ssci );
 
-		if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline ) != VK_SUCCESS )
+		VkPipeline pipeline;
+		if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS )
 			assert( !"Failed to create pipeline!" );
+		return pipeline;
 	}
 
-	void vkGraphicsDevice::CreateDescriptorLayout()
+	VkDescriptorSetLayout vkGraphicsDevice::CreateDescriptorLayout(VkDescriptorSetLayoutBinding* descriptorBindings, int32 bindingCount)
 	{
-		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		
-		VkDescriptorSetLayoutBinding bindings[] = {
-			uboLayoutBinding,
-		};
-
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = ARRSIZE(bindings);
-		layoutInfo.pBindings = bindings;
-
-		if( vkCreateDescriptorSetLayout( m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &_descriptorLayout ) != VK_SUCCESS )
+		layoutInfo.bindingCount = bindingCount;
+		layoutInfo.pBindings = descriptorBindings;
+		VkDescriptorSetLayout descriptorLayout;
+		if( vkCreateDescriptorSetLayout( m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &descriptorLayout) != VK_SUCCESS )
 			assert( !"Failed to create Descriptor layout" );
+
+		return descriptorLayout;
 	}
 
 	void vkGraphicsDevice::CreateDescriptorPool()
@@ -646,33 +661,22 @@ namespace Graphics
 
 	//_____________________________________________
 
-	void vkGraphicsDevice::CreatePipelineLayout()
+	VkPipelineLayout vkGraphicsDevice::CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount)
 	{
+		
 		VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-		VkDescriptorSetLayout layouts[] = {
-			_descriptorLayout,
-		};
+		pipelineCreateInfo.setLayoutCount = descriptorLayoutCount;
+		pipelineCreateInfo.pSetLayouts = descriptorLayouts;
 
+		pipelineCreateInfo.pushConstantRangeCount = pushConstantRangeCount;
+		pipelineCreateInfo.pPushConstantRanges = pushConstantRange;
 
-		VkPushConstantRange pcr0 = {};
-		pcr0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		pcr0.offset = 0;
-		pcr0.size = sizeof(Core::Matrix44f);
-
-		VkPushConstantRange pcra[] = {
-			pcr0,
-		};
-
-		pipelineCreateInfo.setLayoutCount = ARRSIZE(layouts);
-		pipelineCreateInfo.pSetLayouts = layouts;
-
-		pipelineCreateInfo.pushConstantRangeCount = ARRSIZE(pcra);
-		pipelineCreateInfo.pPushConstantRanges = pcra;
-
-		if( vkCreatePipelineLayout( m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &_pipelineLayout ) != VK_SUCCESS )
+		VkPipelineLayout pipeline;
+		if( vkCreatePipelineLayout( m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS )
 			assert( !"Failed to create pipelineLayout" );
+		return pipeline;
 	}
 	//_____________________________________________
 
@@ -764,11 +768,9 @@ namespace Graphics
 		return shaderModule;
 	}
 
-	void vkGraphicsDevice::LoadShader(void* shader, const char* filepath)
+	void vkGraphicsDevice::LoadShader(Shader* shader, const char* filepath)
 	{
-		Shader* s = static_cast<Shader*>(shader);
-		s->Create(LoadShader(filepath, m_LogicalDevice->GetDevice()));
-
+		shader->Create(LoadShader(filepath, m_LogicalDevice->GetDevice()));
 	}
 
 	void vkGraphicsDevice::BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset)

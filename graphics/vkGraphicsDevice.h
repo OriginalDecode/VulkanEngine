@@ -37,7 +37,7 @@ namespace Graphics
 		virtual void CreateConstantBuffer(ConstantBuffer* constantBuffer) override;
 		virtual void DestroyConstantBuffer(ConstantBuffer* constantBuffer) override;
 
-		void LoadShader(void* shader, const char* filepath);
+		void LoadShader(struct Shader* shader, const char* filepath);
 		void DestroyShader(struct Shader* pShader);
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;
@@ -54,6 +54,8 @@ namespace Graphics
 		VkFence m_CommandFence = nullptr;
 		VkFence m_FrameFence[2]{ nullptr, nullptr };
 		uint32 m_Index = 0;
+		std::vector<VkFramebuffer> m_FrameBuffers;
+
 
 		void SetupRenderCommands(int index);
 
@@ -62,13 +64,13 @@ namespace Graphics
 		void CreateRenderPass();
 		void CreateCommandPool();
 		void CreateCommandBuffer();
-		void CreateGraphicsPipeline();
+		VkPipeline CreateGraphicsPipeline();
 
-		void CreateDescriptorLayout();
+		VkDescriptorSetLayout CreateDescriptorLayout(VkDescriptorSetLayoutBinding* descriptorBindings, int32 bindingCount);
 		void CreateDescriptorPool();
 		void CreateDescriptorSet();
 
-		void CreatePipelineLayout();
+		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount);
 		void CreateFramebuffers();
 		//void CreateVertexBuffer();
 		VkVertexInputBindingDescription CreateBindDesc();
@@ -77,7 +79,6 @@ namespace Graphics
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
 
-		
 
 	};
 
