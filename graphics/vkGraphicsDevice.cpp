@@ -680,6 +680,32 @@ namespace Graphics
 	}
 	//_____________________________________________
 
+
+	VkImageView vkGraphicsDevice::CreateImageView(VkFormat format, VkImage image)
+	{
+		VkImageViewCreateInfo vcInfo = {};
+		vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		vcInfo.image = image;
+		vcInfo.format = format;
+		vcInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		vcInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY,
+			VK_COMPONENT_SWIZZLE_IDENTITY };
+		VkImageSubresourceRange& srr = vcInfo.subresourceRange;
+		srr.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		srr.baseMipLevel = 0;
+		srr.levelCount = 1;
+		srr.baseArrayLayer = 0;
+		srr.layerCount = 1;
+		VkImageView view;
+		if (vkCreateImageView(m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &view) != VK_SUCCESS)
+			assert(!"Failed to create ImageView!");
+
+		return view;
+	}
+
+
 	void vkGraphicsDevice::CreateFramebuffers()
 	{
 		m_FrameBuffers.resize( m_Swapchain->GetNofImages() );
@@ -687,24 +713,7 @@ namespace Graphics
 		auto& viewList = m_Swapchain->GetImageViewList();
 		for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
 		{
-			VkImageViewCreateInfo vcInfo = {};
-			vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			vcInfo.image = list[i];
-			vcInfo.format = m_Swapchain->GetFormat().format;
-			vcInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			vcInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY,
-								  VK_COMPONENT_SWIZZLE_IDENTITY,
-								  VK_COMPONENT_SWIZZLE_IDENTITY,
-								  VK_COMPONENT_SWIZZLE_IDENTITY };
-			VkImageSubresourceRange& srr = vcInfo.subresourceRange;
-			srr.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			srr.baseMipLevel = 0;
-			srr.levelCount = 1;
-			srr.baseArrayLayer = 0;
-			srr.layerCount = 1;
-
-			if( vkCreateImageView( m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &viewList[i] ) != VK_SUCCESS )
-				assert( !"Failed to create ImageView!" );
+			viewList[i] = CreateImageView(m_Swapchain->GetFormat().format, list[i]);
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

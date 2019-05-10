@@ -71,8 +71,9 @@ namespace Graphics
 		void CreateDescriptorSet();
 
 		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount);
+		VkImageView CreateImageView(VkFormat format, VkImage image);
 		void CreateFramebuffers();
-		//void CreateVertexBuffer();
+
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
 
