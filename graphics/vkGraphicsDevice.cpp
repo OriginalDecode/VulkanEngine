@@ -155,49 +155,68 @@ namespace Graphics
 	}
 	// to here
 
-	struct Cube
+	struct GPUBuffer
 	{
 		VkBuffer m_Buffer;
-		VkDeviceMemory m_BufferMemory;
+		VkDeviceMemory m_Memory;
+	};
 
-		int m_Rotation = 0;
+	struct VertexBuffer
+	{
+		GPUBuffer m_VertexBuffer;
+		int32 m_VertexCount = 0;
+		int32 m_Stride = 0;
+		int32 m_Offset = 0;
+	};
 
+
+	struct Cube
+	{
+		VertexBuffer m_VertexBuffer;
 		Core::Matrix44f m_Orientation;
 
 		void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 		{
-			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f), &m_Orientation);
-			VkDeviceSize offset[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_Buffer, offset);
-			vkCmdDraw(commandBuffer, ARRSIZE(_cube), 1, 0, 0);
+			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f), &m_Orientation); /* This is quite a strange one, this is only gonna be available in non-instanced entities for position */
+			
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.m_VertexBuffer.m_Buffer, &offset);
+			vkCmdDraw(commandBuffer, m_VertexBuffer.m_VertexCount, 1, 0, 0);
 		}
 
 		void destroy(VkDevice device)
 		{
-			vkDestroyBuffer(device, m_Buffer, nullptr);
+			vkDestroyBuffer(device, m_VertexBuffer.m_VertexBuffer.m_Buffer, nullptr);
 		}
 
 		void init(VkDevice device, VkPhysicalDevice physicalDevice)
 		{
 			m_Orientation = Core::Matrix44f::Identity();
-			const int32 _dataSize = sizeof(_cube);
+			m_VertexBuffer.m_Stride = sizeof(Vertex);
+			m_VertexBuffer.m_VertexCount = ARRSIZE(_cube);
+			m_VertexBuffer.m_Offset = 0;
 
-			m_Rotation = Core::Rand<int>(0, 2);
-
+			const int32 dataSize = m_VertexBuffer.m_Stride * m_VertexBuffer.m_VertexCount;
 
 			VkBufferCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			createInfo.size = _dataSize;
+			createInfo.size = dataSize;
 			createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			CreateBuffer(createInfo, &m_Buffer, &m_BufferMemory, device, physicalDevice);
+			VkDeviceMemory deviceMem;
+			VkBuffer buffer;
+
+			CreateBuffer(createInfo, &buffer, &deviceMem, device, physicalDevice);
+
+			m_VertexBuffer.m_VertexBuffer.m_Buffer = buffer;
+			m_VertexBuffer.m_VertexBuffer.m_Memory = deviceMem;
 
 			void* data = nullptr;
-			if (vkMapMemory(device, m_BufferMemory, 0, _dataSize, 0, &data) != VK_SUCCESS)
+			if (vkMapMemory(device, deviceMem, 0, dataSize, 0, &data) != VK_SUCCESS)
 				assert(!"Failed to map memory!");
-			memcpy(data, _cube, _dataSize);
-			vkUnmapMemory(device, m_BufferMemory);
+			memcpy(data, _cube, dataSize);
+			vkUnmapMemory(device, deviceMem);
 		}
 
 		void setPosition(const Core::Vector4f &position)
@@ -376,16 +395,6 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
-		for (Cube& cube : _Cubes)
-		{
-			if (cube.m_Rotation == 0)
-				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundX((90.f * (3.1415f / 180.f)) * dt);
-			else if (cube.m_Rotation == 1)
-				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundY((90.f * (3.1415f / 180.f)) * dt);
-			else if(cube.m_Rotation == 2)
-				cube.m_Orientation = cube.m_Orientation * Core::Matrix44f::CreateRotateAroundZ((90.f * (3.1415f / 180.f)) * dt);
-		}
-
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
@@ -737,29 +746,6 @@ namespace Graphics
 			assert(!"Failed to create framebuffer!");
 		return framebuffer;
 	}
-
-
-
-	//void vkGraphicsDevice::CreateFramebuffers()
-	//{
-	//
-	//	for( size_t i = 0; i < m_Swapchain->GetNofImages(); ++i )
-	//	{
-	//		viewList[i] = CreateImageView(m_Swapchain->GetFormat().format, list[i]);
-
-	//		VkFramebufferCreateInfo fbInfo = {};
-	//		fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	//		fbInfo.renderPass = _renderPass;
-	//		fbInfo.attachmentCount = 1;
-	//		fbInfo.pAttachments = &viewList[i];
-	//		fbInfo.width = (uint32)_size.m_Width;
-	//		fbInfo.height = (uint32)_size.m_Height;
-	//		fbInfo.layers = 1;
-
-	//		if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &m_FrameBuffers[i] ) != VK_SUCCESS )
-	//			assert( !"Failed to create framebuffer!" );
-	//	}
-	//}
 
 	VkVertexInputBindingDescription vkGraphicsDevice::CreateBindDesc()
 	{
