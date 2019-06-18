@@ -11,7 +11,7 @@ IndentWidth: 4
 BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: 'false'
 BreakConstructorInitializersBeforeComma: 'false'
-ColumnLimit: 0
+ColumnLimit: 120
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'false'
 Cpp11BracedListStyle: 'false'
 IndentCaseLabels: 'true'

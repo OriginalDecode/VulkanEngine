@@ -18,7 +18,6 @@ namespace Graphics
 
 	GraphicsEngine::GraphicsEngine()
 	{
-
 	}
 
 	void GraphicsEngine::Create()
@@ -31,22 +30,21 @@ namespace Graphics
 		return *m_Instance;
 	}
 
-	bool GraphicsEngine::Init(const Window& window)
+	bool GraphicsEngine::Init( const Window& window )
 	{
 		m_Device = std::make_unique<vkGraphicsDevice>();
-		if (!m_Device->Init(window))
+
+		if( !m_Device->Init( window ) )
 		{
 			return false;
 		}
-		
+
 		return true;
 	}
 
-	void GraphicsEngine::Present(float dt)
+	void GraphicsEngine::Present( float dt )
 	{
-		//BeginFrame();
-		m_Device->DrawFrame(dt);
-
+		m_Device->DrawFrame( dt );
 	}
 
 	void GraphicsEngine::BeginFrame()
@@ -55,7 +53,6 @@ namespace Graphics
 
 	GraphicsEngine::~GraphicsEngine()
 	{
-
 	}
 
 }; // namespace Graphics

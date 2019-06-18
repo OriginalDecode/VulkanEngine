@@ -289,16 +289,16 @@ namespace Core
 	template<typename T>
 	Matrix44<T> Matrix44<T>::CreateRotateAroundY(const float rad)
 	{
-		const T cosValue = cosf(rad);
-		const T sinValue = sinf(rad);
+		const T cos = cosf(rad);
+		const T sin = sinf(rad);
 
 		Matrix44<T> matrix = Matrix44<T>::Identity();
 
-		matrix.m_Matrix[0] = cosValue;
-		matrix.m_Matrix[2] = -sinValue;
+		matrix.m_Matrix[0] = cos;
+		matrix.m_Matrix[2] = -sin;
 
-		matrix.m_Matrix[8] = sinValue;
-		matrix.m_Matrix[10] = cosValue;
+		matrix.m_Matrix[8] = sin;
+		matrix.m_Matrix[10] = cos;
 
 		return matrix;
 	}
