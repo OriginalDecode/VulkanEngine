@@ -123,4 +123,9 @@ end
 
         files { "core/**.cpp", "core/**.h" }
 
+    project "Input"
+        kind "StaticLib"
+        location("./input")
+        files{"input/*.cpp", "input/*.h"}
+        dependson{"Core"}
     
