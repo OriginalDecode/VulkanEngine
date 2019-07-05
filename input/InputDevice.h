@@ -1,5 +1,8 @@
 #pragma once
+
+#include <Core/Defines.h>
 #include <Core/Types.h>
+
 #ifdef _WIN32
 #pragma comment( lib, "dinput8.lib" )
 #pragma comment( lib, "dxguid.lib" )
@@ -29,6 +32,13 @@ namespace Input
 		EDeviceType_Keyboard,
 		EDeviceType_Mouse,
 		EDeviceType_Gamepad
+	};
+
+	struct Cursor
+	{
+		float x, dx;
+		float y, dy;
+		float z, dz;
 	};
 
 	class IInputDevice

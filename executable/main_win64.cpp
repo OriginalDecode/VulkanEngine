@@ -6,6 +6,7 @@
 #include <graphics/GraphicsEngine.h>
 #include <core/Timer.h>
 #include <memory>
+#include <input/InputManager.h>
 
 LRESULT CALLBACK WindowProc( HWND, UINT, WPARAM, LPARAM );
 bool gameRunning = true; //we'll need this in the WindowProc
@@ -24,6 +25,10 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
     if( !graphics_engine.Init( *window ) )
         return 1;
+
+
+	Input::InputManager& input = Input::InputManager::Get();
+	input.Initialize( window->GetHandle(), instance );
 
 	Core::Timer timer;
 	timer.Start();
@@ -48,10 +53,12 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
             gameRunning = false;
             break;
         }
-
+		input.Update();
         graphics_engine.Present(timer.GetTime());
 
     } while( gameRunning );
+
+	input.Destroy();
 
     return 0;
 }

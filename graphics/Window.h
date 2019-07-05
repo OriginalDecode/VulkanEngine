@@ -32,7 +32,7 @@ public:
 			, m_WindowProcess(window_proc)
 		{
 		}
-		_HInstance_ m_InstanceHandle = nullptr;
+		HInstance m_InstanceHandle = nullptr;
 		void* m_WindowProcess;
 #endif
 		Size m_Size;
@@ -52,10 +52,11 @@ public:
 
 	
 	HWindow GetHandle() const { return m_WindowHandle; }
-	_HInstance_ GetInstance() const { return m_Instance; }
+	HInstance GetInstance() const { return m_Instance; }
+
 private:
 	HWindow m_WindowHandle;
-	_HInstance_ m_Instance;
+	HInstance m_Instance;
 
 	bool m_WindowIsActive = false;
 	bool m_IsFullScreen = false;

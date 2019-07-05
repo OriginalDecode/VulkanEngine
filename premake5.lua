@@ -88,7 +88,7 @@ if _OPTIONS["project"] ~= nil then
             location ("./executable")
 
             dependson { "Core", "Graphics" }
-            links { "Graphics", "Core" } --libraries to link
+            links { "Graphics", "Core", "Input" } --libraries to link
 
             files { "executable/*.cpp" }
     elseif _OPTIONS["project"] == "unit_test" then
@@ -98,7 +98,7 @@ if _OPTIONS["project"] ~= nil then
             location ("./unit_test")
 
             dependson { "Core", "Graphics" }
-            links { "Graphics", "Core", "gtest_%{cfg.buildcfg}" } --libraries to link
+            links { "Graphics", "Core", "Input" ,"gtest_%{cfg.buildcfg}" } --libraries to link
 
             files { "unit_test/*.cpp" }
     end
@@ -120,7 +120,6 @@ end
     project "Core"
         kind "StaticLib"
         location ("./core")
-
         files { "core/**.cpp", "core/**.h" }
 
     project "Input"
@@ -128,4 +127,11 @@ end
         location("./input")
         files{"input/*.cpp", "input/*.h"}
         dependson{"Core"}
+        links { "Core" }
     
+    project "Game"
+        kind "StaticLib"
+        location("./game")
+        files{"game/*.cpp", "game/*.h"}
+        dependson{"Core", "Input"}
+        links { "Core", "Input"}

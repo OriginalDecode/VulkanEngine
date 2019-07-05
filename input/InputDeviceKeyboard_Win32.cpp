@@ -4,7 +4,7 @@
 
 namespace Input
 {
-	InputDeviceKeyboard_Win32::InputDeviceKeyboard_Win32( HWND window_handle, HINSTANCE instance_handle )
+	InputDeviceKeyboard_Win32::InputDeviceKeyboard_Win32( HWindow window_handle, HInstance instance_handle )
 	{
 		m_DeviceType = EDeviceType_Keyboard;
 
@@ -47,29 +47,23 @@ namespace Input
 		m_Input = nullptr;
 	}
 
-	bool InputDeviceKeyboard_Win32::OnDown() const 
-	{ 
-		return false; 
-	}
+	bool InputDeviceKeyboard_Win32::OnDown() const { return false; }
 
 	bool InputDeviceKeyboard_Win32::OnRelease() const { return false; }
 
 	bool InputDeviceKeyboard_Win32::IsDown() const { return false; }
 
-	bool InputDeviceKeyboard_Win32::OnDown(uint8 vkey) const
+	bool InputDeviceKeyboard_Win32::OnDown( uint8 vkey ) const
 	{
-		return ((m_State[vkey] & 0x80) != 0) && ((m_PrevState[vkey] & 0x80) == 0);
+		return ( ( m_State[vkey] & 0x80 ) != 0 ) && ( ( m_PrevState[vkey] & 0x80 ) == 0 );
 	}
 
-	bool InputDeviceKeyboard_Win32::OnRelease(uint8 vkey) const 
-	{ 
-		return ((m_State[vkey] & 0x80) == 0) && ((m_PrevState[vkey] & 0x80) != 0);
+	bool InputDeviceKeyboard_Win32::OnRelease( uint8 vkey ) const
+	{
+		return ( ( m_State[vkey] & 0x80 ) == 0 ) && ( ( m_PrevState[vkey] & 0x80 ) != 0 );
 	}
 
-	bool InputDeviceKeyboard_Win32::IsDown(uint8 vkey) const 
-	{ 
-		return ((m_State[vkey] & 0x80) != 0);
-	}
+	bool InputDeviceKeyboard_Win32::IsDown( uint8 vkey ) const { return ( ( m_State[vkey] & 0x80 ) != 0 ); }
 
 	void InputDeviceKeyboard_Win32::Update()
 	{
