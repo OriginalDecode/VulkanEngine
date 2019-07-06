@@ -22,6 +22,8 @@ namespace Input
 
 		void Update() override;
 
+		const Cursor& GetCursor() const { return m_Cursor; }
+
 	private:
 		void Release() override;
 		Cursor m_Cursor;

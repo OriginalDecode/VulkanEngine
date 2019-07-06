@@ -17,6 +17,8 @@
 #include <vulkan/vulkan_win32.h>
 #include "Core/utilities/Randomizer.h"
 #include "Camera.h"
+#include "Input/InputManager.h"
+#include "input/InputDeviceMouse_Win32.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -388,11 +390,21 @@ namespace Graphics
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			assert( !"Failed to acquire next image!" );
 
+		Input::HInputDeviceMouse* mouse =
+			static_cast<Input::HInputDeviceMouse*>( Input::InputManager::Get().GetDevice( Input::EDeviceType_Mouse ) );
+		const Input::Cursor& cursor = mouse->GetCursor();
+
+		if( mouse->IsDown( 1 ) )
+		{
+			_Camera.OrientCamera( { cursor.dx, cursor.dy } );
+		}
+
 		_Camera.Update();
 		BindConstantBuffer( &_ViewProjection, 0 );
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
-																									 // having semaphores
+																									 // having
+																									 // semaphores
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pWaitDstStageMask = &waitDstStageMask;

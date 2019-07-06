@@ -1,31 +1,60 @@
 #include "Camera.h"
 
-
 namespace Graphics
 {
-	void Graphics::Camera::InitOrthographicProjection(float width, float height, float near_plane, float far_plane)
+	void Camera::InitOrthographicProjection( float width, float height, float near_plane, float far_plane )
 	{
-		m_ProjectionMatrix = Core::Matrix44f::CreateOrthogonalMatrixLH(width,height, near_plane, far_plane);
+		m_ProjectionMatrix = Core::Matrix44f::CreateOrthogonalMatrixLH( width, height, near_plane, far_plane );
 	}
 
-	void Graphics::Camera::InitOrthogonalProjection(float width, float height, float near_plane, float far_plane)
+	void Camera::InitOrthogonalProjection( float width, float height, float near_plane, float far_plane )
 	{
-		m_ProjectionMatrix = Core::Matrix44f::CreateOrthogonalMatrixLH(width, height, near_plane, far_plane);
+		m_ProjectionMatrix = Core::Matrix44f::CreateOrthogonalMatrixLH( width, height, near_plane, far_plane );
 	}
 
-	void Graphics::Camera::InitPerspectiveProjection(float width, float height, float near_plane, float far_plane, float fov)
+	void Camera::InitPerspectiveProjection( float width, float height, float near_plane, float far_plane, float fov )
 	{
-		m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(near_plane, far_plane, height / width, fov * 3.1415f / 180.f);
+		m_ProjectionMatrix =
+			Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, height / width, fov * 3.1415f / 180.f );
 	}
 
-	void Graphics::Camera::Update() // called once per frame
+	void Camera::Update() // called once per frame
 	{
-		m_ViewProjection = Core::Matrix44f::Inverse(m_ViewMatrix) * m_ProjectionMatrix;
+		m_ViewProjection = Core::Matrix44f::Inverse( m_ViewMatrix ) * m_ProjectionMatrix;
 	}
 
-	Core::Matrix44f* Camera::GetViewProjectionPointer()
+	Core::Matrix44f* Camera::GetViewProjectionPointer() { return &m_ViewProjection; }
+
+	void Camera::OrientCamera( const Core::Vector2f& cursor_pos )
 	{
-		return &m_ViewProjection;
+		m_CenterPoint += cursor_pos * 0.005f;
+		// m_CenterPoint.y = fmaxf( fminf( 1.57f, m_CenterPoint.y ), -1.57f ); // limit the view up / down angle to not
+		// do a 360 rotation.
+
+		m_Pitch = Core::Quaternion( Core::Vector3f( 1.f, 0, 0 ), m_CenterPoint.y );
+		m_Yaw = Core::Quaternion( Core::Vector3f( 0, 1.f, 0 ), m_CenterPoint.x );
+
+		Core::Vector3f axisX( 1.f, 0, 0 );
+		Core::Vector3f axisY( 0, 1.f, 0 );
+		Core::Vector3f axisZ( 0, 0, 1.f );
+
+		axisX = m_Yaw * m_Pitch * axisX;
+		axisY = m_Yaw * m_Pitch * axisY;
+		axisZ = m_Yaw * m_Pitch * axisZ;
+
+		// m_Rotation2 = m_Rotation;
+
+		m_ViewMatrix[0] = axisX.x;
+		m_ViewMatrix[1] = axisX.y;
+		m_ViewMatrix[2] = axisX.z;
+
+		m_ViewMatrix[4] = axisY.x;
+		m_ViewMatrix[5] = axisY.y;
+		m_ViewMatrix[6] = axisY.z;
+
+		m_ViewMatrix[8] = axisZ.x;
+		m_ViewMatrix[9] = axisZ.y;
+		m_ViewMatrix[10] = axisZ.z;
 	}
 
-};
+}; // namespace Graphics
