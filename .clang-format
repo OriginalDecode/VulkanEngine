@@ -6,6 +6,7 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
 AlignTrailingComments: 'true'
+AlwaysBreakTemplateDeclarations: 'true'
 AccessModifierOffset: -4
 BreakConstructorInitializers: BeforeComma
 BreakBeforeBraces: Allman

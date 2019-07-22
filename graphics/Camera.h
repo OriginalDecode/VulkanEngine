@@ -20,6 +20,10 @@ namespace Graphics
 
 		void OrientCamera( const Core::Vector2f& cursor_pos );
 
+		void Forward( float distance );
+		void Right( float distance );
+		void Up( float distance );
+
 	private:
 		Core::Matrix44f m_ProjectionMatrix = Core::Matrix44f::Identity();
 		Core::Matrix44f m_ViewMatrix = Core::Matrix44f::Identity();

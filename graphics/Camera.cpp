@@ -14,8 +14,8 @@ namespace Graphics
 
 	void Camera::InitPerspectiveProjection( float width, float height, float near_plane, float far_plane, float fov )
 	{
-		m_ProjectionMatrix =
-			Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, height / width, fov * 3.1415f / 180.f );
+		m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, height / width,
+																		fov * ( 3.1415f / 180.f ) );
 	}
 
 	void Camera::Update() // called once per frame
@@ -55,6 +55,21 @@ namespace Graphics
 		m_ViewMatrix[8] = axisZ.x;
 		m_ViewMatrix[9] = axisZ.y;
 		m_ViewMatrix[10] = axisZ.z;
+	}
+
+	void Camera::Forward( float distance )
+	{
+		m_ViewMatrix.SetTranslation( m_ViewMatrix.GetTranslation() + ( m_ViewMatrix.GetForward() * distance ) );
+	}
+
+	void Camera::Right( float distance )
+	{
+		m_ViewMatrix.SetTranslation( m_ViewMatrix.GetTranslation() + ( m_ViewMatrix.GetRight() * distance ) );
+	}
+
+	void Camera::Up( float distance )
+	{
+		m_ViewMatrix.SetTranslation( m_ViewMatrix.GetTranslation() + ( m_ViewMatrix.GetUp() * distance ) );
 	}
 
 }; // namespace Graphics
