@@ -87,8 +87,8 @@ if _OPTIONS["project"] ~= nil then
             kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
             location ("./executable")
 
-            dependson { "Core", "Graphics" }
-            links { "Graphics", "Core", "Input" } --libraries to link
+            dependson { "Core", "Graphics", "Input", "Logger" }
+            links { "Graphics", "Core", "Input", "Logger" } --libraries to link
 
             files { "executable/*.cpp" }
     elseif _OPTIONS["project"] == "unit_test" then
@@ -135,3 +135,11 @@ end
         files{"game/*.cpp", "game/*.h"}
         dependson{"Core", "Input"}
         links { "Core", "Input"}
+
+    project "Logger"
+        kind "StaticLib"
+        location("./logger")
+        links { "Core" }
+        dependson { "Core" }
+        files{"logger/**.cpp", "logger/**.h", "logger/**.hpp", "logger/**.c"}
+            

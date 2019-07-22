@@ -1,0 +1,184 @@
+#include "Debug.h"
+#include <cassert>
+#include <cstdarg>
+//#include <cstdio>
+#include <sstream>
+#include <ctime>
+#include "StackWalker.h"
+#include <sys/types.h>
+#include <sys/timeb.h>
+#ifdef RELEASE_BUILD
+#include <ShlObj.h>
+#endif
+
+namespace Log
+{
+
+	Debug* Debug::m_Instance = nullptr;
+
+	void Debug::Create()
+	{
+#ifndef RELEASE_BUILD
+		assert( !m_Instance && "Debugobject already created" );
+		m_Instance = new Debug();
+		if( !m_Instance )
+		{
+			assert( !"no instance" );
+			return;
+		}
+
+		time_t now = time( 0 );
+		struct tm tstruct;
+		char buf[30];
+		localtime_s( &tstruct, &now );
+
+		strftime( buf, sizeof( buf ), "%Y-%m-%d_%H_%M_%S", &tstruct );
+
+		std::string logFolder = "log\\";
+		CreateDirectory( L"log", NULL );
+		std::stringstream ss;
+		ss << logFolder << buf << "_log.txt";
+		m_Instance->m_Stream.open( ss.str().c_str() );
+#else
+		aFile;
+#endif
+	}
+
+	void Debug::Destroy()
+	{
+		m_Instance->m_Stream.close();
+		delete m_Instance;
+		m_Instance = nullptr;
+	}
+
+	Debug* Debug::GetInstance() { return m_Instance; }
+
+	void Debug::WriteLog( const char* fmt, ... )
+	{
+		// Get time and store as string in buf
+		time_t now = time( 0 );
+		struct tm tstruct;
+		char buf[30];
+		localtime_s( &tstruct, &now );
+
+		strftime( buf, sizeof( buf ), "%H:%M:%S:", &tstruct );
+
+		// Get Miliseconds and store in tStructMilli
+		struct _timeb tstructMilli;
+		char bufMilli[128];
+
+		_strtime_s( bufMilli );
+		_ftime_s( &tstructMilli );
+
+		// Get VA_ARGS and store as string in buffer
+		char buffer[4096];
+		va_list args;
+		va_start( args, fmt );
+		vsprintf_s( buffer, fmt, args );
+		perror( buffer );
+		va_end( args );
+
+		// Merge time and VA_ARGS into string and print to log-file
+		std::stringstream ss;
+		ss << "[" << buf << tstructMilli.millitm << "] " << buffer;
+
+		m_Instance->m_Stream << ss.str().c_str() << std::endl;
+		m_Instance->m_Stream.flush();
+	}
+
+	void Debug::PrintMessageVA( const char* fmt, ... )
+	{
+		char buffer[1024];
+		va_list args;
+		va_start( args, fmt );
+		vsprintf_s( buffer, fmt, args );
+		perror( buffer );
+		va_end( args );
+
+		m_Instance->m_Stream << buffer << std::endl;
+		m_Instance->m_Stream.flush();
+	}
+
+	void Debug::AssertMessage( bool expr, const char* fileName, int line, const char* fncName, const char* str )
+	{
+		if( expr == false )
+		{
+			AssertMessage( fileName, line, fncName, str );
+		}
+	}
+
+	void Debug::AssertMessageVA( const char* fileName, int line, const char* fncName, const char* fmt, ... )
+	{
+		char buffer[1024];
+		va_list args;
+		va_start( args, fmt );
+		vsprintf_s( buffer, fmt, args );
+		perror( buffer );
+		va_end( args );
+
+		AssertMessage( fileName, line, fncName, buffer );
+	}
+
+	void Debug::AssertMessage( bool expr, const char* fileName, int line, const char* fncName, const std::string& str )
+	{
+		AssertMessage( expr, fileName, line, fncName, str.c_str() );
+	}
+
+	void Debug::AssertMessage( const char* fileName, int line, const char* fncName, const std::string& str )
+	{
+		std::stringstream ss;
+		ss << std::endl
+		   << std::endl
+		   << "Error message: " << str << std::endl
+		   << std::endl
+		   << "File: " << fileName << std::endl
+		   << "Line: " << line << std::endl
+		   << "Function: " << fncName << std::endl
+		   << std::endl;
+
+		m_Instance->m_Stream << ss.str().c_str();
+		m_Instance->m_Stream << std::endl << std::endl << "Callstack" << std::endl;
+
+		StackWalker sw;
+		sw.ShowCallstack();
+		m_Instance->m_Stream.flush();
+
+		const size_t cSize = strlen( ss.str().c_str() ) + 1;
+		wchar_t* wc = new wchar_t[cSize];
+		size_t tempSize;
+		mbstowcs_s( &tempSize, wc, cSize, ss.str().c_str(), cSize );
+
+		//_wassert(wc, 0, line);
+
+		_wassert( wc, _CRT_WIDE( __FILE__ ), __LINE__ );
+		delete[] wc;
+	}
+
+	void Debug::DebugMessage( const char* fileName, int line, const char* fncName, const char* fmt, ... )
+	{
+		m_Instance->m_Stream << std::endl
+							 << "File: " << fileName << std::endl
+							 << "Line: " << line << std::endl
+							 << "Function: " << fncName << std::endl;
+		char buffer[1024];
+		va_list args;
+		va_start( args, fmt );
+		vsprintf_s( buffer, fmt, args );
+		perror( buffer );
+		va_end( args );
+
+		m_Instance->m_Stream << buffer << std::endl;
+		m_Instance->m_Stream.flush();
+	}
+
+	void Debug::ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type )
+	{
+		// std::string msg = "[";
+		// msg += aTitle;
+		// msg += "] ";
+		// msg += aText;
+		// DL_PRINT(msg.c_str());
+		// MessageBox( hwnd, text, title, type );
+	}
+
+}; // namespace Log
