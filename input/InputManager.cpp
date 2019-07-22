@@ -25,26 +25,6 @@ namespace Input
 
 	void InputManager::AddDevice( IInputDevice* input_device ) { m_Devices.push_back( input_device ); }
 
-	IInputDevice* InputManager::GetDevice( EDeviceType deviceType )
-	{
-
-		assert( deviceType != EDeviceType_Gamepad && "No implementation for getting a gamepad yet. Need to retrieve a "
-													 "list of multiple devices to be able to retrieve this" );
-
-		if( deviceType != EDeviceType_Gamepad )
-		{
-			for( auto& device : m_Devices )
-			{
-				if( device->GetType() == deviceType )
-				{
-					return device;
-				}
-			}
-		}
-
-		return nullptr;
-	}
-
 	InputManager& InputManager::Get()
 	{
 		if( !m_Instance )
