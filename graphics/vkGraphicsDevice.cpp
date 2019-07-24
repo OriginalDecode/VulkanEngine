@@ -274,6 +274,7 @@ namespace Graphics
 	{
 		_size = window.GetInnerSize();
 		_Camera.InitPerspectiveProjection( _size.m_Width, _size.m_Height, 0.1f, 1000000.f, 90.f );
+		_Camera.SetTranslation( { 0.f, 0.f, -25.f, 1.f } );
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -339,7 +340,7 @@ namespace Graphics
 
 		const float xValue = -22.f;
 		const float yValue = -12.f;
-		const float zValue = 25.f;
+		const float zValue = 0.f;
 		Core::Vector4f position{ xValue, yValue, zValue };
 
 		for( int i = 0; i < 128; i++ )
@@ -389,7 +390,6 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
-		LOG_MESSAGE( "Draw Frame Started!" );
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX,
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			ASSERT( false, "Failed to acquire next image!" );
@@ -401,31 +401,32 @@ namespace Graphics
 
 		Input::HInputDeviceKeyboard* keyboard = nullptr;
 		Input::InputManager::Get().GetDevice( Input::EDeviceType_Keyboard, &keyboard );
+		const float speed = 10.f;
 
 		if( keyboard->IsDown( DIK_W ) )
 		{
-			_Camera.Forward( -1.f * dt );
+			_Camera.Forward( speed * dt );
 		}
 
 		if( keyboard->IsDown( DIK_S ) )
 		{
-			_Camera.Forward( 1.f * dt );
+			_Camera.Forward( -speed * dt );
 		}
 		if( keyboard->IsDown( DIK_D ) )
 		{
-			_Camera.Right( 1.f * dt );
+			_Camera.Right( -speed * dt );
 		}
 		if( keyboard->IsDown( DIK_A ) )
 		{
-			_Camera.Right( -1.f * dt );
+			_Camera.Right( speed * dt );
 		}
 		if( keyboard->IsDown( DIK_R ) )
 		{
-			_Camera.Up( 1.f * dt );
+			_Camera.Up( speed * dt );
 		}
 		if( keyboard->IsDown( DIK_F ) )
 		{
-			_Camera.Up( -1.f * dt );
+			_Camera.Up( -speed * dt );
 		}
 
 		if( mouse->IsDown( 1 ) )
@@ -434,7 +435,6 @@ namespace Graphics
 		}
 
 		_Camera.Update();
-		LOG_MESSAGE( "BindConstantBuffer" );
 		BindConstantBuffer( &_ViewProjection, 0 );
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
@@ -453,9 +453,7 @@ namespace Graphics
 		submitInfo.pWaitSemaphores = &m_AcquireNextImageSemaphore;
 		submitInfo.waitSemaphoreCount = 1;
 
-		LOG_MESSAGE( "vkQueueSubmit" );
-
-		// This line fails when running with renderdoc, suspecting emtpy queue would be the issue
+		// This line fails when running with renderdoc, suspecting empty queue would be the issue
 		if( vkQueueSubmit( m_LogicalDevice->GetQueue(), 1, &submitInfo, m_CommandFence ) != VK_SUCCESS )
 			assert( !"Failed to submit the queue!" );
 
@@ -469,7 +467,6 @@ namespace Graphics
 		presentInfo.pWaitSemaphores = &m_DrawDone;
 		presentInfo.waitSemaphoreCount = 1;
 
-		LOG_MESSAGE( "vkQueuePresentKHR" );
 		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
 			assert( !"Failed to present!" );
 
@@ -899,11 +896,8 @@ namespace Graphics
 
 	void vkGraphicsDevice::SetupRenderCommands( int index )
 	{
-		LOG_MESSAGE( "SetupRenderCommands!" );
 		vkWaitForFences( m_LogicalDevice->GetDevice(), 1, &m_CommandFence, VK_TRUE, UINT64_MAX );
 		vkResetFences( m_LogicalDevice->GetDevice(), 1, &m_CommandFence );
-
-		LOG_MESSAGE( "Reset fence!" );
 
 		VkClearValue clearValue = {};
 		clearValue.color = _clearColor;
@@ -923,27 +917,20 @@ namespace Graphics
 		VkFramebuffer& frameBuffer = m_FrameBuffers[index];
 		VkCommandBuffer& commandBuffer = m_CmdBuffers[index];
 
-		LOG_MESSAGE( "Recording Command Buffer!" );
 		if( vkBeginCommandBuffer( commandBuffer, &cmdInfo ) != VK_SUCCESS )
 			assert( !"Failed to begin CommandBuffer!" );
 		renderPassInfo.framebuffer = frameBuffer;
 
-		LOG_MESSAGE( "BeginRenderPass!" );
 		vkCmdBeginRenderPass( commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
-		LOG_MESSAGE( "BindPipeline!" );
 		vkCmdBindPipeline( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline );
-		LOG_MESSAGE( "BindDescriptorSet!" );
 		vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet,
 								 0, nullptr );
 
-		LOG_MESSAGE( "Draw Cubes!" );
 		for( Cube& cube : _Cubes )
 			cube.Draw( commandBuffer, _pipelineLayout );
 
-		LOG_MESSAGE( "EndRenderPass!" );
 		vkCmdEndRenderPass( commandBuffer );
 
-		LOG_MESSAGE( "EndCommandBuffer!" );
 		if( vkEndCommandBuffer( commandBuffer ) != VK_SUCCESS )
 			assert( !"Failed to end CommandBuffer!" );
 	}

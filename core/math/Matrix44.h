@@ -574,14 +574,12 @@ namespace Core
 		const T width = cosFov / sinFov;
 		const T height = width / aspectRatio;
 
-		const T scaling = farPlane / ( farPlane - nearPlane );
-
 		temp[0] = width;
 		temp[5] = height;
-		temp[10] = scaling;
-		temp[11] = 1.0f;
+		temp[10] = farPlane / ( nearPlane - farPlane );
+		temp[11] = -1.0f;
 
-		temp[14] = -scaling * nearPlane;
+		temp[14] = ( nearPlane * farPlane ) / ( nearPlane - farPlane );
 		temp[15] = 1.0f;
 		return temp;
 	}

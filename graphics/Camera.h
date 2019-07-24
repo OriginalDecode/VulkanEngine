@@ -24,6 +24,8 @@ namespace Graphics
 		void Right( float distance );
 		void Up( float distance );
 
+		void SetTranslation( const Core::Vector4f& translation );
+
 	private:
 		Core::Matrix44f m_ProjectionMatrix = Core::Matrix44f::Identity();
 		Core::Matrix44f m_ViewMatrix = Core::Matrix44f::Identity();

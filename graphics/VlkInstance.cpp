@@ -10,22 +10,20 @@
 #endif
 
 #include <vector>
+#include <logger/Debug.h>
 
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
-	VkDebugReportFlagsEXT /* flags */,
-	VkDebugReportObjectTypeEXT /* objectType */,
-	uint64_t /* object */,
-	size_t /* location */,
-	int32_t /* messageCode */,
-	const char* /* pLayerPrefix */,
-	const char* pMessage,
-	void* /* pUserData */ )
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback( VkDebugReportFlagsEXT /* flags */,
+													VkDebugReportObjectTypeEXT /* objectType */, uint64_t /* object */,
+													size_t /* location */, int32_t /* messageCode */,
+													const char* /* pLayerPrefix */, const char* pMessage,
+													void* /* pUserData */ )
 {
-	/*char temp[USHRT_MAX] = { 0 };
-	sprintf_s( temp, "Warning : %s", pMessage );*/
-	OutputDebugStringA(pMessage);
-	OutputDebugStringA("\n");
-	//assert( false && temp );
+	char temp[USHRT_MAX] = { 0 };
+	sprintf_s( temp, "Vulkan Warning :%s", pMessage );
+	OutputDebugStringA( pMessage );
+	OutputDebugStringA( "\n" );
+	LOG_MESSAGE( temp );
+	// assert( false && temp );
 	return VK_FALSE;
 }
 
@@ -45,10 +43,8 @@ namespace Graphics
 		if( !FCreateCallback )
 			return;
 
-		VkDebugReportFlagsEXT flags =
-			VK_DEBUG_REPORT_ERROR_BIT_EXT |
-			VK_DEBUG_REPORT_WARNING_BIT_EXT |
-			VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+		VkDebugReportFlagsEXT flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
+									  VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
 
 		VkDebugReportCallbackCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -59,10 +55,7 @@ namespace Graphics
 		assert( result == VK_SUCCESS );
 	}
 
-	VlkInstance::~VlkInstance()
-	{
-		Release();
-	}
+	VlkInstance::~VlkInstance() { Release(); }
 
 	void VlkInstance::Init()
 	{
@@ -85,7 +78,6 @@ namespace Graphics
 
 		instanceCreateInfo.enabledExtensionCount = ARRSIZE( extentions );
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;
-
 
 		VkResult result = vkCreateInstance( &instanceCreateInfo, nullptr /*allocator*/, &m_Instance );
 		assert( result == VK_SUCCESS && "Failed to create Vulkan instance!" );
@@ -110,28 +102,25 @@ namespace Graphics
 		return surface;
 	}
 
-	upVlkSurface VlkInstance::CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo, VlkPhysicalDevice* physicalDevice ) const
+	upVlkSurface VlkInstance::CreateSurface( const VkWin32SurfaceCreateInfoKHR& createInfo,
+											 VlkPhysicalDevice* physicalDevice ) const
 	{
 		upVlkSurface surface = std::make_unique<VlkSurface>();
 		surface->Init( CreateSurface( createInfo ), physicalDevice );
 		return surface;
 	}
 
-	void VlkInstance::DestroySurface( VkSurfaceKHR pSurface )
-	{
-		vkDestroySurfaceKHR( m_Instance, pSurface, nullptr );
-	}
+	void VlkInstance::DestroySurface( VkSurfaceKHR pSurface ) { vkDestroySurfaceKHR( m_Instance, pSurface, nullptr ); }
 
-	void VlkInstance::GetPhysicalDevices(std::vector<VkPhysicalDevice>& deviceList)
+	void VlkInstance::GetPhysicalDevices( std::vector<VkPhysicalDevice>& deviceList )
 	{
 		uint32 device_count = 0;
-		VkResult result = vkEnumeratePhysicalDevices(m_Instance, &device_count, nullptr);
-		assert(result == VK_SUCCESS && "Failed to enumerate device!");
+		VkResult result = vkEnumeratePhysicalDevices( m_Instance, &device_count, nullptr );
+		assert( result == VK_SUCCESS && "Failed to enumerate device!" );
 
-		deviceList.resize(device_count);
-		result = vkEnumeratePhysicalDevices(m_Instance, &device_count, deviceList.data());
-		assert(result == VK_SUCCESS && "Failed to enumerate device!");
-
+		deviceList.resize( device_count );
+		result = vkEnumeratePhysicalDevices( m_Instance, &device_count, deviceList.data() );
+		assert( result == VK_SUCCESS && "Failed to enumerate device!" );
 	}
 
 }; // namespace Graphics

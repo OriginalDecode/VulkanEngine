@@ -20,7 +20,8 @@ namespace Graphics
 
 	void Camera::Update() // called once per frame
 	{
-		m_ViewProjection = Core::Matrix44f::Inverse( m_ViewMatrix ) * m_ProjectionMatrix;
+		m_ViewProjection = m_ProjectionMatrix * m_ViewMatrix; // vulkan
+		// m_ViewProjection = Core::Matrix44f::Inverse(m_ViewMatrix) * m_ProjectionMatrix; //directX
 	}
 
 	Core::Matrix44f* Camera::GetViewProjectionPointer() { return &m_ViewProjection; }
@@ -59,7 +60,12 @@ namespace Graphics
 
 	void Camera::Forward( float distance )
 	{
-		m_ViewMatrix.SetTranslation( m_ViewMatrix.GetTranslation() + ( m_ViewMatrix.GetForward() * distance ) );
+		const Core::Vector4f& t = m_ViewMatrix.GetTranslation();
+		const Core::Vector4f& f = m_ViewMatrix.GetForward();
+
+		const Core::Vector4f nt = t + ( f * distance );
+
+		m_ViewMatrix.SetTranslation( nt );
 	}
 
 	void Camera::Right( float distance )
@@ -71,5 +77,7 @@ namespace Graphics
 	{
 		m_ViewMatrix.SetTranslation( m_ViewMatrix.GetTranslation() + ( m_ViewMatrix.GetUp() * distance ) );
 	}
+
+	void Camera::SetTranslation( const Core::Vector4f& translation ) { m_ViewMatrix.SetTranslation( translation ); }
 
 }; // namespace Graphics
