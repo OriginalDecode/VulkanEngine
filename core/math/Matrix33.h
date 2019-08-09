@@ -316,7 +316,7 @@ namespace Core
 	}
 
 	template<typename TYPE>
-	Matrix33<TYPE> Inverse(Matrix33<TYPE> &aMatrix)
+	Matrix33<TYPE> FastInverse(Matrix33<TYPE> &aMatrix)
 	{
 		Vector3<TYPE> theTranslation;
 

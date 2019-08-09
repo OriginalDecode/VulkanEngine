@@ -185,8 +185,11 @@ namespace Graphics
 
 		void Draw( VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout )
 		{
-			vkCmdPushConstants( commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof( Core::Matrix44f ),
-								&m_Orientation );
+			Core::Matrix44f total( m_Orientation );
+			total *= *_Camera.GetViewProjectionPointer();
+
+				vkCmdPushConstants( commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+									sizeof( Core::Matrix44f ), &m_Orientation );
 			/* This is quite a strange one, this is only gonna be available in non-instanced entities for position */
 
 			VkDeviceSize offset = 0;

@@ -28,7 +28,7 @@ def main():
         outputFile = file[file.rfind('\\')+1:]
         print("\ninput : " + file)
         print("output : " + outputFolder + "/" + outputFile)
-        command = "%VKBIN%/glslangValidator.exe " #validator path
+        command = "%VULKAN_SDK%/Bin/glslangValidator.exe " #validator path
         command += "-e main " #entrypoint, this should probably be changed into something else ?
         command += "-o " + outputFolder + "/" + outputFile + " " #output
 

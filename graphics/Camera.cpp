@@ -20,7 +20,8 @@ namespace Graphics
 
 	void Camera::Update() // called once per frame
 	{
-		m_ViewProjection = m_ProjectionMatrix * m_ViewMatrix; // vulkan
+		//Row majorness
+		m_ViewProjection = Core::FastInverse( m_ViewMatrix ) * m_ProjectionMatrix; // vulkan
 		// m_ViewProjection = Core::Matrix44f::Inverse(m_ViewMatrix) * m_ProjectionMatrix; //directX
 	}
 

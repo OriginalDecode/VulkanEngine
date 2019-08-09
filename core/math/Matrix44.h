@@ -76,7 +76,6 @@ namespace Core
 		void LookAt( const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up );
 
 		Vector4<T> GetColumn( int index ) const;
-		static Matrix44<T> Inverse( const Matrix44<T>& aMatrix );
 
 		Matrix44<T>& operator+=( const Matrix44<T>& matrix );
 		Matrix44<T>& operator-=( const Matrix44<T>& matrix );
@@ -117,23 +116,34 @@ namespace Core
 	template <typename T>
 	Matrix44<T>& Matrix44<T>::operator*=( const Matrix44<T>& other )
 	{
-		const __m128 r0 = _mm_load_ps( &m_Matrix[0] );
-		const __m128 r1 = _mm_load_ps( &m_Matrix[4] );
-		const __m128 r2 = _mm_load_ps( &m_Matrix[8] );
-		const __m128 r3 = _mm_load_ps( &m_Matrix[12] );
-
-		for( size_t i = 0; i < 4; i++ )
+		Vector4<T> tempRows[4];
+		memcpy( &tempRows[0], &rows[0], sizeof( Vector4<T> ) * 4 );
+		
+		for(size_t i = 0; i < 4; ++i)
 		{
-			__m128 c0 = _mm_set1_ps( other[0 + ( i * 4 )] );
-			__m128 c1 = _mm_set1_ps( other[1 + ( i * 4 )] );
-			__m128 c2 = _mm_set1_ps( other[2 + ( i * 4 )] );
-			__m128 c3 = _mm_set1_ps( other[3 + ( i * 4 )] );
-
-			__m128 row = _mm_add_ps( _mm_add_ps( _mm_mul_ps( r0, c0 ), _mm_mul_ps( r1, c1 ) ),
-									 _mm_add_ps( _mm_mul_ps( r2, c2 ), _mm_mul_ps( r3, c3 ) ) );
-
-			_mm_store_ps( &m_Matrix[4 * i], row );
+			rows[i].x = Dot( tempRows[i], other.GetColumn( 0 ) );
+			rows[i].y = Dot( tempRows[i], other.GetColumn( 1 ) );
+			rows[i].z = Dot( tempRows[i], other.GetColumn( 2 ) );
+			rows[i].w = Dot( tempRows[i], other.GetColumn( 3 ) );
 		}
+
+		//const __m128 r0 = _mm_load_ps( &m_Matrix[0] );
+		//const __m128 r1 = _mm_load_ps( &m_Matrix[4] );
+		//const __m128 r2 = _mm_load_ps( &m_Matrix[8] );
+		//const __m128 r3 = _mm_load_ps( &m_Matrix[12] );
+
+		//for( size_t i = 0; i < 4; i++ )
+		//{
+		//	__m128 c0 = _mm_set1_ps( other[0 + ( i * 4 )] );
+		//	__m128 c1 = _mm_set1_ps( other[1 + ( i * 4 )] );
+		//	__m128 c2 = _mm_set1_ps( other[2 + ( i * 4 )] );
+		//	__m128 c3 = _mm_set1_ps( other[3 + ( i * 4 )] );
+
+		//	__m128 row = _mm_add_ps( _mm_add_ps( _mm_mul_ps( r0, c0 ), _mm_mul_ps( r1, c1 ) ),
+		//							 _mm_add_ps( _mm_mul_ps( r2, c2 ), _mm_mul_ps( r3, c3 ) ) );
+
+		//	_mm_store_ps( &m_Matrix[4 * i], row );
+		//}
 
 		return *this;
 	}
@@ -494,22 +504,6 @@ namespace Core
 	}
 
 	template <typename T>
-	Matrix44<T> Inverse( const Matrix44<T>& aMatrix )
-	{
-		Matrix44<T> inverse( aMatrix );
-
-		Vector4<T> translation = inverse.GetTranslation();
-		inverse.SetPosition( Vector4<T>( 0, 0, 0, 1.f ) );
-		translation *= -1.f;
-		translation.w = 1.f;
-		inverse = Transpose( inverse );
-		translation = translation * inverse;
-
-		inverse.SetPosition( translation );
-		return inverse;
-	}
-
-	template <typename T>
 	const Matrix44<T> operator+( const Matrix44<T>& aFirstMatrix, const Matrix44<T>& aSecondMatrix )
 	{
 		Matrix44<T> tempMatrix( aFirstMatrix );
@@ -531,14 +525,10 @@ namespace Core
 	}
 
 	template <typename T>
-	const Vector4<T> operator*( const Vector4<T>& aVector, const Matrix44<T>& aMatrix )
+	Vector4<T> operator*( const Vector4<T>& aVector, const Matrix44<T>& aMatrix )
 	{
-		Vector4<T> vector;
-		vector.x = Dot( aVector, aMatrix.GetColumn( 0 ) );
-		vector.y = Dot( aVector, aMatrix.GetColumn( 1 ) );
-		vector.z = Dot( aVector, aMatrix.GetColumn( 2 ) );
-		vector.w = Dot( aVector, aMatrix.GetColumn( 3 ) );
-		return vector;
+		Vector4<T> vector( aVector );
+		return vector *= aMatrix;
 	}
 
 	template <typename T>
@@ -596,15 +586,15 @@ namespace Core
 		return toReturn;
 	}
 
+	
 	template <typename T>
-	Matrix44<T> Matrix44<T>::Inverse( const Matrix44<T>& matrix )
+	Matrix44<T> FastInverse( const Matrix44<T>& matrix )
 	{
 		Vector4<T> translation( matrix.GetTranslation() );
 		translation *= -1;
-		translation.w = 1;
 
-		Matrix44<T> inverse = Transpose( matrix );
-		translation = translation * inverse;
+		Matrix44<T> inverse = Matrix44<T>::Transpose( matrix );
+		translation *= inverse;
 		inverse.SetTranslation( translation.x, translation.y, translation.z, 1 );
 
 		return inverse;
