@@ -14,14 +14,15 @@ namespace Graphics
 
 	void Camera::InitPerspectiveProjection( float width, float height, float near_plane, float far_plane, float fov )
 	{
-		m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, height / width,
+		m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, width / height,
 																		fov * ( 3.1415f / 180.f ) );
 	}
 
 	void Camera::Update() // called once per frame
 	{
-		//Row majorness
-		m_ViewProjection = Core::FastInverse( m_ViewMatrix ) * m_ProjectionMatrix; // vulkan
+		// m_ViewProjection = Core::FastInverse( m_ViewMatrix ) * m_ProjectionMatrix;
+		m_ViewMatrixInverse = Core::FastInverse( m_ViewMatrix );
+		// m_ViewProjection = Core::Transpose( m_ViewProjection );
 		// m_ViewProjection = Core::Matrix44f::Inverse(m_ViewMatrix) * m_ProjectionMatrix; //directX
 	}
 

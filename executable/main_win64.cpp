@@ -8,6 +8,7 @@
 #include <memory>
 #include <input/InputManager.h>
 #include <Logger/Debug.h>
+#include <graphics/Camera.h>
 
 LRESULT CALLBACK WindowProc( HWND, UINT, WPARAM, LPARAM );
 bool gameRunning = true; // we'll need this in the WindowProc
@@ -41,7 +42,11 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 		timer.Update();
 
 		char temp[100] = { 0 };
-		sprintf_s( temp, "FPS : %.3f dt: %.3f", 1.f / timer.GetTime(), timer.GetTime() );
+		// sprintf_s(temp, "FPS : %.3f dt: %.3f", 1.f / timer.GetTime(), timer.GetTime());
+		Graphics::Camera* camera = graphics_engine.GetCamera();
+		const Core::Vector4f& position = camera->GetPosition();
+
+		sprintf_s( temp, "X: %.3f Y: %.3f Z: %.3f", position.x, position.y, position.z );
 		window->SetText( temp );
 
 		while( PeekMessage( &msg, 0, 0, 0, PM_REMOVE ) )

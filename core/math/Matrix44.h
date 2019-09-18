@@ -44,9 +44,6 @@ namespace Core
 		static Matrix44<T> Identity();
 
 		void SetOrthographicProjection( float width, float height, float near_plane, float far_plane );
-		void SetPerspectiveFOV( float fov, float aspect_ratio );
-
-		static Matrix44<T> Transpose( const Matrix44<T>& mat );
 
 		Vector4<T> GetRadRotations();
 
@@ -76,6 +73,7 @@ namespace Core
 		void LookAt( const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up );
 
 		Vector4<T> GetColumn( int index ) const;
+		// static Matrix44<T> Inverse( const Matrix44<T>& aMatrix );
 
 		Matrix44<T>& operator+=( const Matrix44<T>& matrix );
 		Matrix44<T>& operator-=( const Matrix44<T>& matrix );
@@ -97,6 +95,11 @@ namespace Core
 	using Matrix44f = Matrix44<float>;
 
 	template <typename T>
+	Matrix44<T> Transpose( const Matrix44<T>& m );
+	template <typename T>
+	Matrix44<T> FastInverse( const Matrix44<T>& m );
+
+	template <typename T>
 	Matrix44<T>& Matrix44<T>::operator+=( const Matrix44<T>& matrix )
 	{
 		for( int i = 0; i < 16; ++i )
@@ -116,34 +119,23 @@ namespace Core
 	template <typename T>
 	Matrix44<T>& Matrix44<T>::operator*=( const Matrix44<T>& other )
 	{
-		Vector4<T> tempRows[4];
-		memcpy( &tempRows[0], &rows[0], sizeof( Vector4<T> ) * 4 );
-		
-		for(size_t i = 0; i < 4; ++i)
+		const __m128 r0 = _mm_load_ps( &m_Matrix[0] );
+		const __m128 r1 = _mm_load_ps( &m_Matrix[4] );
+		const __m128 r2 = _mm_load_ps( &m_Matrix[8] );
+		const __m128 r3 = _mm_load_ps( &m_Matrix[12] );
+
+		for( size_t i = 0; i < 4; i++ )
 		{
-			rows[i].x = Dot( tempRows[i], other.GetColumn( 0 ) );
-			rows[i].y = Dot( tempRows[i], other.GetColumn( 1 ) );
-			rows[i].z = Dot( tempRows[i], other.GetColumn( 2 ) );
-			rows[i].w = Dot( tempRows[i], other.GetColumn( 3 ) );
+			__m128 c0 = _mm_set1_ps( other[0 + ( i * 4 )] );
+			__m128 c1 = _mm_set1_ps( other[1 + ( i * 4 )] );
+			__m128 c2 = _mm_set1_ps( other[2 + ( i * 4 )] );
+			__m128 c3 = _mm_set1_ps( other[3 + ( i * 4 )] );
+
+			__m128 row = _mm_add_ps( _mm_add_ps( _mm_mul_ps( r0, c0 ), _mm_mul_ps( r1, c1 ) ),
+									 _mm_add_ps( _mm_mul_ps( r2, c2 ), _mm_mul_ps( r3, c3 ) ) );
+
+			_mm_store_ps( &m_Matrix[4 * i], row );
 		}
-
-		//const __m128 r0 = _mm_load_ps( &m_Matrix[0] );
-		//const __m128 r1 = _mm_load_ps( &m_Matrix[4] );
-		//const __m128 r2 = _mm_load_ps( &m_Matrix[8] );
-		//const __m128 r3 = _mm_load_ps( &m_Matrix[12] );
-
-		//for( size_t i = 0; i < 4; i++ )
-		//{
-		//	__m128 c0 = _mm_set1_ps( other[0 + ( i * 4 )] );
-		//	__m128 c1 = _mm_set1_ps( other[1 + ( i * 4 )] );
-		//	__m128 c2 = _mm_set1_ps( other[2 + ( i * 4 )] );
-		//	__m128 c3 = _mm_set1_ps( other[3 + ( i * 4 )] );
-
-		//	__m128 row = _mm_add_ps( _mm_add_ps( _mm_mul_ps( r0, c0 ), _mm_mul_ps( r1, c1 ) ),
-		//							 _mm_add_ps( _mm_mul_ps( r2, c2 ), _mm_mul_ps( r3, c3 ) ) );
-
-		//	_mm_store_ps( &m_Matrix[4 * i], row );
-		//}
 
 		return *this;
 	}
@@ -229,7 +221,7 @@ namespace Core
 	}
 
 	template <typename T>
-	Matrix44<T> Matrix44<T>::Transpose( const Matrix44<T>& mat )
+	Matrix44<T> Transpose( const Matrix44<T>& mat )
 	{
 		Matrix44<T> result( mat );
 		std::swap( result[1], result[4] );
@@ -504,6 +496,24 @@ namespace Core
 	}
 
 	template <typename T>
+	Matrix44<T> FastInverse( const Matrix44<T>& m )
+	{
+		Matrix44<T> inverse{ m };
+
+		Vector4<T> translation{ inverse.GetTranslation() };
+		translation *= -1.f;
+		translation.w = 1.f;
+
+		inverse.SetPosition( { 0, 0, 0, 1 } );
+		inverse = Transpose( inverse );
+
+		translation = translation * inverse;
+		inverse.SetPosition( translation );
+
+		return inverse;
+	}
+
+	template <typename T>
 	const Matrix44<T> operator+( const Matrix44<T>& aFirstMatrix, const Matrix44<T>& aSecondMatrix )
 	{
 		Matrix44<T> tempMatrix( aFirstMatrix );
@@ -525,52 +535,53 @@ namespace Core
 	}
 
 	template <typename T>
-	Vector4<T> operator*( const Vector4<T>& aVector, const Matrix44<T>& aMatrix )
+	Vector4<T> operator*=( const Vector4<T>& v, const Matrix44<T>& m )
 	{
-		Vector4<T> vector( aVector );
-		return vector *= aMatrix;
+		return { Dot( v, m.GetColumn( 0 ) ), Dot( v, m.GetColumn( 1 ) ), Dot( v, m.GetColumn( 2 ) ),
+				 Dot( v, m.GetColumn( 3 ) ) };
 	}
 
 	template <typename T>
-	Vector4<T>& operator*=( Vector4<T>& v, const Matrix44<T>& m )
+	Vector4<T> operator*( const Vector4<T>& v, const Matrix44<T>& m )
 	{
-		v.x = Dot( v, m.GetColumn( 0 ) );
-		v.y = Dot( v, m.GetColumn( 1 ) );
-		v.z = Dot( v, m.GetColumn( 2 ) );
-		v.w = Dot( v, m.GetColumn( 3 ) );
-		return v;
+		return v *= m;
 	}
+	/*
+		This doesn't belong in here
+		template <typename T>
+		void Matrix44<T>::SetPerspectiveFOV( float fov, float aspect_ratio )
+		{
+			const float sin_fov = sinf( 0.5f * fov );
+			const float cos_fov = cosf( 0.5f * fov );
+			const float width = cos_fov / sin_fov;
+			const float height = width / aspect_ratio;
 
-	template <typename T>
-	void Matrix44<T>::SetPerspectiveFOV( float fov, float aspect_ratio )
-	{
-		const float sin_fov = sinf( 0.5f * fov );
-		const float cos_fov = cosf( 0.5f * fov );
-		const float width = cos_fov / sin_fov;
-		const float height = width / aspect_ratio;
-
-		m_Matrix[0] = width;
-		m_Matrix[5] = height;
-	}
+			m_Matrix[0] = width;
+			m_Matrix[5] = height;
+		}
+	*/
 
 	template <typename T>
 	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH( T nearPlane, T farPlane, T aspectRatio, T fovAngle )
 	{
 		Matrix44<T> temp = Matrix44<T>::Identity();
+		/*
+				const T sinFov = sinf( 0.5f * fovAngle );
+				const T cosFov = cosf( 0.5f * fovAngle );
 
-		const T sinFov = sinf( 0.5f * fovAngle );
-		const T cosFov = cosf( 0.5f * fovAngle );
+				const T width = cosFov / sinFov;
+				const T height = width / aspectRatio;
+		*/
 
-		const T width = cosFov / sinFov;
-		const T height = width / aspectRatio;
+		const T f = 1.0f / tan( 0.5f * fovAngle );
 
-		temp[0] = width;
-		temp[5] = height;
+		temp[0] = f / aspectRatio;
+		temp[5] = -f;
 		temp[10] = farPlane / ( nearPlane - farPlane );
 		temp[11] = -1.0f;
 
 		temp[14] = ( nearPlane * farPlane ) / ( nearPlane - farPlane );
-		temp[15] = 1.0f;
+		temp[15] = 0.0f;
 		return temp;
 	}
 
@@ -586,19 +597,19 @@ namespace Core
 		return toReturn;
 	}
 
-	
-	template <typename T>
-	Matrix44<T> FastInverse( const Matrix44<T>& matrix )
-	{
-		Vector4<T> translation( matrix.GetTranslation() );
-		translation *= -1;
+	// template <typename T>
+	// Matrix44<T> Matrix44<T>::Inverse( const Matrix44<T>& matrix )
+	//{
+	//	Vector4<T> translation( matrix.GetTranslation() );
+	//	translation *= -1;
+	//	translation.w = 1;
 
-		Matrix44<T> inverse = Matrix44<T>::Transpose( matrix );
-		translation *= inverse;
-		inverse.SetTranslation( translation.x, translation.y, translation.z, 1 );
+	//	Matrix44<T> inverse = Transpose( matrix );
+	//	translation = translation * inverse;
+	//	inverse.SetTranslation( translation.x, translation.y, translation.z, 1 );
 
-		return inverse;
-	}
+	//	return inverse;
+	//}
 
 	template <class T>
 	Matrix44<T> CreateReflectionMatrixAboutAxis44( Vector3<T> reflectionVector )
