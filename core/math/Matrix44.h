@@ -562,26 +562,44 @@ namespace Core
 	*/
 
 	template <typename T>
-	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH( T nearPlane, T farPlane, T aspectRatio, T fovAngle )
+	Matrix44<T> VKCreatePerspectiveMatrix( T nearPlane, T farPlane, T aspectRatio, T fovAngle )
 	{
 		Matrix44<T> temp = Matrix44<T>::Identity();
-		/*
-				const T sinFov = sinf( 0.5f * fovAngle );
-				const T cosFov = cosf( 0.5f * fovAngle );
 
-				const T width = cosFov / sinFov;
-				const T height = width / aspectRatio;
-		*/
-
-		const T f = 1.0f / tan( 0.5f * fovAngle );
+		const T f = 1.0f / tan( 0.5f * ( fovAngle * ( 3.1415f / 180.f ) ) );
 
 		temp[0] = f / aspectRatio;
 		temp[5] = -f;
-		temp[10] = farPlane / ( nearPlane - farPlane );
-		temp[11] = -1.0f;
+		temp[10] = -farPlane / ( nearPlane - farPlane );
+		temp[11] = 1.0f;
 
-		temp[14] = ( nearPlane * farPlane ) / ( nearPlane - farPlane );
-		temp[15] = 0.0f;
+		temp[14] = -( nearPlane * farPlane ) / ( nearPlane - farPlane );
+		temp[15] = 1.0f;
+		return temp;
+	}
+
+	template <typename T>
+	Matrix44<T> Matrix44<T>::CreateProjectionMatrixLH( T nearPlane, T farPlane, T aspectRatio, T fovAngle )
+	{
+		Matrix44<T> temp = Matrix44<T>::Identity();
+
+		const T fovRad = fovAngle * ( 3.1415f / 180.f );
+
+		const T sinFov = sinf( 0.5f * fovRad );
+		const T cosFov = cosf( 0.5f * fovRad );
+
+		const T width = cosFov / sinFov;
+		const T height = width / aspectRatio;
+
+		const T scaling = farPlane / ( farPlane - nearPlane );
+
+		temp[0] = width;
+		temp[5] = height;
+		temp[10] = scaling;
+		temp[11] = 1.0f;
+
+		temp[14] = -scaling * nearPlane;
+		temp[15] = 1.0f;
 		return temp;
 	}
 

@@ -416,11 +416,11 @@ namespace Graphics
 		}
 		if( keyboard->IsDown( DIK_D ) )
 		{
-			_Camera.Right( -speed * dt );
+			_Camera.Right( speed * dt );
 		}
 		if( keyboard->IsDown( DIK_A ) )
 		{
-			_Camera.Right( speed * dt );
+			_Camera.Right( -speed * dt );
 		}
 		if( keyboard->IsDown( DIK_R ) )
 		{

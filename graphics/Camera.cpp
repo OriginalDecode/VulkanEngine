@@ -14,8 +14,8 @@ namespace Graphics
 
 	void Camera::InitPerspectiveProjection( float width, float height, float near_plane, float far_plane, float fov )
 	{
-		m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH( near_plane, far_plane, width / height,
-																		fov * ( 3.1415f / 180.f ) );
+		// m_ProjectionMatrix = Core::Matrix44f::CreateProjectionMatrixLH(near_plane, far_plane, width / height, fov);
+		m_ProjectionMatrix = Core::VKCreatePerspectiveMatrix( near_plane, far_plane, width / height, fov );
 	}
 
 	void Camera::Update() // called once per frame
