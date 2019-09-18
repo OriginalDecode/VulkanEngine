@@ -52,60 +52,70 @@ constexpr Vertex _triangle[3] = {
 	{ { -0.25f, 0.5f, 0.f }, { 0.f, 0.f, 1.f } },
 };
 
+constexpr Core::Vector4f v0{ -1.f, -1.f, -1.f };
+constexpr Core::Vector4f v1{ -1.f, 1.f, -1.f };
+constexpr Core::Vector4f v2{ 1.f, 1.f, -1.f };
+constexpr Core::Vector4f v3{ 1.f, -1.f, -1.f };
+
+constexpr Core::Vector4f v4{ -1.f, -1.f, 1.f };
+constexpr Core::Vector4f v5{ -1.f, 1.f, 1.f };
+constexpr Core::Vector4f v6{ 1.f, 1.f, 1.f };
+constexpr Core::Vector4f v7{ 1.f, -1.f, 1.f };
+
 constexpr Vertex _cube[] = {
 	// front
-	{ { -1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
-	{ { 1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
-	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ v2, { 1.f, 0.f, 0.f } }, // 0
+	{ v0, { 1.f, 0.f, 0.f } }, // 1
+	{ v1, { 1.f, 0.f, 0.f } }, // 2
 
-	{ { -1.f, -1.f, -1.f }, { 1.f, 0.f, 0.f } },
-	{ { 1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
-	{ { -1.f, 1.f, -1.f }, { 1.f, 0.f, 0.f } },
+	{ v2, { 1.f, 0.f, 0.f } }, // 3
+	{ v3, { 1.f, 0.f, 0.f } }, // 4
+	{ v0, { 1.f, 0.f, 0.f } }, // 5
 
 	// right
-	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+	{ v6, { 0.f, 1.f, 0.f } }, // 6
+	{ v3, { 0.f, 1.f, 0.f } }, // 7
+	{ v2, { 0.f, 1.f, 0.f } }, // 8
 
-	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, 1.f, 1.f }, { 0.f, 1.f, 0.f } },
-	{ { 1.f, 1.f, -1.f }, { 0.f, 1.f, 0.f } },
+	{ v6, { 0.f, 1.f, 0.f } }, // 9
+	{ v7, { 0.f, 1.f, 0.f } }, // 10
+	{ v3, { 0.f, 1.f, 0.f } }, // 11
 
 	// back
-	{ { 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { -1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { -1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ v5, { 0.f, 0.f, 1.f } }, // 12
+	{ v7, { 0.f, 0.f, 1.f } }, // 13
+	{ v6, { 0.f, 0.f, 1.f } }, // 14
 
-	{ { 1.f, -1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { -1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
-	{ { 1.f, 1.f, 1.f }, { 0.f, 0.f, 1.f } },
+	{ v5, { 0.f, 0.f, 1.f } }, // 15
+	{ v4, { 0.f, 0.f, 1.f } }, // 16
+	{ v7, { 0.f, 0.f, 1.f } }, // 17
 
 	// left
-	{ { -1.f, -1.f, 1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f, -1.f, -1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 0.f } },
+	{ v1, { 1.f, 1.f, 0.f } }, // 18
+	{ v4, { 1.f, 1.f, 0.f } }, // 19
+	{ v5, { 1.f, 1.f, 0.f } }, // 20
 
-	{ { -1.f, -1.f, 1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 0.f } },
-	{ { -1.f, 1.f, 1.f }, { 1.f, 1.f, 0.f } },
+	{ v1, { 1.f, 1.f, 0.f } }, // 21
+	{ v0, { 1.f, 1.f, 0.f } }, // 22
+	{ v4, { 1.f, 1.f, 0.f } }, // 23
 
 	// top
-	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
-	{ { 1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
-	{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
+	{ v6, { 1.f, 1.f, 1.f } }, // 24
+	{ v1, { 1.f, 1.f, 1.f } }, // 25
+	{ v5, { 1.f, 1.f, 1.f } }, // 26
 
-	{ { 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
-	{ { -1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f } },
-	{ { -1.f, 1.f, -1.f }, { 1.f, 1.f, 1.f } },
+	{ v6, { 1.f, 1.f, 1.f } }, // 27
+	{ v2, { 1.f, 1.f, 1.f } }, // 28
+	{ v1, { 1.f, 1.f, 1.f } }, // 29
 
 	// bottom
-	{ { 1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
-	{ { -1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
-	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
+	{ v3, { 0.f, 1.f, 1.f } }, // 30
+	{ v4, { 0.f, 1.f, 1.f } }, // 31
+	{ v0, { 0.f, 1.f, 1.f } }, // 32
 
-	{ { -1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
-	{ { 1.f, -1.f, 1.f }, { 0.f, 1.f, 1.f } },
-	{ { -1.f, -1.f, -1.f }, { 0.f, 1.f, 1.f } },
+	{ v3, { 0.f, 1.f, 1.f } }, // 33
+	{ v7, { 0.f, 1.f, 1.f } }, // 34
+	{ v4, { 0.f, 1.f, 1.f } }, // 35
 
 };
 
@@ -580,7 +590,7 @@ namespace Graphics
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		// rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
+		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
 		rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
