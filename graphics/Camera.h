@@ -18,6 +18,9 @@ namespace Graphics
 
 		Core::Matrix44f* GetViewProjectionPointer();
 
+		Core::Matrix44f* GetView() { return &m_ViewMatrixInverse; }
+		Core::Matrix44f* GetProjection() { return &m_ProjectionMatrix; }
+
 		void OrientCamera( const Core::Vector2f& cursor_pos );
 
 		void Forward( float distance );
@@ -26,9 +29,12 @@ namespace Graphics
 
 		void SetTranslation( const Core::Vector4f& translation );
 
+		const Core::Vector4f& GetPosition() { return m_ViewMatrix.GetTranslation(); }
+
 	private:
 		Core::Matrix44f m_ProjectionMatrix = Core::Matrix44f::Identity();
 		Core::Matrix44f m_ViewMatrix = Core::Matrix44f::Identity();
+		Core::Matrix44f m_ViewMatrixInverse = Core::Matrix44f::Identity();
 		Core::Matrix44f m_ViewProjection = Core::Matrix44f::Identity();
 
 		Core::Vector2f m_CenterPoint;

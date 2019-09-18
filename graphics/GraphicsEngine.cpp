@@ -16,19 +16,11 @@ namespace Graphics
 {
 	std::unique_ptr<GraphicsEngine> GraphicsEngine::m_Instance = nullptr;
 
-	GraphicsEngine::GraphicsEngine()
-	{
-	}
+	GraphicsEngine::GraphicsEngine() {}
 
-	void GraphicsEngine::Create()
-	{
-		m_Instance = std::make_unique<GraphicsEngine>();
-	}
+	void GraphicsEngine::Create() { m_Instance = std::make_unique<GraphicsEngine>(); }
 
-	GraphicsEngine& GraphicsEngine::Get()
-	{
-		return *m_Instance;
-	}
+	GraphicsEngine& GraphicsEngine::Get() { return *m_Instance; }
 
 	bool GraphicsEngine::Init( const Window& window )
 	{
@@ -42,17 +34,12 @@ namespace Graphics
 		return true;
 	}
 
-	void GraphicsEngine::Present( float dt )
-	{
-		m_Device->DrawFrame( dt );
-	}
+	void GraphicsEngine::Present( float dt ) { m_Device->DrawFrame( dt ); }
 
-	void GraphicsEngine::BeginFrame()
-	{
-	}
+	Camera* GraphicsEngine::GetCamera() { return m_Device->GetCamera(); }
 
-	GraphicsEngine::~GraphicsEngine()
-	{
-	}
+	void GraphicsEngine::BeginFrame() {}
+
+	GraphicsEngine::~GraphicsEngine() {}
 
 }; // namespace Graphics

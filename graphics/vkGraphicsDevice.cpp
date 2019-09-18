@@ -185,6 +185,7 @@ namespace Graphics
 
 		void Draw( VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout )
 		{
+
 			vkCmdPushConstants( commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof( Core::Matrix44f ),
 								&m_Orientation );
 			/* This is quite a strange one, this is only gonna be available in non-instanced entities for position */
@@ -273,7 +274,7 @@ namespace Graphics
 	bool vkGraphicsDevice::Init( const Window& window )
 	{
 		_size = window.GetInnerSize();
-		_Camera.InitPerspectiveProjection( _size.m_Width, _size.m_Height, 0.1f, 1000000.f, 90.f );
+		_Camera.InitPerspectiveProjection( _size.m_Width, _size.m_Height, 0.1f, 1000.f, 90.f );
 		_Camera.SetTranslation( { 0.f, 0.f, -25.f, 1.f } );
 
 		m_Instance = std::make_unique<VlkInstance>();
@@ -288,7 +289,8 @@ namespace Graphics
 		m_Swapchain = std::make_unique<VlkSwapchain>();
 		m_Swapchain->Init( m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window );
 
-		_ViewProjection.RegVar( _Camera.GetViewProjectionPointer() );
+		_ViewProjection.RegVar( _Camera.GetView() );
+		_ViewProjection.RegVar( _Camera.GetProjection() );
 		CreateConstantBuffer( &_ViewProjection );
 
 		CreateCommandPool();
@@ -341,7 +343,7 @@ namespace Graphics
 		const float xValue = -22.f;
 		const float yValue = -12.f;
 		const float zValue = 0.f;
-		Core::Vector4f position{ xValue, yValue, zValue };
+		Core::Vector4f position{ xValue, yValue, zValue, 1.f };
 
 		for( int i = 0; i < 128; i++ )
 		{
@@ -577,7 +579,8 @@ namespace Graphics
 		VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		// rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		rastCreateInfo.cullMode = VK_CULL_MODE_NONE;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
 		rastCreateInfo.rasterizerDiscardEnable = VK_FALSE;
@@ -939,5 +942,7 @@ namespace Graphics
 	{
 		vkDestroyShaderModule( m_LogicalDevice->GetDevice(), (VkShaderModule)pShader->GetBlob(), nullptr );
 	}
+
+	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }
 
 }; // namespace Graphics

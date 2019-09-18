@@ -10,7 +10,7 @@
 #include <vulkan/vulkan_core.h>
 
 class Window;
-//struct VkWin32SurfaceCreateInfoKHR;
+// struct VkWin32SurfaceCreateInfoKHR;
 
 namespace Graphics
 {
@@ -26,6 +26,7 @@ namespace Graphics
 		vkGraphicsDevice();
 		~vkGraphicsDevice();
 
+		class Camera* GetCamera();
 		bool Init( const Window& window );
 
 		void DrawFrame( float dt );
@@ -33,12 +34,13 @@ namespace Graphics
 		VlkInstance& GetVlkInstance() { return *m_Instance; }
 		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
 
-		virtual void BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset) override;
-		virtual void CreateConstantBuffer(ConstantBuffer* constantBuffer) override;
-		virtual void DestroyConstantBuffer(ConstantBuffer* constantBuffer) override;
+		virtual void BindConstantBuffer( ConstantBuffer* constantBuffer, uint32 offset ) override;
+		virtual void CreateConstantBuffer( ConstantBuffer* constantBuffer ) override;
+		virtual void DestroyConstantBuffer( ConstantBuffer* constantBuffer ) override;
 
-		void LoadShader(struct Shader* shader, const char* filepath);
-		void DestroyShader(struct Shader* pShader);
+		void LoadShader( struct Shader* shader, const char* filepath );
+		void DestroyShader( struct Shader* pShader );
+
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;
 		std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
@@ -56,8 +58,7 @@ namespace Graphics
 		uint32 m_Index = 0;
 		std::vector<VkFramebuffer> m_FrameBuffers;
 
-
-		void SetupRenderCommands(int index);
+		void SetupRenderCommands( int index );
 
 		void SetupScissorArea();
 		void SetupViewport();
@@ -66,21 +67,21 @@ namespace Graphics
 		void CreateCommandBuffer();
 		VkPipeline CreateGraphicsPipeline();
 
-		VkDescriptorSetLayout CreateDescriptorLayout(VkDescriptorSetLayoutBinding* descriptorBindings, int32 bindingCount);
+		VkDescriptorSetLayout CreateDescriptorLayout( VkDescriptorSetLayoutBinding* descriptorBindings,
+													  int32 bindingCount );
 		void CreateDescriptorPool();
 		void CreateDescriptorSet();
 
-		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount);
-		VkImageView CreateImageView(VkFormat format, VkImage image);
-		VkFramebuffer CreateFramebuffer(VkImageView view, int32 attachmentCount, const Window& window);
-	
+		VkPipelineLayout CreatePipelineLayout( VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount,
+											   VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount );
+		VkImageView CreateImageView( VkFormat format, VkImage image );
+		VkFramebuffer CreateFramebuffer( VkImageView view, int32 attachmentCount, const Window& window );
+
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
 
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
-
-
 	};
 
 	class ConstantBuffer
