@@ -1,3 +1,3 @@
 @echo off
 
-python compileShaders.py
+%python% compileShaders.py

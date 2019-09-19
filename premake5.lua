@@ -36,15 +36,15 @@ workspace "UnitTest"
 else
 return
 end
-
--- fnc.setWorkspace("Engine")
--- fnc.addConfig("Debug")
--- fnc.addConfig("Release")
--- fnc.setPlatform("Windows")
+    -- fnc.setWorkspace("Engine")
+    -- fnc.addConfig("Debug")
+    -- fnc.addConfig("Release")
+    -- fnc.setPlatform("Windows")
     configurations { "Debug" , "Release" }
 
     platforms { _OPTIONS["platform"] }
     debugdir "%{wks.location}../bin"
+    
 -- language "C++"
     cppdialect "C++14"
     disablewarnings { "4201" }
@@ -54,11 +54,13 @@ end
     architecture "x64"
     includedirs { ".\\" }
     -- libdirs { "" }
-    flags { "StaticRuntime" }
+    -- flags { "StaticRuntime" }
     warnings "Extra"
 
     objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
-    -- staticruntime "on"
+    staticruntime "on"
+    filter "system:Windows"
+        systemversion "latest"
 
     filter "platforms:Windows"
         defines { "_WIN32", "_CRT_SECURE_NO_WARNINGS" }
