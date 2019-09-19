@@ -128,4 +128,10 @@ namespace Graphics
 
 
 
+	VkExtent2D VlkSwapchain::GetExtent() const 
+	{
+		const VkSurfaceCapabilitiesKHR& capabilities = m_Surface->GetCapabilities();
+		return capabilities.currentExtent;	
+	}
+
 }; //namespace Graphics

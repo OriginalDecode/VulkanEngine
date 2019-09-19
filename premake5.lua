@@ -111,7 +111,7 @@ end
     project "Graphics"
         kind "StaticLib"
         location ("./graphics")    
-        files { "graphics/*.cpp", "graphics/*.h" }
+        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp" }
         dependson { "Core" }
         links { "$(VULKAN_SDK)/lib/vulkan-1.lib" }
         includedirs { "$(VULKAN_SDK)/Include/" }

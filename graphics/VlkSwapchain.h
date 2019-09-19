@@ -34,6 +34,7 @@ namespace Graphics
 		std::vector<VkImage>& GetImageList() { return m_Images; }
 		std::vector<VkImageView>& GetImageViewList() { return m_ImageViews; }
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
+		VkExtent2D GetExtent() const;
 
 	private:
 
