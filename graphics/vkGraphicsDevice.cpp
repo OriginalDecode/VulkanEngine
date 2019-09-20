@@ -40,8 +40,6 @@ VkImage _depthImage = nullptr;
 VkImageView _depthView = nullptr;
 VkDeviceMemory _depthImageMemory = nullptr;
 
-
-
 Graphics::Camera _Camera;
 
 Window::Size _size;
@@ -307,6 +305,7 @@ namespace Graphics
 
 		_ViewProjection.RegVar( _Camera.GetView() );
 		_ViewProjection.RegVar( _Camera.GetProjection() );
+
 		CreateConstantBuffer( &_ViewProjection );
 		CreateCommandPool();
 		CreateCommandBuffer();
@@ -321,22 +320,21 @@ namespace Graphics
 			viewList[i] = CreateImageView( m_Swapchain->GetFormat().format, list[i], VK_IMAGE_ASPECT_COLOR_BIT );
 
 			VkImageView views[] = { viewList[i], _depthView };
-			m_FrameBuffers[i] = CreateFramebuffer( views, ARRSIZE(views), window );
+			m_FrameBuffers[i] = CreateFramebuffer( views, ARRSIZE( views ), window );
 		}
-
-		// CreateFramebuffers();
 
 		LoadShader( &_vertexShader, "Data/Shaders/vertex.vert" );
 		LoadShader( &_fragmentShader, "Data/Shaders/frag.frag" );
 
 		CreateViewport( 0.f, 0.f, _size.m_Width, _size.m_Height, 0.f, 1.f, &_Viewport );
-		SetupScissorArea();
+		SetupScissorArea( (uint32)_size.m_Width, (uint32)_size.m_Height, 0, 0, &_Scissor );
 
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 		uboLayoutBinding.binding = 0;
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		uboLayoutBinding.descriptorCount = 1;
+
 		VkDescriptorSetLayoutBinding bindings[] = {
 			uboLayoutBinding,
 		};
@@ -388,12 +386,13 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	void vkGraphicsDevice::SetupScissorArea()
+	void vkGraphicsDevice::SetupScissorArea( uint32 width, uint32 height, int32 offsetX, int32 offsetY,
+											 VkRect2D* scissorArea )
 	{
-		_Scissor.extent.width = (uint32)_size.m_Width;
-		_Scissor.extent.height = (uint32)_size.m_Height;
-		_Scissor.offset.x = 0;
-		_Scissor.offset.y = 0;
+		scissorArea->extent.width = width;
+		scissorArea->extent.height = height;
+		scissorArea->offset.x = offsetX;
+		scissorArea->offset.y = offsetY;
 	}
 
 	//_____________________________________________
@@ -544,8 +543,6 @@ namespace Graphics
 		rpInfo.pSubpasses = &subpassDesc;
 		rpInfo.dependencyCount = 1;
 		rpInfo.pDependencies = &dependency;
-
-	
 
 		VkRenderPass renderpass = nullptr;
 		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &renderpass ) != VK_SUCCESS )
@@ -779,7 +776,7 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	VkImageView vkGraphicsDevice::CreateImageView( VkFormat format, VkImage image, VkImageAspectFlags aspectFlag)
+	VkImageView vkGraphicsDevice::CreateImageView( VkFormat format, VkImage image, VkImageAspectFlags aspectFlag )
 	{
 		VkImageViewCreateInfo vcInfo = {};
 		vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -937,7 +934,7 @@ namespace Graphics
 		renderPassInfo.renderPass = _renderPass;
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = { (uint32)_size.m_Width, (uint32)_size.m_Height };
-		renderPassInfo.clearValueCount = ARRSIZE(clearValue);
+		renderPassInfo.clearValueCount = ARRSIZE( clearValue );
 		renderPassInfo.pClearValues = clearValue;
 
 		VkCommandBufferBeginInfo cmdInfo = {};
@@ -973,7 +970,7 @@ namespace Graphics
 	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }
 
 	VkFormat vkGraphicsDevice::findSupportedFormat( const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-								  VkFormatFeatureFlags features )
+													VkFormatFeatureFlags features )
 	{
 		for( VkFormat format : candidates )
 		{
@@ -988,7 +985,6 @@ namespace Graphics
 			{
 				return format;
 			}
-
 		}
 	}
 
@@ -1003,9 +999,9 @@ namespace Graphics
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
-	void vkGraphicsDevice::CreateDepthResources() 
-	{ 
-		VkFormat depthFormat = findDepthFormat(); 
+	void vkGraphicsDevice::CreateDepthResources()
+	{
+		VkFormat depthFormat = findDepthFormat();
 		const VkExtent2D extent = m_Swapchain->GetExtent();
 		CreateImage( extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
 					 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _depthImage,
@@ -1015,7 +1011,6 @@ namespace Graphics
 		transitionImageLayout( _depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
 							   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
 	}
-
 
 	uint32_t vkGraphicsDevice::findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags properties )
 	{
@@ -1077,11 +1072,11 @@ namespace Graphics
 	}
 
 	void vkGraphicsDevice::transitionImageLayout( VkImage image, VkFormat format, VkImageLayout oldLayout,
-												VkImageLayout newLayout )
+												  VkImageLayout newLayout )
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-	   VkImageMemoryBarrier barrier = {};
+		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		barrier.oldLayout = oldLayout;
 		barrier.newLayout = newLayout;

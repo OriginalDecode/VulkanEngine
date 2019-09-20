@@ -64,8 +64,6 @@ namespace Graphics
 
 		void SetupRenderCommands( int index );
 
-		void SetupScissorArea();
-		void SetupViewport();
 		VkRenderPass CreateRenderPass();
 		void CreateCommandPool();
 		void CreateCommandBuffer();
@@ -93,8 +91,7 @@ namespace Graphics
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
 
-
-		//rewrite
+		// rewrite
 		VkCommandBuffer beginSingleTimeCommands();
 		void transitionImageLayout( VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout );
 		void endSingleTimeCommands( VkCommandBuffer commandBuffer );
@@ -107,6 +104,8 @@ namespace Graphics
 
 		void CreateViewport( float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth,
 							 VkViewport* viewport );
+
+		void SetupScissorArea( uint32 width, uint32 height, int32 offsetX, int32 offsetY, VkRect2D* scissorArea );
 	};
 
 	class ConstantBuffer
