@@ -137,7 +137,7 @@ namespace Graphics
 				return i;
 			}
 		}
-		assert( !"Failed to find suitable memory type!" );
+		ASSERT( false, "Failed to find suitable memory type!" );
 		return 0;
 	}
 
@@ -153,7 +153,7 @@ namespace Graphics
 							VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, physDevice );
 
 		if( vkAllocateMemory( logicalDevice, &allocInfo, nullptr, &memory ) != VK_SUCCESS )
-			assert( !"Failed to allocate memory on GPU!" );
+			ASSERT( false, "Failed to allocate memory on GPU!" );
 
 		return memory;
 	}
@@ -162,7 +162,7 @@ namespace Graphics
 					   VkPhysicalDevice physicalDevice )
 	{
 		if( vkCreateBuffer( device, &createInfo, nullptr, buffer ) != VK_SUCCESS )
-			assert( !"Failed to create vertex buffer!" );
+			ASSERT( false, "Failed to create vertex buffer!" );
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements( device, *buffer, &memRequirements );
@@ -170,7 +170,7 @@ namespace Graphics
 		*memory = GPUAllocateMemory( memRequirements, device, physicalDevice );
 
 		if( vkBindBufferMemory( device, *buffer, *memory, 0 ) != VK_SUCCESS )
-			assert( !"Failed to bind buffer memory!" );
+			ASSERT( false, "Failed to bind buffer memory!" );
 	}
 	// to here
 
@@ -232,7 +232,7 @@ namespace Graphics
 
 			void* data = nullptr;
 			if( vkMapMemory( device, deviceMem, 0, dataSize, 0, &data ) != VK_SUCCESS )
-				assert( !"Failed to map memory!" );
+				ASSERT( false, "Failed to map memory!" );
 			memcpy( data, _cube, dataSize );
 			vkUnmapMemory( device, deviceMem );
 		}
@@ -321,7 +321,7 @@ namespace Graphics
 		LoadShader( &_vertexShader, "Data/Shaders/vertex.vert" );
 		LoadShader( &_fragmentShader, "Data/Shaders/frag.frag" );
 
-		SetupViewport();
+		CreateViewport( 0.f, 0.f, _size.m_Width, _size.m_Height, 0.f, 1.f, &_Viewport );
 		SetupScissorArea();
 
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -374,7 +374,7 @@ namespace Graphics
 		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
 		if( vkCreateFence( m_LogicalDevice->GetDevice(), &fenceCreateInfo, nullptr, &m_CommandFence ) != VK_SUCCESS )
-			assert( !"Failed to create fence!" );
+			ASSERT( false, "Failed to create fence!" );
 
 		return true;
 	}
@@ -387,17 +387,7 @@ namespace Graphics
 		_Scissor.offset.x = 0;
 		_Scissor.offset.y = 0;
 	}
-	//_____________________________________________
 
-	void vkGraphicsDevice::SetupViewport()
-	{
-		_Viewport.x = 0.0f;
-		_Viewport.y = 0.0f;
-		_Viewport.width = _size.m_Width;
-		_Viewport.height = _size.m_Height;
-		_Viewport.minDepth = 0.0f;
-		_Viewport.maxDepth = 1.0f;
-	}
 	//_____________________________________________
 
 	void vkGraphicsDevice::DrawFrame( float dt )
@@ -406,13 +396,15 @@ namespace Graphics
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			ASSERT( false, "Failed to acquire next image!" );
 
+		Input::InputManager& input = Input::InputManager::Get();
+
 		Input::HInputDeviceMouse* mouse = nullptr;
-		Input::InputManager::Get().GetDevice( Input::EDeviceType_Mouse, &mouse );
+		input.GetDevice( Input::EDeviceType_Mouse, &mouse );
 
 		const Input::Cursor& cursor = mouse->GetCursor();
 
 		Input::HInputDeviceKeyboard* keyboard = nullptr;
-		Input::InputManager::Get().GetDevice( Input::EDeviceType_Keyboard, &keyboard );
+		input.GetDevice( Input::EDeviceType_Keyboard, &keyboard );
 		const float speed = 10.f;
 
 		if( keyboard->IsDown( DIK_W ) )
@@ -467,7 +459,7 @@ namespace Graphics
 
 		// This line fails when running with renderdoc, suspecting empty queue would be the issue
 		if( vkQueueSubmit( m_LogicalDevice->GetQueue(), 1, &submitInfo, m_CommandFence ) != VK_SUCCESS )
-			assert( !"Failed to submit the queue!" );
+			ASSERT( false, "Failed to submit the queue!" );
 
 		VkSwapchainKHR swapchain = m_Swapchain->GetSwapchain();
 
@@ -480,7 +472,7 @@ namespace Graphics
 		presentInfo.waitSemaphoreCount = 1;
 
 		if( vkQueuePresentKHR( m_LogicalDevice->GetQueue(), &presentInfo ) != VK_SUCCESS )
-			assert( !"Failed to present!" );
+			ASSERT( false, "Failed to present!" );
 
 		SetupRenderCommands( m_Index ^ 1 );
 	}
@@ -531,7 +523,7 @@ namespace Graphics
 
 		VkRenderPass renderpass;
 		if( vkCreateRenderPass( m_LogicalDevice->GetDevice(), &rpInfo, nullptr, &renderpass ) != VK_SUCCESS )
-			assert( !"Failed to create renderpass" );
+			ASSERT( false, "Failed to create renderpass" );
 
 		return renderpass;
 	}
@@ -546,7 +538,7 @@ namespace Graphics
 		poolCreateInfo.queueFamilyIndex = m_PhysicalDevice->GetQueueFamilyIndex();
 
 		if( vkCreateCommandPool( m_LogicalDevice->GetDevice(), &poolCreateInfo, nullptr, &m_CmdPool ) != VK_SUCCESS )
-			assert( !"failed to create VkCommandPool!" );
+			ASSERT( false, "failed to create VkCommandPool!" );
 	}
 	//_____________________________________________
 
@@ -561,12 +553,14 @@ namespace Graphics
 
 		if( vkAllocateCommandBuffers( m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data() ) !=
 			VK_SUCCESS )
-			assert( !"Failed to create VkCommandBuffer!" );
+			ASSERT( false, "Failed to create VkCommandBuffer!" );
 	}
 	//_____________________________________________
 
 	VkPipeline vkGraphicsDevice::CreateGraphicsPipeline()
 	{
+
+		// viewport
 		VkPipelineViewportStateCreateInfo vpCreateInfo = {};
 		vpCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		vpCreateInfo.viewportCount = 1;
@@ -574,10 +568,11 @@ namespace Graphics
 		vpCreateInfo.pScissors = &_Scissor;
 		vpCreateInfo.pViewports = &_Viewport;
 
+		// depth
 		VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = {};
 		pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
-		pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_FALSE;
+		pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+		pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
 		pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_ALWAYS;
 		pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
 		pipelineDepthStencilStateCreateInfo.back.failOp = VK_STENCIL_OP_KEEP;
@@ -586,10 +581,10 @@ namespace Graphics
 		pipelineDepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
 		pipelineDepthStencilStateCreateInfo.front = pipelineDepthStencilStateCreateInfo.back;
 
+		// rasterizer
 		VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-		// rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE // Wireframe
 		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
@@ -597,11 +592,13 @@ namespace Graphics
 		rastCreateInfo.depthBiasEnable = VK_FALSE;
 		rastCreateInfo.lineWidth = 1.0f;
 
+		// sampler
 		VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
 		pipelineMSCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		pipelineMSCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 		pipelineMSCreateInfo.sampleShadingEnable = VK_FALSE;
 
+		// blendstate
 		VkPipelineColorBlendAttachmentState blendAttachState = {};
 		blendAttachState.colorWriteMask = 0xF;
 		blendAttachState.blendEnable = VK_FALSE;
@@ -652,19 +649,10 @@ namespace Graphics
 		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
-		VkPipelineShaderStageCreateInfo vertexStageInfo = {};
-		vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertexStageInfo.module = (VkShaderModule)_vertexShader.GetBlob();
-		vertexStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragStageInfo = {};
-		fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageInfo.module = (VkShaderModule)_fragmentShader.GetBlob();
-		fragStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo ssci[] = { vertexStageInfo, fragStageInfo };
+		VkPipelineShaderStageCreateInfo ssci[] = {
+			CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT, (VkShaderModule)_vertexShader.GetBlob(), "main" ),
+			CreateShaderStageInfo( VK_SHADER_STAGE_FRAGMENT_BIT, (VkShaderModule)_fragmentShader.GetBlob(), "main" )
+		};
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -684,7 +672,7 @@ namespace Graphics
 		VkPipeline pipeline;
 		if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
 									   &pipeline ) != VK_SUCCESS )
-			assert( !"Failed to create pipeline!" );
+			ASSERT( false, "Failed to create pipeline!" );
 		return pipeline;
 	}
 
@@ -698,7 +686,7 @@ namespace Graphics
 		VkDescriptorSetLayout descriptorLayout;
 		if( vkCreateDescriptorSetLayout( m_LogicalDevice->GetDevice(), &layoutInfo, nullptr, &descriptorLayout ) !=
 			VK_SUCCESS )
-			assert( !"Failed to create Descriptor layout" );
+			ASSERT( false, "Failed to create Descriptor layout" );
 
 		return descriptorLayout;
 	}
@@ -718,7 +706,7 @@ namespace Graphics
 
 		if( vkCreateDescriptorPool( m_LogicalDevice->GetDevice(), &createInfo, nullptr, &_descriptorPool ) !=
 			VK_SUCCESS )
-			assert( !"Failed to create descriptorPool" );
+			ASSERT( false, "Failed to create descriptorPool" );
 	}
 
 	void vkGraphicsDevice::CreateDescriptorSet()
@@ -735,7 +723,7 @@ namespace Graphics
 		allocInfo.pSetLayouts = layouts;
 
 		if( vkAllocateDescriptorSets( m_LogicalDevice->GetDevice(), &allocInfo, &_descriptorSet ) != VK_SUCCESS )
-			assert( !"failed to allocate descriptor sets!" );
+			ASSERT( false, "failed to allocate descriptor sets!" );
 	}
 
 	//_____________________________________________
@@ -758,7 +746,7 @@ namespace Graphics
 		VkPipelineLayout pipeline;
 		if( vkCreatePipelineLayout( m_LogicalDevice->GetDevice(), &pipelineCreateInfo, nullptr, &pipeline ) !=
 			VK_SUCCESS )
-			assert( !"Failed to create pipelineLayout" );
+			ASSERT( false, "Failed to create pipelineLayout" );
 		return pipeline;
 	}
 	//_____________________________________________
@@ -780,7 +768,7 @@ namespace Graphics
 		srr.layerCount = 1;
 		VkImageView view;
 		if( vkCreateImageView( m_LogicalDevice->GetDevice(), &vcInfo, nullptr, &view ) != VK_SUCCESS )
-			assert( !"Failed to create ImageView!" );
+			ASSERT( false, "Failed to create ImageView!" );
 
 		return view;
 	}
@@ -799,7 +787,7 @@ namespace Graphics
 
 		VkFramebuffer framebuffer;
 		if( vkCreateFramebuffer( m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &framebuffer ) != VK_SUCCESS )
-			assert( !"Failed to create framebuffer!" );
+			ASSERT( false, "Failed to create framebuffer!" );
 		return framebuffer;
 	}
 
@@ -828,7 +816,7 @@ namespace Graphics
 		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		if( vkCreateSemaphore( pDevice, &semaphoreCreateInfo, nullptr, &semaphore ) != VK_SUCCESS )
-			assert( !"Failed to create VkSemaphore" );
+			ASSERT( false, "Failed to create VkSemaphore" );
 
 		return semaphore;
 	}
@@ -844,7 +832,7 @@ namespace Graphics
 
 		VkShaderModule shaderModule = nullptr;
 		if( vkCreateShaderModule( pDevice, &createInfo, nullptr, &shaderModule ) != VK_SUCCESS )
-			assert( !"Failed to create VkShaderModule!" );
+			ASSERT( false, "Failed to create VkShaderModule!" );
 
 		return shaderModule;
 	}
@@ -861,7 +849,7 @@ namespace Graphics
 		VkDeviceMemory deviceMem = static_cast<VkDeviceMemory>( constantBuffer->GetDeviceMemory() );
 		void* data = nullptr;
 		if( vkMapMemory( lDevice, deviceMem, offset, constantBuffer->GetSize(), 0, &data ) != VK_SUCCESS )
-			assert( !"Failed to map memory!" );
+			ASSERT( false, "Failed to map memory!" );
 
 		int8* pMem = static_cast<int8*>( data );
 		int32 step = 0;
@@ -893,7 +881,7 @@ namespace Graphics
 
 		VkBuffer vulkan_buffer = nullptr;
 		if( vkCreateBuffer( lDevice, &createInfo, nullptr, &vulkan_buffer ) != VK_SUCCESS )
-			assert( !"Failed to create vertex buffer!" );
+			ASSERT( false, "Failed to create vertex buffer!" );
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements( lDevice, vulkan_buffer, &memRequirements );
@@ -901,7 +889,7 @@ namespace Graphics
 		VkDeviceMemory deviceMem = GPUAllocateMemory( memRequirements, lDevice, pDevice );
 
 		if( vkBindBufferMemory( lDevice, vulkan_buffer, deviceMem, 0 ) != VK_SUCCESS )
-			assert( !"Failed to bind buffer memory!" );
+			ASSERT( false, "Failed to bind buffer memory!" );
 
 		constantBuffer->SetBuffer( vulkan_buffer );
 		constantBuffer->SetDeviceMemory( deviceMem );
@@ -931,7 +919,7 @@ namespace Graphics
 		VkCommandBuffer& commandBuffer = m_CmdBuffers[index];
 
 		if( vkBeginCommandBuffer( commandBuffer, &cmdInfo ) != VK_SUCCESS )
-			assert( !"Failed to begin CommandBuffer!" );
+			ASSERT( false, "Failed to begin CommandBuffer!" );
 		renderPassInfo.framebuffer = frameBuffer;
 
 		vkCmdBeginRenderPass( commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
@@ -945,7 +933,7 @@ namespace Graphics
 		vkCmdEndRenderPass( commandBuffer );
 
 		if( vkEndCommandBuffer( commandBuffer ) != VK_SUCCESS )
-			assert( !"Failed to end CommandBuffer!" );
+			ASSERT( false, "Failed to end CommandBuffer!" );
 	}
 
 	void vkGraphicsDevice::DestroyShader( Shader* pShader )
@@ -954,5 +942,28 @@ namespace Graphics
 	}
 
 	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }
+
+	VkPipelineShaderStageCreateInfo vkGraphicsDevice::CreateShaderStageInfo( VkShaderStageFlagBits stageFlags,
+																			 VkShaderModule module,
+																			 const char* entryPoint )
+	{
+		VkPipelineShaderStageCreateInfo stageInfo = {};
+		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageInfo.stage = stageFlags;
+		stageInfo.module = module;
+		stageInfo.pName = entryPoint;
+		return stageInfo;
+	}
+
+	void vkGraphicsDevice::CreateViewport( float topLeftX, float topLeftY, float width, float height, float minDepth,
+										   float maxDepth, VkViewport* viewport )
+	{
+		viewport->x = topLeftX;
+		viewport->y = topLeftY;
+		viewport->width = width;
+		viewport->height = height;
+		viewport->minDepth = minDepth;
+		viewport->maxDepth = maxDepth;
+	}
 
 }; // namespace Graphics

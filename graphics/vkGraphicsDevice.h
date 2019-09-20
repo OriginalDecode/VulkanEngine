@@ -82,6 +82,12 @@ namespace Graphics
 
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
+
+		VkPipelineShaderStageCreateInfo CreateShaderStageInfo( VkShaderStageFlagBits stageFlags, VkShaderModule module,
+															   const char* entryPoint );
+
+		void CreateViewport( float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth,
+							 VkViewport* viewport );
 	};
 
 	class ConstantBuffer
