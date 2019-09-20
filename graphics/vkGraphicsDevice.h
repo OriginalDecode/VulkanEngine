@@ -50,6 +50,10 @@ namespace Graphics
 		std::vector<VkCommandBuffer> m_CmdBuffers;
 		VkCommandPool m_CmdPool = nullptr;
 
+		VkFormat findSupportedFormat( const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+									  VkFormatFeatureFlags features );
+		VkFormat findDepthFormat();
+
 		VkSemaphore m_AcquireNextImageSemaphore = nullptr;
 
 		VkSemaphore m_DrawDone = nullptr;
@@ -74,14 +78,29 @@ namespace Graphics
 
 		VkPipelineLayout CreatePipelineLayout( VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount,
 											   VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount );
-		VkImageView CreateImageView( VkFormat format, VkImage image );
-		VkFramebuffer CreateFramebuffer( VkImageView view, int32 attachmentCount, const Window& window );
+		VkImageView CreateImageView( VkFormat format, VkImage image, VkImageAspectFlags aspectFlag );
+		VkFramebuffer CreateFramebuffer( VkImageView* view, int32 attachmentCount, const Window& window );
+
+		void CreateImage( uint32 width, uint32 height, VkFormat format, VkImageTiling imageTiling,
+						  VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,
+						  VkDeviceMemory& imageMemory );
 
 		VkVertexInputBindingDescription CreateBindDesc();
 		VkVertexInputAttributeDescription CreateAttrDesc( int location, int offset );
 
+		void CreateDepthResources();
+
 		VkSemaphore CreateVkSemaphore( VkDevice pDevice );
 		VkShaderModule LoadShader( const char* filepath, VkDevice pDevice );
+
+
+		//rewrite
+		VkCommandBuffer beginSingleTimeCommands();
+		void transitionImageLayout( VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout );
+		void endSingleTimeCommands( VkCommandBuffer commandBuffer );
+		void copyBuffer( VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size );
+		uint32_t findMemoryType( uint32_t typeFilter, VkMemoryPropertyFlags properties );
+		// rewrite
 
 		VkPipelineShaderStageCreateInfo CreateShaderStageInfo( VkShaderStageFlagBits stageFlags, VkShaderModule module,
 															   const char* entryPoint );
