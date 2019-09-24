@@ -1,7 +1,6 @@
 #include "vkGraphicsDevice.h"
 
-#include "Core/File.h"
-#include "Core/math/Matrix44.h"
+#include "Camera.h"
 
 #include "VlkInstance.h"
 #include "VlkPhysicalDevice.h"
@@ -11,17 +10,18 @@
 #include "Utilities.h"
 #include "Window.h"
 
-#include <cassert>
-#include <windows.h>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
+#include "Core/File.h"
+#include "Core/math/Matrix44.h"
 #include "Core/utilities/Randomizer.h"
-#include "Camera.h"
 #include "Input/InputManager.h"
 #include "input/InputDeviceMouse_Win32.h"
 #include "input/InputDeviceKeyboard_Win32.h"
 
-#include <logger/Debug.h>
+#include "logger/Debug.h"
+
+#include <windows.h>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -305,6 +305,7 @@ namespace Graphics
 
 		_ViewProjection.RegVar( _Camera.GetView() );
 		_ViewProjection.RegVar( _Camera.GetProjection() );
+		//_ViewProjection.RegVar( _Camera.GetViewProjectionPointer() );
 
 		CreateConstantBuffer( &_ViewProjection );
 		CreateCommandPool();
@@ -986,6 +987,9 @@ namespace Graphics
 				return format;
 			}
 		}
+
+		ASSERT( false, "undefined format!" );
+		return VK_FORMAT_UNDEFINED;
 	}
 
 	VkFormat vkGraphicsDevice::findDepthFormat()

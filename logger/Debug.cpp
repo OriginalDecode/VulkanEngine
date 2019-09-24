@@ -171,14 +171,14 @@ namespace Log
 		m_Instance->m_Stream.flush();
 	}
 
-	void Debug::ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type )
-	{
-		// std::string msg = "[";
-		// msg += aTitle;
-		// msg += "] ";
-		// msg += aText;
-		// DL_PRINT(msg.c_str());
-		// MessageBox( hwnd, text, title, type );
-	}
+	// void Debug::ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type )
+	//{
+	//	// std::string msg = "[";
+	//	// msg += aTitle;
+	//	// msg += "] ";
+	//	// msg += aText;
+	//	// DL_PRINT(msg.c_str());
+	//	// MessageBox( hwnd, text, title, type );
+	//}
 
 }; // namespace Log

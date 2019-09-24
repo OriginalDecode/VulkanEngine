@@ -50,7 +50,7 @@ namespace Log
 		void AssertMessage( bool expr, const char* fileName, int line, const char* fncName, const std::string& str );
 		void AssertMessage( const char* fileName, int line, const char* fncName, const std::string& str );
 
-		void ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type );
+		// void ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type );
 
 	private:
 		Debug() = default;

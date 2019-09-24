@@ -110,7 +110,7 @@ protected:
 		CHAR loadedImageName[STACKWALK_MAX_NAMELEN];
 	} CallstackEntry;
 
-	typedef enum CallstackEntryType
+	enum CallstackEntryType
 	{
 		firstEntry,
 		nextEntry,

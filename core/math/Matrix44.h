@@ -566,7 +566,7 @@ namespace Core
 	{
 		Matrix44<T> temp = Matrix44<T>::Identity();
 
-		const T f = 1.0f / tan( 0.5f * ( fovAngle * ( 3.1415f / 180.f ) ) );
+		const T f = 1.0f / tanf( 0.5f * ( fovAngle * ( 3.1415f / 180.f ) ) );
 
 		temp[0] = f / aspectRatio;
 		temp[5] = -f;
