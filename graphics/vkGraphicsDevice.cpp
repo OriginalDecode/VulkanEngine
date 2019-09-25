@@ -246,11 +246,11 @@ namespace Graphics
 
 	struct Shader
 	{
-		void* m_ShaderBlob = nullptr;
+		VkShaderModule m_Module = nullptr;
 
-		void Create( void* blob ) { m_ShaderBlob = blob; }
+		void Create( VkShaderModule module ) { m_Module = module; }
 
-		void* GetBlob() { return m_ShaderBlob; }
+		VkShaderModule GetModule() { return m_Module; }
 	};
 
 	Shader _vertexShader;
@@ -676,8 +676,8 @@ namespace Graphics
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
 		VkPipelineShaderStageCreateInfo ssci[] = {
-			CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT, (VkShaderModule)_vertexShader.GetBlob(), "main" ),
-			CreateShaderStageInfo( VK_SHADER_STAGE_FRAGMENT_BIT, (VkShaderModule)_fragmentShader.GetBlob(), "main" )
+			CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT, _vertexShader.GetModule(), "main" ),
+			CreateShaderStageInfo( VK_SHADER_STAGE_FRAGMENT_BIT, _fragmentShader.GetModule(), "main" )
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -863,7 +863,7 @@ namespace Graphics
 		return shaderModule;
 	}
 
-	void vkGraphicsDevice::LoadShader( Shader* shader, const char* filepath )
+	void vkGraphicsDevice::LoadShader( HShader* shader, const char* filepath )
 	{
 		shader->Create( LoadShader( filepath, m_LogicalDevice->GetDevice() ) );
 	}
@@ -963,9 +963,9 @@ namespace Graphics
 			ASSERT( false, "Failed to end CommandBuffer!" );
 	}
 
-	void vkGraphicsDevice::DestroyShader( Shader* pShader )
+	void vkGraphicsDevice::DestroyShader( HShader* pShader )
 	{
-		vkDestroyShaderModule( m_LogicalDevice->GetDevice(), (VkShaderModule)pShader->GetBlob(), nullptr );
+		vkDestroyShaderModule( m_LogicalDevice->GetDevice(), pShader->GetModule(), nullptr );
 	}
 
 	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }

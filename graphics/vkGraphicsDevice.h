@@ -10,10 +10,13 @@
 #include <vulkan/vulkan_core.h>
 
 class Window;
-// struct VkWin32SurfaceCreateInfoKHR;
 
 namespace Graphics
 {
+
+	typedef struct Shader HShader;
+
+
 	class ConstantBuffer;
 	class VlkInstance;
 	class VlkPhysicalDevice;
@@ -38,8 +41,9 @@ namespace Graphics
 		virtual void CreateConstantBuffer( ConstantBuffer* constantBuffer ) override;
 		virtual void DestroyConstantBuffer( ConstantBuffer* constantBuffer ) override;
 
-		void LoadShader( struct Shader* shader, const char* filepath );
-		void DestroyShader( struct Shader* pShader );
+		void LoadShader( HShader* shader, const char* filepath );
+		void DestroyShader( HShader* pShader );
+
 
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;
