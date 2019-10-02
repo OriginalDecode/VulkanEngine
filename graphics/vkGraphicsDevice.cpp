@@ -26,6 +26,7 @@
 
 #include "thirdparty/imgui/imgui.h"
 #include "graphics/imgui_impl_vulkan.h"
+#include "graphics/imgui_impl_win32.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -407,6 +408,17 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
+
+		
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+		static bool show_demo_window = true;
+		ImGui::ShowDemoWindow( &show_demo_window );
+		ImGui::Render();
+
+
+
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX,
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			ASSERT( false, "Failed to acquire next image!" );
@@ -490,6 +502,9 @@ namespace Graphics
 			ASSERT( false, "Failed to present!" );
 
 		SetupRenderCommands( m_Index ^ 1 );
+
+
+
 	}
 
 	//_____________________________________________
@@ -964,11 +979,11 @@ namespace Graphics
 		//for( Cube& cube : _Cubes )
 		//	cube.Draw( commandBuffer, _pipelineLayout );
 
-		ImGui_ImplVulkan_NewFrame();
-		ImGui::NewFrame();
-		static bool show_demo_window = true;
-		ImGui::ShowDemoWindow( &show_demo_window );
-		ImGui::Render();
+
+
+
+		
+		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), commandBuffer);
 
 		vkCmdEndRenderPass( commandBuffer );
 
