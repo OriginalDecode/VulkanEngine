@@ -44,7 +44,6 @@ namespace Graphics
 		void LoadShader( HShader* shader, const char* filepath );
 		void DestroyShader( HShader* pShader );
 
-
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;
 		std::unique_ptr<VlkPhysicalDevice> m_PhysicalDevice;
@@ -110,6 +109,9 @@ namespace Graphics
 							 VkViewport* viewport );
 
 		void SetupScissorArea( uint32 width, uint32 height, int32 offsetX, int32 offsetY, VkRect2D* scissorArea );
+
+		void SetupImGui();
+
 	};
 
 	class ConstantBuffer

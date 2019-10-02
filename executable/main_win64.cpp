@@ -1,13 +1,19 @@
 
-#include <Windows.h>
-#include <iostream>
 
-#include <graphics/Window.h>
-#include <graphics/GraphicsEngine.h>
-#include <core/Timer.h>
+#include "graphics/Window.h"
+#include "graphics/GraphicsEngine.h"
+#include "core/Timer.h"
+#include "input/InputManager.h"
+#include "Logger/Debug.h"
+
+#include "thirdparty/imgui/imgui.h"
+#include "graphics/imgui_impl_win32.h"
+
 #include <memory>
-#include <input/InputManager.h>
-#include <Logger/Debug.h>
+#include <iostream>
+#include <Windows.h>
+
+
 
 LRESULT CALLBACK WindowProc( HWND, UINT, WPARAM, LPARAM );
 bool gameRunning = true; // we'll need this in the WindowProc
@@ -15,6 +21,9 @@ bool gameRunning = true; // we'll need this in the WindowProc
 int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 {
 	// Window* window = new Window({ 1920, 1080, instance, WindowProc });
+
+
+	Graphics::CreateImGuiContext();
 
 	Log::Debug::Create();
 
@@ -34,6 +43,8 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 	Core::Timer timer;
 	timer.Start();
+
+	ImGui_ImplWin32_Init( window->GetHandle() );
 
 	MSG msg;
 	do

@@ -6,6 +6,7 @@
 #include "VlkPhysicalDevice.h"
 #include "VlkDevice.h"
 #include "VlkSwapchain.h"
+#include "VlkSurface.h"
 
 #include "Utilities.h"
 #include "Window.h"
@@ -22,6 +23,9 @@
 #include <windows.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
+
+#include "thirdparty/imgui/imgui.h"
+#include "graphics/imgui_impl_vulkan.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -40,6 +44,7 @@ VkImage _depthImage = nullptr;
 VkImageView _depthView = nullptr;
 VkDeviceMemory _depthImageMemory = nullptr;
 
+ImGui_ImplVulkanH_Window _MainWindowData;
 Graphics::Camera _Camera;
 
 Window::Size _size;
@@ -382,6 +387,8 @@ namespace Graphics
 
 		if( vkCreateFence( m_LogicalDevice->GetDevice(), &fenceCreateInfo, nullptr, &m_CommandFence ) != VK_SUCCESS )
 			ASSERT( false, "Failed to create fence!" );
+
+		SetupImGui();
 
 		return true;
 	}
@@ -954,8 +961,14 @@ namespace Graphics
 		vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet,
 								 0, nullptr );
 
-		for( Cube& cube : _Cubes )
-			cube.Draw( commandBuffer, _pipelineLayout );
+		//for( Cube& cube : _Cubes )
+		//	cube.Draw( commandBuffer, _pipelineLayout );
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui::NewFrame();
+		static bool show_demo_window = true;
+		ImGui::ShowDemoWindow( &show_demo_window );
+		ImGui::Render();
 
 		vkCmdEndRenderPass( commandBuffer );
 
@@ -1217,6 +1230,30 @@ namespace Graphics
 		viewport->height = height;
 		viewport->minDepth = minDepth;
 		viewport->maxDepth = maxDepth;
+	}
+
+	void vkGraphicsDevice::SetupImGui()
+	{
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize.x = _size.m_Width;
+		io.DisplaySize.y = _size.m_Height;
+
+
+		ImGui_ImplVulkan_InitInfo info = {};
+		info.Device = m_LogicalDevice->GetDevice();
+		info.PhysicalDevice = m_PhysicalDevice->GetDevice();
+		info.Instance = m_Instance->GetVKInstance();
+		info.Queue = m_LogicalDevice->GetQueue();
+		info.DescriptorPool = _descriptorPool;
+		info.MinImageCount = 2;
+		info.ImageCount = m_Swapchain->GetNofImages();
+
+		if( !ImGui_ImplVulkan_Init( &info, _renderPass ) )
+			ASSERT( false, "Failed" );
+
+		ImGui_ImplVulkan_CreateFontsTexture( m_CmdBuffers[0] );
+
 	}
 
 }; // namespace Graphics

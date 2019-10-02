@@ -36,6 +36,8 @@ namespace Graphics
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
 		VkExtent2D GetExtent() const;
 
+		VlkSurface* GetSurface();
+
 	private:
 
 		std::unique_ptr<VlkSurface> m_Surface;

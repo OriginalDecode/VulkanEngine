@@ -24,8 +24,11 @@ namespace Graphics
 
 		void GetPhysicalDevices(std::vector<VkPhysicalDevice>& deviceList);
 
+		VkInstance GetVKInstance() { return m_Instance; }
+
 	private:
 		VkInstance m_Instance = nullptr;
+
 	};
 
 }; //namespace Graphics

@@ -33,6 +33,8 @@ namespace Graphics
 		uint32 GetFormatCount( ) const;
 		const std::vector<VkSurfaceFormatKHR>& GetSurfaceFormats()const;
 
+		VkSurfaceKHR GetSurface() { return m_Surface; }
+
 	private:
 		bool m_CanPresent = false;
 		VkSurfaceKHR m_Surface = nullptr;

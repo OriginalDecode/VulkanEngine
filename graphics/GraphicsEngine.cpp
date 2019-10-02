@@ -10,10 +10,19 @@
 
 #include "vkGraphicsDevice.h"
 
+#include "thirdparty/imgui/imgui.h"
+
 constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
 
 namespace Graphics
 {
+	void CreateImGuiContext()
+	{
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGui::StyleColorsDark();
+	}
+
 	std::unique_ptr<GraphicsEngine> GraphicsEngine::m_Instance = nullptr;
 
 	GraphicsEngine::GraphicsEngine() {}

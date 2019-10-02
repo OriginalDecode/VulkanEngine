@@ -111,10 +111,14 @@ end
     project "Graphics"
         kind "StaticLib"
         location ("./graphics")    
-        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp" }
+        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp", 
+                "thirdparty/imgui/**.h", "thirdparty/imgui/**.cpp" }
         dependson { "Core" }
-        links { "$(VULKAN_SDK)/lib/vulkan-1.lib" }
-        includedirs { "$(VULKAN_SDK)/Include/" }
+        links { "$(VULKAN_SDK)/lib/vulkan-1.lib", 
+                "thirdparty/freetype/freetype.lib" }
+
+        includedirs { "$(VULKAN_SDK)/Include/",
+                      "thirdparty/freetype/" }
         -- symbolspath does not seem to work as inteded
         -- symbolspath "%{wks.location}/bin/%{cfg.buildcfg}/%{prj.name}.pdb"
         

@@ -29,7 +29,8 @@ namespace Graphics
 		{
 			for( const auto& availableFormat : formats )
 			{
-				if( availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+				if( availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+					availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
 				{
 					format = availableFormat;
 				}
@@ -37,17 +38,11 @@ namespace Graphics
 		}
 		return format;
 	}
-		
-	VkSurfaceFormatKHR VlkSwapchain::GetFormat()
-	{
-		return Graphics::GetFormat( m_Surface->GetSurfaceFormats() );
-	}
+
+	VkSurfaceFormatKHR VlkSwapchain::GetFormat() { return Graphics::GetFormat( m_Surface->GetSurfaceFormats() ); }
 
 	VlkSwapchain::VlkSwapchain() = default;
-	VlkSwapchain::~VlkSwapchain() 
-	{
-		Release();
-	}
+	VlkSwapchain::~VlkSwapchain() { Release(); }
 
 	void VlkSwapchain::Release()
 	{
@@ -55,13 +50,13 @@ namespace Graphics
 		device.DestroySwapchain( m_Swapchain );
 	}
 
-
-	void VlkSwapchain::Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window )
+	void VlkSwapchain::Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice,
+							 const Window& window )
 	{
 		VkWin32SurfaceCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hwnd = static_cast<HWND>(window.GetHandle());
-		createInfo.hinstance = ::GetModuleHandle(nullptr);
+		createInfo.hwnd = static_cast<HWND>( window.GetHandle() );
+		createInfo.hinstance = ::GetModuleHandle( nullptr );
 
 		m_Surface = instance->CreateSurface( createInfo, physicalDevice );
 		QueueProperties queueProp = physicalDevice->FindFamilyIndices( m_Surface.get() );
@@ -71,7 +66,6 @@ namespace Graphics
 			assert( !"Surface cannot present!" );
 			return;
 		}
-
 
 		const VkSurfaceCapabilitiesKHR& capabilities = m_Surface->GetCapabilities();
 
@@ -94,7 +88,7 @@ namespace Graphics
 		if( queueProp.queueIndex != queueProp.familyIndex )
 		{
 			const uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
-			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE(queueIndices);
+			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE( queueIndices );
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		}
@@ -113,25 +107,24 @@ namespace Graphics
 
 		swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; //this field defines blocking or nonblocking - (VK_PRESENT_MODE_FIFO_KHR) blocks (vsync on or off)
-		
-		swapchainCreateInfo.clipped = VK_TRUE;
+		swapchainCreateInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // this field defines blocking or nonblocking -
+																		 // (VK_PRESENT_MODE_FIFO_KHR) blocks (vsync on
+																		 // or off)
 
+		swapchainCreateInfo.clipped = VK_TRUE;
 
 		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
 
 		device->GetSwapchainImages( &m_Swapchain, &m_Images );
 		m_ImageViews.resize( m_Images.size() );
-
-
 	}
 
-
-
-	VkExtent2D VlkSwapchain::GetExtent() const 
+	VkExtent2D VlkSwapchain::GetExtent() const
 	{
 		const VkSurfaceCapabilitiesKHR& capabilities = m_Surface->GetCapabilities();
-		return capabilities.currentExtent;	
+		return capabilities.currentExtent;
 	}
 
-}; //namespace Graphics
+	VlkSurface* VlkSwapchain::GetSurface() { return m_Surface.get(); }
+
+}; // namespace Graphics

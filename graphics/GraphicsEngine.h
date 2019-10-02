@@ -6,6 +6,7 @@
 class Window;
 namespace Graphics
 {
+	void CreateImGuiContext();
 	class vkGraphicsDevice;
 	class GraphicsEngine
 	{
