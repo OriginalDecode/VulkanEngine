@@ -1,9 +1,12 @@
+#define UNIT_TEST
+
 #include <cstdio>
 #include "gtest/gtest.h"
 
 #include "Core/math/Vector4.h"
 #include "Core/math/Vector3.h"
 #include "Core/math/Vector2.h"
+#include "Core/containers/Array.h"
 
 /*
 	different macros for unit tests
@@ -16,7 +19,7 @@
 	EXPECT_GE // greater or equal than
 
 	Expect does not assume fatal
-	
+
 	ASSERT_TRUE //fatal
 	ASSERT_FALSE //fatal
 
@@ -49,6 +52,43 @@ TEST( Vector4, dot )
 	Core::Vector4<float> second( e, f, g, h );
 
 	ASSERT_EQ( Core::Dot( first, second ), dot_result );
+}
+
+TEST( Array, create )
+{
+	Core::Array<float> array;
+	ASSERT_TRUE( array.Size() != array.Capacity() );
+	ASSERT_TRUE( array.Size() == 0 );
+	ASSERT_TRUE( array.Capacity() == 20 ); // if the default capacity ever changes this test will break
+}
+
+TEST( Array, addOne )
+{
+	Core::Array<float> array;
+	array.Add( 1.f );
+	ASSERT_TRUE( array.Size() == 1 );
+}
+
+TEST( Array, fill )
+{
+	Core::Array<float> array;
+	for( int i = 0; i < array.Capacity(); i++ )
+		array.Add( 1.f );
+
+	ASSERT_EQ( array.Size(), array.Capacity() );
+}
+
+TEST( Array, Copy )
+{
+	Core::Array<float> array;
+	for( int i = 0; i < array.Capacity(); i++ )
+		array.Add( 1.f );
+
+	Core::Array<float> array2( array );
+
+	ASSERT_TRUE( array2.m_Data != nullptr );
+	ASSERT_TRUE( array.m_Data != nullptr );
+	ASSERT_NE( array.m_Data, array2.m_Data );
 }
 
 GTEST_API_ int main( int argc, char** argv )

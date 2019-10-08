@@ -89,8 +89,8 @@ if _OPTIONS["project"] ~= nil then
             kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
             location ("./executable")
 
-            dependson { "Core", "Graphics", "Input", "Logger" }
-            links { "Graphics", "Core", "Input", "Logger" } --libraries to link
+            dependson { "Core", "Graphics", "Input", "Logger", "Game" }
+            links { "Graphics", "Core", "Input", "Logger", "Game" } --libraries to link
 
             files { "executable/*.cpp" }
     elseif _OPTIONS["project"] == "unit_test" then
@@ -100,8 +100,7 @@ if _OPTIONS["project"] ~= nil then
             location ("./unit_test")
 
             dependson { "Core", "Graphics" }
-            links { "Graphics", "Core", "Input" ,"gtest_%{cfg.buildcfg}" } --libraries to link
-
+            links { "Graphics", "Core", "Input", "Logger", "gtest_%{cfg.buildcfg}" } --libraries to link
             files { "unit_test/*.cpp" }
     end
 else
