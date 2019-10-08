@@ -6,6 +6,9 @@
 #include "input/InputManager.h"
 #include "Logger/Debug.h"
 
+#include "game/StateStack.h"
+#include "game/Game.h"
+
 #include "thirdparty/imgui/imgui.h"
 #include "graphics/imgui_impl_win32.h"
 
@@ -46,6 +49,10 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 	ImGui_ImplWin32_Init( window->GetHandle() );
 
+	Game game;
+	StateStack state_stack;
+	state_stack.PushState( &game, StateStack::MAIN );
+
 	MSG msg;
 	do
 	{
@@ -69,6 +76,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 		}
 		/* Windows Specific */
 
+		state_stack.UpdateCurrentState( timer.GetTime() );
 		input.Update();
 		graphics_engine.Present( timer.GetTime() );
 
