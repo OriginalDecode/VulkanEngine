@@ -81,8 +81,13 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 	return 0;
 }
 
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) /* very windows specific */
 {
+
+	if( ImGui_ImplWin32_WndProcHandler( hWnd, message, wParam, lParam ) )
+		return true;
 
 	switch( message )
 	{

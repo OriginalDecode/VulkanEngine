@@ -24,6 +24,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_win32.h>
 
+#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #include "thirdparty/imgui/imgui.h"
 #include "graphics/imgui_impl_vulkan.h"
 #include "graphics/imgui_impl_win32.h"
@@ -45,7 +46,6 @@ VkImage _depthImage = nullptr;
 VkImageView _depthView = nullptr;
 VkDeviceMemory _depthImageMemory = nullptr;
 
-ImGui_ImplVulkanH_Window _MainWindowData;
 Graphics::Camera _Camera;
 
 Window::Size _size;
@@ -289,6 +289,11 @@ namespace Graphics
 
 		for( VkFramebuffer buffer : m_FrameBuffers )
 			vkDestroyFramebuffer( device, buffer, nullptr );
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		ImGui::DestroyContext();
+		ImGui_ImplWin32_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
 	}
 
 	bool vkGraphicsDevice::Init( const Window& window )
@@ -409,15 +414,43 @@ namespace Graphics
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
 
-		
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplWin32_NewFrame();
+
 		ImGui::NewFrame();
-		static bool show_demo_window = true;
-		ImGui::ShowDemoWindow( &show_demo_window );
+		// static bool show_demo_window = true;
+		// ImGui::ShowDemoWindow( &show_demo_window );
+
+		/*
+		ImGui::SetNextWindowSize( ImVec2( _size.m_Width * 0.5f, _size.m_Height * 0.25f ) );
+		if( ImGui::Begin( "log", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) )
+		{
+			for( auto& it : m_LogMessages )
+			{
+				if( it.find( "warning" ) != it.npos )
+				{
+					ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), it.c_str() );
+				}
+				else if (it.find("error") != it.npos)
+				{
+					ImGui::TextColored( ImVec4( 1, 0, 0, 1 ), it.c_str() );
+				}
+				else
+				{
+					ImGui::TextColored( ImVec4( 1, 1, 1, 1 ), it.c_str() );
+				}
+			}
+			if (m_LogIsDirty)
+			{
+				m_LogIsDirty = false;
+				ImGui::SetScrollHereY(1.0);
+			}
+		
+			ImGui::End();
+		}
+		*/
+
 		ImGui::Render();
-
-
 
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX,
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
@@ -433,6 +466,22 @@ namespace Graphics
 		Input::HInputDeviceKeyboard* keyboard = nullptr;
 		input.GetDevice( Input::EDeviceType_Keyboard, &keyboard );
 		const float speed = 10.f;
+
+		if( keyboard->OnDown( DIK_P ) )
+		{
+			AddLogText( "adding some text to the log" );
+		}
+
+		if (keyboard->OnDown(DIK_L))
+		{
+			AddLogText( "error some text were added" );
+		}
+
+		if( keyboard->OnDown( DIK_O ) )
+		{
+			AddLogText( "warning some text were added" );
+		}
+
 
 		if( keyboard->IsDown( DIK_W ) )
 		{
@@ -502,9 +551,6 @@ namespace Graphics
 			ASSERT( false, "Failed to present!" );
 
 		SetupRenderCommands( m_Index ^ 1 );
-
-
-
 	}
 
 	//_____________________________________________
@@ -721,6 +767,11 @@ namespace Graphics
 		if( vkCreateGraphicsPipelines( m_LogicalDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
 									   &pipeline ) != VK_SUCCESS )
 			ASSERT( false, "Failed to create pipeline!" );
+
+		DestroyShader( &_vertexShader );
+		DestroyShader( &_fragmentShader );
+
+
 		return pipeline;
 	}
 
@@ -976,14 +1027,10 @@ namespace Graphics
 		vkCmdBindDescriptorSets( commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet,
 								 0, nullptr );
 
-		//for( Cube& cube : _Cubes )
-		//	cube.Draw( commandBuffer, _pipelineLayout );
+		for( Cube& cube : _Cubes )
+			cube.Draw( commandBuffer, _pipelineLayout );
 
-
-
-
-		
-		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), commandBuffer );
 
 		vkCmdEndRenderPass( commandBuffer );
 
@@ -1254,12 +1301,18 @@ namespace Graphics
 		io.DisplaySize.x = _size.m_Width;
 		io.DisplaySize.y = _size.m_Height;
 
+		VkDevice lDevice = m_LogicalDevice->GetDevice();
+		VkPhysicalDevice pDevice = m_PhysicalDevice->GetDevice();
+		VkInstance instance = m_Instance->GetVKInstance();
+		VkQueue queue = m_LogicalDevice->GetQueue();
+		uint32 queueFamily = m_PhysicalDevice->GetQueueFamilyIndex();
 
 		ImGui_ImplVulkan_InitInfo info = {};
-		info.Device = m_LogicalDevice->GetDevice();
-		info.PhysicalDevice = m_PhysicalDevice->GetDevice();
-		info.Instance = m_Instance->GetVKInstance();
-		info.Queue = m_LogicalDevice->GetQueue();
+		info.Device = lDevice;
+		info.PhysicalDevice = pDevice;
+		info.Instance = instance;
+		info.Queue = queue;
+		info.QueueFamily = queueFamily;
 		info.DescriptorPool = _descriptorPool;
 		info.MinImageCount = 2;
 		info.ImageCount = m_Swapchain->GetNofImages();
@@ -1267,8 +1320,46 @@ namespace Graphics
 		if( !ImGui_ImplVulkan_Init( &info, _renderPass ) )
 			ASSERT( false, "Failed" );
 
-		ImGui_ImplVulkan_CreateFontsTexture( m_CmdBuffers[0] );
+		if( vkResetCommandPool( lDevice, m_CmdPool, 0 ) != VK_SUCCESS )
+			ASSERT( false, "failed to reset commandPool" );
 
+		VkCommandBuffer command_buffer = m_CmdBuffers[0];
+
+		VkCommandBufferBeginInfo begin_info = {};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		if( vkBeginCommandBuffer( command_buffer, &begin_info ) != VK_SUCCESS )
+			ASSERT( false, "vkBeginCommandBuffer failed" );
+
+		ImGui_ImplVulkan_CreateFontsTexture( command_buffer );
+
+		VkSubmitInfo end_info = {};
+		end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		end_info.commandBufferCount = 1;
+		end_info.pCommandBuffers = &command_buffer;
+		if( vkEndCommandBuffer( command_buffer ) != VK_SUCCESS )
+			ASSERT( false, "vkEndCommandBuffer failed" );
+
+		if( vkQueueSubmit( queue, 1, &end_info, VK_NULL_HANDLE ) != VK_SUCCESS )
+			ASSERT( false, "vkQueueSubmit failed" );
+
+		if( vkDeviceWaitIdle( lDevice ) != VK_SUCCESS )
+			ASSERT( false, "vkDeviceWaitIdle failed!" );
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
+	}
+
+	void vkGraphicsDevice::AddLogText( const char* fmt, ... )
+	{
+		char buffer[1024];
+		va_list args;
+		va_start( args, fmt );
+		vsprintf_s( buffer, fmt, args );
+		perror( buffer );
+		va_end( args );
+
+		m_LogMessages.push_back( buffer );
+		m_LogIsDirty = true;
 	}
 
 }; // namespace Graphics
