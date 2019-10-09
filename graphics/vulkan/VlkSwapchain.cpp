@@ -4,9 +4,9 @@
 #include "VlkInstance.h"
 #include "VlkSurface.h"
 #include "VlkPhysicalDevice.h"
-#include "Window.h"
+#include "graphics/Window.h"
 
-#include "GraphicsEngine.h"
+#include "graphics/GraphicsEngine.h"
 #include "vkGraphicsDevice.h"
 
 #include <vulkan/vulkan_core.h>

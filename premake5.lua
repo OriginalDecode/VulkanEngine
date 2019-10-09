@@ -125,19 +125,19 @@ end
     project "Core"
         kind "StaticLib"
         location ("./core")
-        files { "core/**.cpp", "core/**.h" }
+        files { "core/**.cpp", "core/**.h", "core/**.c", "core/**.hpp" }
 
     project "Input"
         kind "StaticLib"
         location("./input")
-        files{"input/*.cpp", "input/*.h"}
+        files{"input/**.cpp", "input/**.h", "input/**.hpp", "input/**.c"}
         dependson{"Core"}
         links { "Core" }
     
     project "Game"
         kind "StaticLib"
         location("./game")
-        files{"game/*.cpp", "game/*.h"}
+        files{"game/**.cpp", "game/**.h", "game/**.hpp", "game/**.c"}
         dependson{"Core", "Input"}
         links { "Core", "Input"}
 

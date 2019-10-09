@@ -49,9 +49,9 @@ namespace Core
 			index--;
 		}
 
-#ifndef UNIT_TEST
+		T* Data() { return m_Data; }
+
 	private:
-#endif
 		uint32 m_Size{ 0 };
 		uint32 m_Capacity{ 20 };
 		T* m_Data{ nullptr };

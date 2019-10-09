@@ -1,5 +1,3 @@
-#define UNIT_TEST
-
 #include <cstdio>
 #include "gtest/gtest.h"
 
@@ -22,8 +20,6 @@
 
 	ASSERT_TRUE //fatal
 	ASSERT_FALSE //fatal
-
-
 */
 
 TEST( Vector4, Length )
@@ -86,9 +82,9 @@ TEST( Array, Copy )
 
 	Core::Array<float> array2( array );
 
-	ASSERT_TRUE( array2.m_Data != nullptr );
-	ASSERT_TRUE( array.m_Data != nullptr );
-	ASSERT_NE( array.m_Data, array2.m_Data );
+	ASSERT_TRUE( array2.Data() != nullptr );
+	ASSERT_TRUE( array.Data() != nullptr );
+	ASSERT_NE( array.Data(), array2.Data() );
 }
 
 GTEST_API_ int main( int argc, char** argv )

@@ -1,6 +1,8 @@
 #pragma once
 #include "State.h"
 
+class Camera;
+
 class Game : public State
 {
 public:
@@ -11,4 +13,7 @@ public:
 
 
 private:
+
+	Camera* m_Camera{ nullptr };
+
 };

@@ -1,6 +1,5 @@
 #include "vkGraphicsDevice.h"
 
-#include "Camera.h"
 
 #include "VlkInstance.h"
 #include "VlkPhysicalDevice.h"
@@ -8,15 +7,12 @@
 #include "VlkSwapchain.h"
 #include "VlkSurface.h"
 
-#include "Utilities.h"
-#include "Window.h"
+#include "graphics/Utilities.h"
+#include "graphics/Window.h"
 
 #include "Core/File.h"
 #include "Core/math/Matrix44.h"
 #include "Core/utilities/Randomizer.h"
-#include "Input/InputManager.h"
-#include "input/InputDeviceMouse_Win32.h"
-#include "input/InputDeviceKeyboard_Win32.h"
 
 #include "logger/Debug.h"
 
@@ -26,8 +22,9 @@
 
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #include "thirdparty/imgui/imgui.h"
-#include "graphics/imgui_impl_vulkan.h"
-#include "graphics/imgui_impl_win32.h"
+#include "graphics/imgui/imgui_impl_vulkan.h"
+#include "graphics/imgui/imgui_impl_win32.h"
+#include "graphics/GraphicsEngine.h"
 
 VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
 
@@ -46,7 +43,7 @@ VkImage _depthImage = nullptr;
 VkImageView _depthView = nullptr;
 VkDeviceMemory _depthImageMemory = nullptr;
 
-Graphics::Camera _Camera;
+//Graphics::Camera _Camera;
 
 Window::Size _size;
 
@@ -299,8 +296,12 @@ namespace Graphics
 	bool vkGraphicsDevice::Init( const Window& window )
 	{
 		_size = window.GetInnerSize();
-		_Camera.InitPerspectiveProjection( _size.m_Width, _size.m_Height, 0.1f, 1000.f, 90.f );
-		_Camera.SetTranslation( { 0.f, 0.f, -25.f, 1.f } );
+
+		GraphicsEngine::Get().RegisterCreateConstantBufferFunc(
+			[&]( ConstantBuffer* buffer ) { CreateConstantBuffer( buffer ); } );
+
+		//_Camera.InitPerspectiveProjection( _size.m_Width, _size.m_Height, 0.1f, 1000.f, 90.f );
+		//_Camera.SetTranslation( { 0.f, 0.f, -25.f, 1.f } );
 
 		m_Instance = std::make_unique<VlkInstance>();
 		m_Instance->Init();
@@ -314,11 +315,11 @@ namespace Graphics
 		m_Swapchain = std::make_unique<VlkSwapchain>();
 		m_Swapchain->Init( m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window );
 
-		_ViewProjection.RegVar( _Camera.GetView() );
-		_ViewProjection.RegVar( _Camera.GetProjection() );
+		//_ViewProjection.RegVar( _Camera.GetView() );
+		//_ViewProjection.RegVar( _Camera.GetProjection() );
 		//_ViewProjection.RegVar( _Camera.GetViewProjectionPointer() );
 
-		CreateConstantBuffer( &_ViewProjection );
+		//CreateConstantBuffer( &_ViewProjection );
 		CreateCommandPool();
 		CreateCommandBuffer();
 		CreateDepthResources();
@@ -413,108 +414,11 @@ namespace Graphics
 
 	void vkGraphicsDevice::DrawFrame( float dt )
 	{
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-
-		ImGui::NewFrame();
-		// static bool show_demo_window = true;
-		// ImGui::ShowDemoWindow( &show_demo_window );
-
-		/*
-		ImGui::SetNextWindowSize( ImVec2( _size.m_Width * 0.5f, _size.m_Height * 0.25f ) );
-		if( ImGui::Begin( "log", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) )
-		{
-			for( auto& it : m_LogMessages )
-			{
-				if( it.find( "warning" ) != it.npos )
-				{
-					ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), it.c_str() );
-				}
-				else if (it.find("error") != it.npos)
-				{
-					ImGui::TextColored( ImVec4( 1, 0, 0, 1 ), it.c_str() );
-				}
-				else
-				{
-					ImGui::TextColored( ImVec4( 1, 1, 1, 1 ), it.c_str() );
-				}
-			}
-			if (m_LogIsDirty)
-			{
-				m_LogIsDirty = false;
-				ImGui::SetScrollHereY(1.0);
-			}
-		
-			ImGui::End();
-		}
-		*/
-
-		ImGui::Render();
-
 		if( vkAcquireNextImageKHR( m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX,
 								   m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index ) != VK_SUCCESS )
 			ASSERT( false, "Failed to acquire next image!" );
 
-		Input::InputManager& input = Input::InputManager::Get();
-
-		Input::HInputDeviceMouse* mouse = nullptr;
-		input.GetDevice( Input::EDeviceType_Mouse, &mouse );
-
-		const Input::Cursor& cursor = mouse->GetCursor();
-
-		Input::HInputDeviceKeyboard* keyboard = nullptr;
-		input.GetDevice( Input::EDeviceType_Keyboard, &keyboard );
-		const float speed = 10.f;
-
-		if( keyboard->OnDown( DIK_P ) )
-		{
-			AddLogText( "adding some text to the log" );
-		}
-
-		if (keyboard->OnDown(DIK_L))
-		{
-			AddLogText( "error some text were added" );
-		}
-
-		if( keyboard->OnDown( DIK_O ) )
-		{
-			AddLogText( "warning some text were added" );
-		}
-
-
-		if( keyboard->IsDown( DIK_W ) )
-		{
-			_Camera.Forward( speed * dt );
-		}
-
-		if( keyboard->IsDown( DIK_S ) )
-		{
-			_Camera.Forward( -speed * dt );
-		}
-		if( keyboard->IsDown( DIK_D ) )
-		{
-			_Camera.Right( speed * dt );
-		}
-		if( keyboard->IsDown( DIK_A ) )
-		{
-			_Camera.Right( -speed * dt );
-		}
-		if( keyboard->IsDown( DIK_R ) )
-		{
-			_Camera.Up( speed * dt );
-		}
-		if( keyboard->IsDown( DIK_F ) )
-		{
-			_Camera.Up( -speed * dt );
-		}
-
-		if( mouse->IsDown( 1 ) )
-		{
-			_Camera.OrientCamera( { cursor.dx, cursor.dy } );
-		}
-
-		_Camera.Update();
+		
 		BindConstantBuffer( &_ViewProjection, 0 );
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
@@ -770,7 +674,6 @@ namespace Graphics
 
 		DestroyShader( &_vertexShader );
 		DestroyShader( &_fragmentShader );
-
 
 		return pipeline;
 	}
@@ -1030,8 +933,6 @@ namespace Graphics
 		for( Cube& cube : _Cubes )
 			cube.Draw( commandBuffer, _pipelineLayout );
 
-		ImGui_ImplVulkan_RenderDrawData( ImGui::GetDrawData(), commandBuffer );
-
 		vkCmdEndRenderPass( commandBuffer );
 
 		if( vkEndCommandBuffer( commandBuffer ) != VK_SUCCESS )
@@ -1042,8 +943,6 @@ namespace Graphics
 	{
 		vkDestroyShaderModule( m_LogicalDevice->GetDevice(), pShader->GetModule(), nullptr );
 	}
-
-	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }
 
 	VkFormat vkGraphicsDevice::findSupportedFormat( const std::vector<VkFormat>& candidates, VkImageTiling tiling,
 													VkFormatFeatureFlags features )
@@ -1219,7 +1118,7 @@ namespace Graphics
 
 		vkCmdPipelineBarrier( commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier );
 
-		vkCmdPipelineBarrier( commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier );
+		//vkCmdPipelineBarrier( commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier );
 
 		endSingleTimeCommands( commandBuffer );
 	}
@@ -1361,5 +1260,7 @@ namespace Graphics
 		m_LogMessages.push_back( buffer );
 		m_LogIsDirty = true;
 	}
+
+	void vkGraphicsDevice::CreateConstantBuffer2( ConstantBuffer* constantBuffer ) {}
 
 }; // namespace Graphics

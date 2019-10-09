@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Defines.h"
-#include "GraphicsDecl.h"
+#include "graphics/GraphicsDecl.h"
 #include <vector>
 LPE_DEFINE_HANDLE( VkInstance );
 LPE_DEFINE_HANDLE( VkSurfaceKHR );

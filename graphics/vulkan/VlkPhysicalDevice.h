@@ -2,7 +2,7 @@
 #include <Core/Defines.h>
 #include <Core/Types.h>
 
-#include "IGfxObject.h"
+#include "graphics/IGfxObject.h"
 
 #include <vector>
 #include <vulkan/vulkan_core.h>

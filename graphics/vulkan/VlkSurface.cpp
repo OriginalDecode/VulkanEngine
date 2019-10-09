@@ -3,7 +3,7 @@
 #include "VlkInstance.h"
 #include "vkGraphicsDevice.h"
 #include "VlkPhysicalDevice.h"
-#include "GraphicsEngine.h"
+#include "graphics/GraphicsEngine.h"
 
 #include <cassert>
 

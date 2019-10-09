@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Defines.h"
 #include "Core/Types.h"
-#include "GraphicsDecl.h"
+#include "graphics/GraphicsDecl.h"
 
 #include <vector>
 #include <vulkan/vulkan_core.h>

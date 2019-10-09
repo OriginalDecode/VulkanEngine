@@ -8,7 +8,7 @@
 #include <Windows.h>
 #endif
 
-#include "vkGraphicsDevice.h"
+#include "vulkan/vkGraphicsDevice.h"
 
 #include "thirdparty/imgui/imgui.h"
 
@@ -44,8 +44,6 @@ namespace Graphics
 	}
 
 	void GraphicsEngine::Present( float dt ) { m_Device->DrawFrame( dt ); }
-
-	Camera* GraphicsEngine::GetCamera() { return m_Device->GetCamera(); }
 
 	void GraphicsEngine::BeginFrame() {}
 

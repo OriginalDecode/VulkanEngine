@@ -1,6 +1,6 @@
 #pragma once
 #include <Core/Defines.h>
-#include "IGfxDevice.h"
+#include "graphics/IGfxDevice.h"
 #include <vulkan/vulkan_core.h>
 #include <vector>
 
