@@ -82,9 +82,15 @@ TEST( Array, Copy )
 
 	Core::Array<float> array2( array );
 
-	ASSERT_TRUE( array2.Data() != nullptr );
-	ASSERT_TRUE( array.Data() != nullptr );
-	ASSERT_NE( array.Data(), array2.Data() );
+	// float* data = *(float**)( ( (char*)&array ) + ( sizeof( uint32 ) * 2 ) );
+	// float* data2 = *(float**)( ( (char*)&array2 ) + ( sizeof( uint32 ) * 2 ) );
+
+	float* data = &array[0];
+	float* data2 = &array2[0];
+
+	ASSERT_TRUE( data != nullptr );
+	ASSERT_TRUE( data2 != nullptr );
+	ASSERT_NE( data, data2 );
 }
 
 GTEST_API_ int main( int argc, char** argv )
