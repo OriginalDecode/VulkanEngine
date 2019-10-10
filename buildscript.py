@@ -129,13 +129,20 @@ def buildWindows(buildConfig):
     if args.verbosity == None:
         verbosity = "n"
 
-    os.system("msbuild " + args.build + 
+    buildCommand = "none"
+    if "msbuild" in os.environ:
+        buildCommand = "msbuild"
+    else:
+        buildCommand = "C:\\VS2017\\MSBuild\\15.0\\Bin\\MSBuild.exe"
+        
+    os.system(buildCommand + " " + args.build + 
         " /p:GenerateFullPaths=true" +
         " /p:Configuration=" + buildConfig + 
         " /p:Platform=Windows" +
         " /t:build" +
         " -v:" + verbosity
         )
+
 
 def buildLinux(buildConfig):
     print(system)

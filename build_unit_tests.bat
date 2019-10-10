@@ -1,3 +1,3 @@
 @echo off
 
-python buildscript.py -b=UnitTest.sln -v=m
+%python% buildscript.py -b=UnitTest.sln -v=m
