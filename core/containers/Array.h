@@ -43,18 +43,12 @@ namespace Core
 
 		T& GetLast() { return m_Data[m_Size - 1]; }
 
-		void RemoveCyclicAtIndex( uint32 index )
-		{
-			m_Data[index] = GetLast();
-			index--;
-		}
-
-		T* Data() { return m_Data; }
+		void RemoveCyclicAtIndex( uint32 index ) { m_Data[index--] = GetLast(); }
 
 	private:
-		uint32 m_Size{ 0 };
-		uint32 m_Capacity{ 20 };
-		T* m_Data{ nullptr };
+		uint32 m_Size{ 0 };		 /**/
+		uint32 m_Capacity{ 20 }; /* */
+		T* m_Data{ nullptr };	/* 8 byte in */
 	};
 
 	template <typename T>
