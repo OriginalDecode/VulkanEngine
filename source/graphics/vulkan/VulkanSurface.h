@@ -1,45 +1,46 @@
 #pragma once
+
 #include "Core/Defines.h"
 #include "Core/Types.h"
 #include "graphics/GraphicsDecl.h"
 
-#include <vector>
 #include <vulkan/vulkan_core.h>
+
+// This probably doesn't
 
 LPE_DEFINE_HANDLE( VkSurfaceKHR );
 LPE_DEFINE_HANDLE( VkPhysicalDevice );
 struct VkWin32SurfaceCreateInfoKHR;
-
+/* put into swapchain??? */
 namespace Graphics
 {
-	class VlkInstance;
-	class VlkPhysicalDevice;
-	class VlkSurface
+	class VulkanSurface
 	{
-		friend class VlkSwapchain;
 	public:
-		VlkSurface();
-		~VlkSurface();
-		void Release();
-
+		VulkanSurface();
+		~VulkanSurface();
+		
 		void Init( VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice );
 
 		bool CanPresent() const;
 
 		const VkSurfaceCapabilitiesKHR& GetCapabilities() const;
-		const std::vector<VkSurfaceFormatKHR>& GetSurfaceFormats() const;
+
+		const VkSurfaceFormatKHR* GetSurfaceFormats() const;
+		uint32 GetFormatCount() const { return m_NofFormats; }
 
 		VkSurfaceKHR GetSurface() { return m_Surface; }
 
 	private:
-		bool m_CanPresent = false;
-		VkSurfaceKHR m_Surface = nullptr;
+		bool m_CanPresent{ false };
+		VkSurfaceKHR m_Surface{ nullptr };
 
 		VkSurfaceCapabilitiesKHR m_Capabilities;
 
-		std::vector<VkSurfaceFormatKHR> m_Formats;
-		
-		std::vector<VkPresentModeKHR> m_PresentModes;
+		uint32 m_NofFormats{ 0 };
+		VkSurfaceFormatKHR* m_Formats{ nullptr };
 
+		uint32 m_NofModes{ 0 };
+		VkPresentModeKHR* m_Modes{ nullptr };
 	};
 }; // namespace Graphics

@@ -23,11 +23,11 @@ namespace Graphics
 	class VlkSwapchain
 	{
 	public:
-		VkSurfaceFormatKHR GetFormat( );
 		VlkSwapchain();
 		~VlkSwapchain();
 		void Release();
 
+		VkSurfaceFormatKHR GetFormat( );
 		void Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice, const Window& window );
 		size_t GetNofImages() const { return m_Images.size(); }
 
@@ -41,10 +41,12 @@ namespace Graphics
 	private:
 
 		std::unique_ptr<VlkSurface> m_Surface;
-		VkSwapchainKHR m_Swapchain;
-		std::vector<VkImage> m_Images;
-		std::vector<VkImageView> m_ImageViews;
 
+		VkSwapchainKHR m_Swapchain;
+
+		std::vector<VkImage> m_Images;
+
+		std::vector<VkImageView> m_ImageViews;
 
 	};
 

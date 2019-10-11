@@ -2,6 +2,9 @@
 
 #include "logger/Debug.h"
 
+#include "graphics/GraphicsEngine.h"
+#include "graphics/Window.h"
+
 #include <vulkan/vulkan.h>
 #ifdef _WIN32
 #include <windows.h>
@@ -38,19 +41,6 @@ namespace Graphics
 		vkDestroyDevice( m_Device, nullptr );
 	}
 
-	VkSwapchainKHR VulkanDevice::CreateSwapchain( const VkSwapchainCreateInfoKHR& createInfo ) const
-	{
-		VkSwapchainKHR swapchain = nullptr;
-		VkResult result = vkCreateSwapchainKHR( m_Device, &createInfo, nullptr, &swapchain );
-		assert( result == VK_SUCCESS && "Failed to create swapchain" );
-		return swapchain;
-	}
-
-	void VulkanDevice::DestroySwapchain( VkSwapchainKHR pSwapchain )
-	{
-		vkDestroySwapchainKHR( m_Device, pSwapchain, nullptr );
-	}
-
 	// void VulkanDevice::GetSwapchainImages( VkSwapchainKHR* pSwapchain, std::vector<VkImage>* scImages )
 	//{
 	//	uint32 imageCount = 0;
@@ -66,6 +56,8 @@ namespace Graphics
 		CreateInstance();
 		CreatePhysicalDevice();
 		CreateDevice();
+		CreateSwapchainSurface();
+		CreateSwapchain();
 	}
 
 	void VulkanDevice::CreateInstance()
@@ -199,7 +191,68 @@ namespace Graphics
 
 		ASSERT( m_Device, "Failed to create device!" );
 
-		vkGetDeviceQueue( m_Device, m_QueueFamily, 0/*queueIndex*/, &m_Queue );
+		vkGetDeviceQueue( m_Device, m_QueueFamily, 0 /*queueIndex*/, &m_Queue );
+	}
+
+	void VulkanDevice::CreateSwapchain()
+	{
+		
+
+		VkSwapchainCreateInfoKHR createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = m_Surface;
+		createInfo.minImageCount = capabilities.minImageCount;
+		createInfo.imageFormat = format.format;
+		createInfo.imageColorSpace = format.colorSpace;
+		createInfo.imageExtent = vkExtent;
+		createInfo.imageArrayLayers = 1;
+
+		if( queueProp.queueIndex != queueProp.familyIndex )
+		{
+			const uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
+			createInfo.queueFamilyIndexCount = ARRSIZE( queueIndices );
+			createInfo.pQueueFamilyIndices = queueIndices;
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		}
+		else
+		{
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		}
+
+		VkSurfaceTransformFlagBitsKHR transformFlags = capabilities.currentTransform;
+		if( capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR )
+			transformFlags = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+
+		createInfo.preTransform = transformFlags;
+
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; // this field defines blocking or nonblocking -
+																// (VK_PRESENT_MODE_FIFO_KHR) blocks (vsync on
+																// or off)
+
+		createInfo.clipped = VK_TRUE;
+
+		if( vkCreateSwapchainKHR( m_Device, &createInfo, nullptr, &m_Swapchain ) != VK_SUCCESS )
+		{
+			ASSERT( false, "failed to create vkSwapchainKHR" );
+		}
+	}
+
+	void VulkanDevice::CreateSwapchainSurface() 
+	{
+		const Window* window = GraphicsEngine::Get().GetWindow();
+		VkWin32SurfaceCreateInfoKHR createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+		createInfo.hwnd = static_cast<HWND>( window->GetHandle() );
+		createInfo.hinstance = ::GetModuleHandle( nullptr );
+		 
+		if (vkCreateWin32SurfaceKHR(m_Instance, &createInfo, nullptr, &m_Surface) != VK_SUCCESS)
+		{
+			ASSERT( false, "Failed to create Win32SurfaceKHR" );
+		}
 	}
 
 }; // namespace Graphics

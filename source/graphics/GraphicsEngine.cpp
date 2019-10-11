@@ -33,6 +33,7 @@ namespace Graphics
 
 	bool GraphicsEngine::Init( const Window& window )
 	{
+		m_Window = &window;
 		m_Device = std::make_unique<vkGraphicsDevice>();
 
 		if( !m_Device->Init( window ) )

@@ -32,22 +32,22 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 	Window::CreateInfo createInfo{ 1920.f, 1080.f, instance, WindowProc };
 
-	std::unique_ptr<Window> window = std::make_unique<Window>( createInfo );
-	window->SetText( "Engine2" );
+	Window window( createInfo );
+	window.SetText( "Engine2" );
 
 	Graphics::GraphicsEngine::Create();
 	Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
 
-	if( !graphics_engine.Init( *window ) )
-		return 1;
+	if( !graphics_engine.Init( window ) )
+		return -1;
 
 	Input::InputManager& input = Input::InputManager::Get();
-	input.Initialize( window->GetHandle(), instance );
+	input.Initialize( window.GetHandle(), instance );
 
 	Core::Timer timer;
 	timer.Start();
 
-	ImGui_ImplWin32_Init( window->GetHandle() );
+	ImGui_ImplWin32_Init( window.GetHandle() );
 
 	Game game;
 	StateStack state_stack;
@@ -60,7 +60,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 		char temp[100] = { 0 };
 		sprintf_s(temp, "FPS : %.3f dt: %.3f", 1.f / timer.GetTime(), timer.GetTime());
-		window->SetText( temp );
+		window.SetText( temp );
 		
 		/* Windows Specific */
 		while( PeekMessage( &msg, 0, 0, 0, PM_REMOVE ) ) //message pump

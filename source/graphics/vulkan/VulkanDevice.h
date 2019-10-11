@@ -27,26 +27,29 @@ namespace Graphics
 		VkDevice GetDevice() const { return m_Device; }
 		VkQueue GetQueue() const { return m_Queue; }
 
-		VkSwapchainKHR CreateSwapchain( const VkSwapchainCreateInfoKHR& createInfo ) const;
-		void DestroySwapchain( VkSwapchainKHR pSwapchain );
+		// VkSwapchainKHR CreateSwapchain( const VkSwapchainCreateInfoKHR& createInfo ) const;
+		// void DestroySwapchain( VkSwapchainKHR pSwapchain );
 
-		//void GetSwapchainImages( VkSwapchainKHR* pSwapchain, std::vector<VkImage>* scImages );
+		// void GetSwapchainImages( VkSwapchainKHR* pSwapchain, std::vector<VkImage>* scImages );
 
 	private:
 		void CreateInstance();
 		void CreatePhysicalDevice();
 		void CreateDevice();
-
+		void CreateSwapchain();
+		void CreateSwapchainSurface();
 
 		VkInstance m_Instance{ nullptr };
 		VkPhysicalDevice m_PhysicalDevice{ nullptr };
 		VkDevice m_Device{ nullptr };
 		VkQueue m_Queue{ nullptr };
+		VkSwapchainKHR m_Swapchain{ nullptr };
+		VkSurfaceKHR m_Surface {nullptr};
 
 		uint32 m_QueueFamily{ 0 };
 		uint32 m_PresentFamily{ 0 };
 
-		//std::vector<VkQueueFamilyProperties> m_QueueProperties;
+		// std::vector<VkQueueFamilyProperties> m_QueueProperties;
 	};
 
-}; //namespace Graphics
+}; // namespace Graphics

@@ -32,9 +32,13 @@ namespace Graphics
 
 		void RegisterCreateConstantBufferFunc( FCreateConstantBuffer fnc ) { m_CreateConstantBufferFnc = fnc; }
 
+		const Window* GetWindow() const { return m_Window; }
+
 	private:
 		static std::unique_ptr<GraphicsEngine> m_Instance;
 		std::unique_ptr<vkGraphicsDevice> m_Device;
+
+		const Window* m_Window{nullptr};
 
 		// std::function < void(ConstantBuffer*)> m
 
