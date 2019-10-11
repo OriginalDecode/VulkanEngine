@@ -31,19 +31,19 @@ namespace Graphics
 		return m_CanPresent;
 	}
 
-	uint32 VlkSurface::GetPresentModeCount( VkPhysicalDevice pPhysicalDevice ) const
+	/*int32 VlkSurface::GetPresentModeCount( VkPhysicalDevice pPhysicalDevice ) const
 	{
 		uint32 out = 0;
 		VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR( pPhysicalDevice, m_Surface, &out, nullptr);
 		assert( result == VK_SUCCESS );
 		return out;
-	}
+	}*/
 
-	uint32 VlkSurface::GetFormatCount() const
-	{
+	//uint32 VlkSurface::GetFormatCount() const
+	//{
 
-		return m_FormatCount;
-	}
+	//	return m_FormatCount;
+	//}
 
 	const std::vector<VkSurfaceFormatKHR>& VlkSurface::GetSurfaceFormats() const
 	{

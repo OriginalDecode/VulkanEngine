@@ -45,21 +45,6 @@ namespace Graphics
 		std::vector<VkImage> m_Images;
 		std::vector<VkImageView> m_ImageViews;
 
-		struct
-		{
-			struct
-			{
-				float x = 0.f;
-				float y = 0.f;
-			} offset;
-
-			struct
-			{
-				float x = 0.f;
-				float y = 0.f;
-			} width;
-
-		} m_Extent;
 
 	};
 

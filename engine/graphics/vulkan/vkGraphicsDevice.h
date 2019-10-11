@@ -38,13 +38,12 @@ namespace Graphics
 
 		virtual void BindConstantBuffer( ConstantBuffer* constantBuffer, uint32 offset ) override;
 		virtual void CreateConstantBuffer( ConstantBuffer* constantBuffer ) override;
-		void CreateConstantBuffer2( ConstantBuffer* constantBuffer );
 		virtual void DestroyConstantBuffer( ConstantBuffer* constantBuffer ) override;
 
 		void LoadShader( HShader* shader, const char* filepath );
 		void DestroyShader( HShader* pShader );
 
-		void AddLogText( const char* fmt, ... );
+		void CreateBuffer( const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory );
 
 	private:
 		std::unique_ptr<VlkInstance> m_Instance;

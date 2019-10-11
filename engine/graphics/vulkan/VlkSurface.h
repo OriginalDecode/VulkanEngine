@@ -24,14 +24,10 @@ namespace Graphics
 
 		void Init( VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice );
 
-		bool CanPresent()const;
+		bool CanPresent() const;
 
-		uint32 GetPresentModeCount(VkPhysicalDevice pPhysicalDevice) const;
 		const VkSurfaceCapabilitiesKHR& GetCapabilities() const;
-
-
-		uint32 GetFormatCount( ) const;
-		const std::vector<VkSurfaceFormatKHR>& GetSurfaceFormats()const;
+		const std::vector<VkSurfaceFormatKHR>& GetSurfaceFormats() const;
 
 		VkSurfaceKHR GetSurface() { return m_Surface; }
 
@@ -41,10 +37,8 @@ namespace Graphics
 
 		VkSurfaceCapabilitiesKHR m_Capabilities;
 
-		uint32 m_FormatCount = 0;
 		std::vector<VkSurfaceFormatKHR> m_Formats;
 		
-		uint32 m_PresentCount = 0;
 		std::vector<VkPresentModeKHR> m_PresentModes;
 
 	};
