@@ -1,40 +1,36 @@
-// #pragma once
-// #include <CommonLib/Types.hpp>
-// #include <CommonLib/containers/GrowingArray.h>
+#pragma once
+#include "core/Types.h"
+#include "core/containers/Array.h"
 
-// struct ID3D11Buffer;
-// class ConstantBuffer
-// {
-// public:
-// 	ConstantBuffer() = default;
-// 	~ConstantBuffer();
+class ConstantBuffer
+{
+public:
+	ConstantBuffer() = default;
+	~ConstantBuffer() = default;
 
-// 	template<typename T>
-// 	void RegisterVariable(T* variable);
+	template <typename T>
+	void RegisterVariable( T* variable )
+	{
+		m_Variables.Add( { variable, sizeof( T ) } );
+		m_Size += sizeof( T );
+	}
 
-// 	void Bind(const uint32 index, const uint32 shader_binding);
+	void* GetBuffer() { return m_Buffer; }
 
-// 	void Bind(const uint32 index[], const uint32 shader_binding);
+private:
+	struct Variable
+	{
+		Variable() = default;
+		Variable( void* variable, int32 size )
+			: m_Variable( variable )
+			, m_Size( size )
+		{
+		}
+		void* m_Variable = nullptr;
+		int32 m_Size = 0;
+	};
+	uint32 m_Size{ 0 };
+	void* m_Buffer{ nullptr };
 
-
-// private:
-// 	struct BufferVariable
-// 	{
-// 		BufferVariable() = default;
-// 		BufferVariable(void* variable, int32 size) : m_Variable(variable), m_Size(size) { }
-// 		void* m_Variable = nullptr;
-// 		int32 m_Size = 0;
-// 	};
-// 	uint32 m_BufferSize = 0;
-// 	ID3D11Buffer* m_Buffer = nullptr;
-
-// 	CU::GrowingArray<BufferVariable> m_Variables;
-// };
-
-// template<typename T>
-// void ConstantBuffer::RegisterVariable(T* variable)
-// {
-// 	m_Variables.Add({ variable, sizeof(T) });
-// 	m_BufferSize += sizeof(T);
-// }
-
+	Core::Array<Variable> m_Variables;
+};

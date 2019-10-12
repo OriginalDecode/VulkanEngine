@@ -15,7 +15,7 @@ class Window;
 namespace Graphics
 {
 	void CreateImGuiContext();
-	class vkGraphicsDevice;
+	class VulkanRenderer;
 	class GraphicsEngine
 	{
 	public:
@@ -28,7 +28,7 @@ namespace Graphics
 		bool Init( const Window& window );
 		void Present( float dt );
 
-		static vkGraphicsDevice& GetDevice() { return *m_Instance->m_Device; }
+		static VulkanRenderer& GetDevice() { return *m_Instance->m_Device; }
 
 		void RegisterCreateConstantBufferFunc( FCreateConstantBuffer fnc ) { m_CreateConstantBufferFnc = fnc; }
 
@@ -36,7 +36,7 @@ namespace Graphics
 
 	private:
 		static std::unique_ptr<GraphicsEngine> m_Instance;
-		std::unique_ptr<vkGraphicsDevice> m_Device;
+		std::unique_ptr<VulkanRenderer> m_Device;
 
 		const Window* m_Window{nullptr};
 

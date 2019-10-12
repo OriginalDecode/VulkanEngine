@@ -8,7 +8,7 @@
 #include <Windows.h>
 #endif
 
-#include "vulkan/vkGraphicsDevice.h"
+#include "vulkan/VulkanRenderer.h"
 
 #include "thirdparty/imgui/imgui.h"
 
@@ -34,7 +34,7 @@ namespace Graphics
 	bool GraphicsEngine::Init( const Window& window )
 	{
 		m_Window = &window;
-		m_Device = std::make_unique<vkGraphicsDevice>();
+		m_Device = std::make_unique<VulkanRenderer>();
 
 		if( !m_Device->Init( window ) )
 		{
