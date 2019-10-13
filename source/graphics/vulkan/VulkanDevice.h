@@ -82,7 +82,7 @@ namespace Graphics
 		void ResetFences(VkFence* fences, uint32 fenceCount);
 
 		template <typename F, typename T, typename O>
-		void CreateObject(F fnc, const T* createInfo, O object);
+		void CreateObject(F fnc, T createInfo, O object);
 
 		VkFormat GetDepthFormat() const { return m_DepthFormat; }
 
@@ -143,9 +143,9 @@ namespace Graphics
 	}
 
 	template <typename F, typename T, typename O>
-	void VulkanDevice::CreateObject(F fnc, const T* createInfo, O object)
+	void VulkanDevice::CreateObject(F fnc, T createInfo, O object)
 	{
-		if(fnc(m_Device, &createInfo, nullptr, object) != VK_SUCCESS)
+		if(fnc(m_Device, createInfo, nullptr, object) != VK_SUCCESS)
 			ASSERT(false, "Failed to create vulkan object!");
 	}
 
