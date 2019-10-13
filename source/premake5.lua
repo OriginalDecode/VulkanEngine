@@ -40,6 +40,7 @@ end
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
     -- fnc.setPlatform("Windows")
+    startproject "Executable"
     configurations { "Debug" , "Release" }
 
     platforms { _OPTIONS["platform"] }
