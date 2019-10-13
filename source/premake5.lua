@@ -40,7 +40,6 @@ end
     -- fnc.addConfig("Debug")
     -- fnc.addConfig("Release")
     -- fnc.setPlatform("Windows")
-    startproject "Executable"
     configurations { "Debug" , "Release" }
 
     platforms { _OPTIONS["platform"] }
@@ -85,6 +84,7 @@ end
 
 if _OPTIONS["project"] ~= nil then
     if _OPTIONS["project"] == "engine" then
+        startproject "Executable"
         project "Executable" --project name
             targetname "%{wks.name}_%{cfg.buildcfg}"
             kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
@@ -95,6 +95,7 @@ if _OPTIONS["project"] ~= nil then
 
             files { "executable/*.cpp" }
     elseif _OPTIONS["project"] == "unit_test" then
+        startproject "UnitTest"
         project "UnitTest" --project name
             targetname "%{wks.name}_%{cfg.buildcfg}Test"
             kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
