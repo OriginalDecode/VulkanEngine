@@ -58,8 +58,6 @@ namespace Graphics
 
 		SetupRenderPass();
 
-		m_Device->CreateImGuiContext(m_RenderPass, m_DescriptorPool, m_CommandPool);
-
 		m_NofFrameBuffers = m_Device->GetSwapchainImageCount();
 		m_FrameBuffers = new VkFramebuffer[m_NofFrameBuffers];
 
@@ -87,6 +85,12 @@ namespace Graphics
 		m_ScissorArea.extent = { (uint32)windowSize.m_Width, (uint32)windowSize.m_Height };
 		m_ScissorArea.offset = { 0, 0 };
 
+		m_Device->CreateDeviceSemaphore(&m_NextImage);
+		m_Device->CreateDeviceSemaphore(&m_DrawDone);
+		m_Device->CreateFence(&m_CommandFence);
+
+		return true;
+
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 		uboLayoutBinding.binding = 0;
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -111,17 +115,17 @@ namespace Graphics
 												pushRangeList, ARRSIZE(pushRangeList));
 		m_Pipeline = CreateGraphicsPipeline();
 
-		m_Device->CreateDeviceSemaphore(&m_NextImage);
-		m_Device->CreateDeviceSemaphore(&m_DrawDone);
-		m_Device->CreateFence(&m_CommandFence);
-
+		m_Device->CreateImGuiContext(m_RenderPass, m_DescriptorPool, m_CommandPool);
 		return true;
 	}
 	//_____________________________________________
 
 	void VulkanRenderer::DrawFrame(float dt)
 	{
+
 		m_Device->AcquireNextImage(m_DrawDone, nullptr, &m_Index);
+
+		// SetupRenderCommands(m_Index ^ 1);
 
 		const VkPipelineStageFlags waitDstStageMask =
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
@@ -143,15 +147,13 @@ namespace Graphics
 		m_Device->SubmitQueue(submitInfo, 1, m_CommandFence);
 		m_Device->PresentQueue(m_Index, &m_DrawDone, 1);
 
-		SetupRenderCommands(m_Index ^ 1);
+		m_Device->WaitForFences(&m_CommandFence, 1, VK_TRUE);
+		m_Device->ResetFences(&m_CommandFence, 1);
 	}
 
 	void VulkanRenderer::SetupRenderCommands(int index)
 	{
 		const Window::Size& windowSize = GraphicsEngine::Get().GetWindow()->GetSize();
-
-		m_Device->WaitForFences(&m_CommandFence, 1, VK_TRUE);
-		m_Device->ResetFences(&m_CommandFence, 1);
 
 		VkClearValue clearValue[2] = {};
 		clearValue[0].color = { 0.f, 0.f, 0.f, 0.f };
@@ -284,7 +286,7 @@ namespace Graphics
 		VkPipelineRasterizationStateCreateInfo rastCreateInfo = {};
 		rastCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rastCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE
-														   // // Wireframe
+														   // Wireframe
 		rastCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 		rastCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rastCreateInfo.depthClampEnable = VK_FALSE;
@@ -335,12 +337,13 @@ namespace Graphics
 		VkDescriptorSetLayout layouts[] = { m_DescriptorLayout };
 		m_DescriptorSet = m_Device->AllocDescriptorSet(m_DescriptorPool, 1, layouts);
 
-		VkDescriptorBufferInfo bInfo2 = {};
+		// VkDescriptorBufferInfo bInfo2 = {};
+
 		// bInfo2.buffer = static_cast<VkBuffer>( _ViewProjection.GetBuffer() );
 		// bInfo2.offset = 0;
 		// bInfo2.range = _ViewProjection.GetSize();
 
-		VkWriteDescriptorSet descWrite = {};
+		/*VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descWrite.dstSet = m_DescriptorSet;
 		descWrite.dstBinding = 0;
@@ -349,7 +352,7 @@ namespace Graphics
 		descWrite.descriptorCount = 1;
 		descWrite.pBufferInfo = &bInfo2;
 
-		m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);
+		m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);*/
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

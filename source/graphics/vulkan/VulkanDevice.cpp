@@ -75,6 +75,7 @@ namespace Graphics
 		CreateDevice();
 		CreateSwapchainSurface();
 		CreateSwapchain();
+		CreateDepthResources();
 	}
 
 	void VulkanDevice::CreateBuffer(const VkBufferCreateInfo& create_info, VkBuffer* buffer)
@@ -187,7 +188,7 @@ namespace Graphics
 		VkDeviceMemory memory = AllocMemory(
 			memory_requirements, FindMemoryType(memory_requirements.memoryTypeBits, memory_flags));
 
-		// BindImageMemory( image, memory, 0 );
+		BindImageMemory(image, memory, 0);
 		return std::make_tuple(image, memory);
 	}
 
@@ -445,7 +446,7 @@ namespace Graphics
 		VkSurfaceCapabilitiesKHR surface_capabilities = GetSurfaceCapabilities(m_Surface);
 
 		uint32 image_count = 2;
-		ASSERT(image_count < surface_capabilities.minImageCount, "");
+		ASSERT(image_count <= surface_capabilities.minImageCount, "");
 
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
