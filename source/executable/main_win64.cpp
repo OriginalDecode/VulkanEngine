@@ -16,15 +16,12 @@
 #include <iostream>
 #include <Windows.h>
 
-
-
-LRESULT CALLBACK WindowProc( HWND, UINT, WPARAM, LPARAM );
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 bool gameRunning = true; // we'll need this in the WindowProc
 
-int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 {
 	// Window* window = new Window({ 1920, 1080, instance, WindowProc });
-
 
 	Graphics::CreateImGuiContext();
 
@@ -32,26 +29,26 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 	Window::CreateInfo createInfo{ 1920.f, 1080.f, instance, WindowProc };
 
-	Window window( createInfo );
-	window.SetText( "Engine2" );
+	Window window(createInfo);
+	window.SetText("Engine2");
 
 	Graphics::GraphicsEngine::Create();
 	Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
 
-	if( !graphics_engine.Init( window ) )
+	if(!graphics_engine.Init(window))
 		return -1;
 
 	Input::InputManager& input = Input::InputManager::Get();
-	input.Initialize( window.GetHandle(), instance );
+	input.Initialize(window.GetHandle(), instance);
 
 	Core::Timer timer;
 	timer.Start();
 
-	ImGui_ImplWin32_Init( window.GetHandle() );
+	ImGui_ImplWin32_Init(window.GetHandle());
 
 	Game game;
 	StateStack state_stack;
-	state_stack.PushState( &game, StateStack::MAIN );
+	state_stack.PushState(&game, StateStack::MAIN);
 
 	MSG msg;
 	do
@@ -60,27 +57,27 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 
 		char temp[100] = { 0 };
 		sprintf_s(temp, "FPS : %.3f dt: %.3f", 1.f / timer.GetTime(), timer.GetTime());
-		window.SetText( temp );
-		
+		window.SetText(temp);
+
 		/* Windows Specific */
-		while( PeekMessage( &msg, 0, 0, 0, PM_REMOVE ) ) //message pump
+		while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) // message pump
 		{
-			TranslateMessage( &msg );
-			DispatchMessage( &msg );
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
 		}
 
-		if( msg.message == WM_QUIT || msg.message == WM_CLOSE )
+		if(msg.message == WM_QUIT || msg.message == WM_CLOSE)
 		{
-			gameRunning = false; //not so specific
+			gameRunning = false; // not so specific
 			break;
 		}
 		/* Windows Specific */
 
-		state_stack.UpdateCurrentState( timer.GetTime() );
+		state_stack.UpdateCurrentState(timer.GetTime());
 		input.Update();
-		graphics_engine.Present( timer.GetTime() );
+		// graphics_engine.Present( timer.GetTime() );
 
-	} while( gameRunning );
+	} while(gameRunning);
 
 	Input::InputManager::Destroy();
 
@@ -89,26 +86,26 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE, LPSTR, int )
 	return 0;
 }
 
-
-extern LRESULT ImGui_ImplWin32_WndProcHandler( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
-LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) /* very windows specific */
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) /* very windows
+																					  specific */
 {
 
-	if( ImGui_ImplWin32_WndProcHandler( hWnd, message, wParam, lParam ) )
+	if(ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
 		return true;
 
-	switch( message )
+	switch(message)
 	{
 		case WM_CREATE:
 			break;
 		case WM_DESTROY:
-			PostQuitMessage( 0 );
+			PostQuitMessage(0);
 			return 0;
 		case WM_SIZE:
 			break;
 		case WM_ACTIVATE:
 		{
-			if( LOWORD( wParam ) == WA_INACTIVE )
+			if(LOWORD(wParam) == WA_INACTIVE)
 			{
 			}
 			else
@@ -124,13 +121,13 @@ LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			gameRunning = false;
 			break;
 		case WM_SYSCOMMAND:
-			if( ( wParam & 0xfff0 ) == SC_KEYMENU ) // Disable ALT application menu
+			if((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
 				return 0;
 			break;
 		case WM_SYSKEYDOWN:
-			if( wParam == VK_RETURN )
+			if(wParam == VK_RETURN)
 			{
-				if( ( HIWORD( lParam ) & KF_ALTDOWN ) )
+				if((HIWORD(lParam) & KF_ALTDOWN))
 				{
 				}
 			}
@@ -142,5 +139,5 @@ LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		default:
 			break;
 	}
-	return DefWindowProc( hWnd, message, wParam, lParam );
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }

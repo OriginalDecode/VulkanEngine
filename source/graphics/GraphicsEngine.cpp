@@ -1,18 +1,9 @@
 #include "GraphicsEngine.h"
 #include "Window.h"
-
-#include <cassert>
-
-#ifdef _WIN32
-#include <d3d11.h>
-#include <Windows.h>
-#endif
-
 #include "vulkan/VulkanRenderer.h"
-
 #include "thirdparty/imgui/imgui.h"
 
-constexpr float BLACK[4] = { 0.f, 0.f, 0.f, 0.f };
+#include <cassert>
 
 namespace Graphics
 {
@@ -23,31 +14,23 @@ namespace Graphics
 		ImGui::StyleColorsDark();
 	}
 
-	std::unique_ptr<GraphicsEngine> GraphicsEngine::m_Instance = nullptr;
+	GraphicsEngine* GraphicsEngine::m_Instance = nullptr;
 
-	GraphicsEngine::GraphicsEngine() {}
+	void GraphicsEngine::Create() { m_Instance = new GraphicsEngine; }
 
-	void GraphicsEngine::Create() { m_Instance = std::make_unique<GraphicsEngine>(); }
+	void GraphicsEngine::Destroy()
+	{
+		delete m_Instance;
+		m_Instance = nullptr;
+	}
 
 	GraphicsEngine& GraphicsEngine::Get() { return *m_Instance; }
 
-	bool GraphicsEngine::Init( const Window& window )
+	bool GraphicsEngine::Init(const Window& window)
 	{
 		m_Window = &window;
-		m_Device = std::make_unique<VulkanRenderer>();
-
-		if( !m_Device->Init( window ) )
-		{
-			return false;
-		}
 
 		return true;
 	}
-
-	void GraphicsEngine::Present( float dt ) { m_Device->DrawFrame( dt ); }
-
-	void GraphicsEngine::BeginFrame() {}
-
-	GraphicsEngine::~GraphicsEngine() {}
 
 }; // namespace Graphics

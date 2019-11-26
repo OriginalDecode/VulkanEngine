@@ -46,7 +46,7 @@ end
     debugdir "%{wks.location}../bin"
     
 -- language "C++"
-    cppdialect "C++14"
+    cppdialect "C++17"
     disablewarnings { "4201" }
 -- flags { "C++14" }
 --filename "whiteroom"

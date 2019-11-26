@@ -13,6 +13,7 @@
 #else
 
 
+
 #define ASSERT_VA( ... ) Log::Debug::GetInstance()->AssertMessageVA( __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__ )
 #define ASSERT( expression, string ) \
 	Log::Debug::GetInstance()->AssertMessage( expression, __FILE__, __LINE__, __FUNCTION__, string )
@@ -23,6 +24,8 @@
 
 #define LOG_DEBUG( ... ) Log::Debug::GetInstance()->DebugMessage( __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__ )
 
+// #define VERIFY(expr, ...) (void)(expr)
+#define VERIFY(expr, ...) ASSERT(expr, __VA_ARGS__)
 #endif
 
 #include <string>
