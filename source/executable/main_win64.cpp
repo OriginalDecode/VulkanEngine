@@ -75,6 +75,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 		state_stack.UpdateCurrentState(timer.GetTime());
 		input.Update();
+		graphics_engine.Update();
 		// graphics_engine.Present( timer.GetTime() );
 
 	} while(gameRunning);

@@ -56,7 +56,7 @@ namespace Graphics
 		m_FrameBuffers = new VkFramebuffer[m_NofFrameBuffers];
 
 		SetupRenderPass();
-
+		SetupDepthResources();
 		auto [format_list, nof_formats] =
 			vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
 
@@ -137,7 +137,8 @@ namespace Graphics
 		submitInfo.waitSemaphoreCount = 1;
 
 		vkQueueSubmit(m_Context->Queue, 1, &submitInfo, m_CommandFence);
-		vlk::PresentQueue(m_Context->Queue, m_Index, nullptr, 1, m_Context->SwapchainCtx.Swapchain);
+		vlk::PresentQueue(m_Context->Queue, m_Index, &m_DrawDone, 1,
+						  m_Context->SwapchainCtx.Swapchain);
 
 		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
 		vkResetFences(m_Context->Device, 1, &m_CommandFence);

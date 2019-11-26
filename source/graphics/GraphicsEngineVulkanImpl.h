@@ -15,6 +15,8 @@ namespace Graphics
 		~GraphicsEngineVulkanImpl() = default;
 
 		void Init(const Window& window);
+		void Destroy();
+		RenderContextVulkan* GetRenderContext() { return m_Context; }
 
 	private:
 		RenderContextVulkan* m_Context{};

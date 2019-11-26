@@ -7,6 +7,7 @@ namespace Graphics
 {
 	void CreateImGuiContext();
 	class VulkanRenderer;
+	class GraphicsEngineVulkanImpl;
 	class GraphicsEngine
 	{
 	public:
@@ -18,10 +19,17 @@ namespace Graphics
 
 		const Window* GetWindow() const { return m_Window; }
 
+		void Update();
+
 	private:
+		void DestroyObjects();
+
 		GraphicsEngine() = default;
 		~GraphicsEngine() = default;
 		static GraphicsEngine* m_Instance;
+
+		GraphicsEngineVulkanImpl* m_VulkanImpl = nullptr;
+		VulkanRenderer* m_VulkanRenderer = nullptr;
 
 		const Window* m_Window{};
 	};

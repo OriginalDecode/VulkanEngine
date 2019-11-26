@@ -23,6 +23,22 @@ namespace Graphics
 		// Create Depth
 	}
 
+	void GraphicsEngineVulkanImpl::Destroy()
+	{
+		for(int32 i = 0; i < m_Context->SwapchainCtx.ImageCount; ++i)
+		{
+			vkDestroyImage(m_Context->Device, m_Context->SwapchainCtx.Images[i], nullptr);
+			vkDestroyImageView(m_Context->Device, m_Context->SwapchainCtx.Views[i], nullptr);
+		}
+
+		vkDestroySwapchainKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, nullptr);
+		vkDestroySurfaceKHR(m_Context->Instance, m_Context->Surface, nullptr);
+		vkDestroyDevice(m_Context->Device, nullptr);
+		vlk::DestroyInstance(m_Context->Instance);
+		delete m_Context;
+		m_Context = nullptr;
+	}
+
 	void GraphicsEngineVulkanImpl::CreatePhysicalDevice()
 	{
 		auto [device_list, device_count] = vlk::AllocPhysicalDeviceList(m_Context->Instance);
@@ -101,6 +117,9 @@ namespace Graphics
 		if(vkCreateDevice(m_Context->PhysicalDevice, &create_info, nullptr, &m_Context->Device) !=
 		   VK_SUCCESS)
 			ASSERT(false, "Failed to create device!");
+
+		vkGetDeviceQueue(m_Context->Device, m_Context->QueueFamily, 0 /*queueIndex*/,
+						 &m_Context->Queue);
 	}
 
 	void GraphicsEngineVulkanImpl::CreateSwapchain()
