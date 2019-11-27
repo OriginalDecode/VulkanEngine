@@ -1,3 +1,3 @@
 @echo off
 
-%python% buildscript.py --clean -c=vs2019 -p=engine
+%python% buildscript.py --clean -c=vs2017 -p=engine

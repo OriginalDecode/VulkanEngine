@@ -67,6 +67,9 @@ namespace Graphics
 		VkImageView m_DefaultDepthImageView = nullptr;
 		VkDeviceMemory m_DepthMemory = nullptr;
 		VkFormat m_DepthFormat;
+
+		
+
 	};
 
 }; // namespace Graphics

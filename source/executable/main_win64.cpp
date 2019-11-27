@@ -30,7 +30,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 	Window::CreateInfo createInfo{ 1920.f, 1080.f, instance, WindowProc };
 
 	Window window(createInfo);
-	window.SetText("Engine2");
+	window.SetText("Dark Roast Bean");
 
 	Graphics::GraphicsEngine::Create();
 	Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();

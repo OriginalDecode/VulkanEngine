@@ -55,8 +55,8 @@ namespace Graphics
 		m_NofFrameBuffers = ctx->SwapchainCtx.ImageCount;
 		m_FrameBuffers = new VkFramebuffer[m_NofFrameBuffers];
 
-		SetupRenderPass();
 		SetupDepthResources();
+		SetupRenderPass();
 		auto [format_list, nof_formats] =
 			vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
 
@@ -85,8 +85,7 @@ namespace Graphics
 		m_NextImage = vlk::CreateDeviceSemaphore();
 		m_DrawDone = vlk::CreateDeviceSemaphore();
 
-		return true;
-
+		
 		VkDescriptorSetLayoutBinding uboLayoutBinding = vlk::CreateLayoutBinding(
 			0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1);
 
@@ -108,16 +107,17 @@ namespace Graphics
 													 pushRangeList, ARRSIZE(pushRangeList));
 		m_Pipeline = CreateGraphicsPipeline();
 
-		CreateImGuiContext();
+		//CreateImGuiContext();
 		return true;
 	}
 
 	void VulkanRenderer::DrawFrame(float dt)
 	{
+		
 		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX,
 							  m_DrawDone, nullptr, &m_Index);
 
-		// SetupRenderCommands(m_Index ^ 1);
+		 //SetupRenderCommands(m_Index ^ 1);
 
 		const VkPipelineStageFlags waitDstStageMask =
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
@@ -146,7 +146,7 @@ namespace Graphics
 
 	void VulkanRenderer::SetupRenderCommands(int index)
 	{
-		const Window::Size& windowSize = GraphicsEngine::Get().GetWindow()->GetSize();
+		const Window::Size& windowSize = m_Context->Window->GetSize();
 
 		VkClearValue clearValue[2] = {};
 		clearValue[0].color = { 0.f, 0.f, 0.f, 0.f };
@@ -168,8 +168,9 @@ namespace Graphics
 		VkFramebuffer& frameBuffer = m_FrameBuffers[index];
 		VkCommandBuffer& commandBuffer = m_CommandsBuffers[index];
 
-		if(vkBeginCommandBuffer(commandBuffer, &cmdInfo) != VK_SUCCESS)
-			ASSERT(false, "Failed to begin CommandBuffer!");
+		VkResult result = vkBeginCommandBuffer(commandBuffer, &cmdInfo);
+		ASSERT(result == VK_SUCCESS, "Failed to begin CommandBuffer!");
+		
 		renderPassInfo.framebuffer = frameBuffer;
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -179,8 +180,8 @@ namespace Graphics
 
 		vkCmdEndRenderPass(commandBuffer);
 
-		if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-			ASSERT(false, "Failed to end CommandBuffer!");
+		result = vkEndCommandBuffer(commandBuffer);
+		ASSERT(result == VK_SUCCESS, "Failed to end CommandBuffer!");
 	}
 
 	void VulkanRenderer::SetupRenderPass()
@@ -404,21 +405,27 @@ namespace Graphics
 		blendCreateInfo.attachmentCount = 1;
 		blendCreateInfo.pAttachments = &blendAttachState;
 
-		// auto bindDesc = vlk::CreateBindingDesc(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
-		// auto attrDesc = vlk::CreateAttributeDesc(0, 0);
-		// auto attrDesc2 = vlk::CreateAttributeDesc(1, 16);
+		struct Vertex
+		{
+			Core::Vector4f pos;
+			Core::Vector4f color;
+		};
 
-		// VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
-		// VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
+		auto bindDesc	= vlk::CreateBindingDesc(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
+		auto attrDesc	= vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 0, 0);
+		auto attrDesc2	= vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 1, sizeof(Core::Vector4f));
+
+		 VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
+		 VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		/*vertexInputInfo.vertexBindingDescriptionCount = ARRSIZE(bindDescArr);
-		vertexInputInfo.vertexAttributeDescriptionCount = ARRSIZE(descriptions);*/
+		vertexInputInfo.vertexBindingDescriptionCount = ARRSIZE(bindDescArr);
+		vertexInputInfo.vertexAttributeDescriptionCount = ARRSIZE(descriptions);
 
-		// vertexInputInfo.pVertexBindingDescriptions = bindDescArr;
-		// vertexInputInfo.pVertexAttributeDescriptions = descriptions;
+		vertexInputInfo.pVertexBindingDescriptions = bindDescArr;
+		vertexInputInfo.pVertexAttributeDescriptions = descriptions;
 
 		VkDescriptorPoolSize poolSize = {};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -429,33 +436,35 @@ namespace Graphics
 		VkDescriptorSetLayout layouts[] = { m_DescriptorLayout };
 		m_DescriptorSet = vlk::AllocDescSet(m_DescriptorPool, 1, layouts);
 
-		// VkDescriptorBufferInfo bInfo2 = {};
+		 /*VkDescriptorBufferInfo bInfo2 = {};
 
-		// bInfo2.buffer = static_cast<VkBuffer>( _ViewProjection.GetBuffer() );
-		// bInfo2.offset = 0;
-		// bInfo2.range = _ViewProjection.GetSize();
+		bInfo2.buffer = static_cast<VkBuffer>( _ViewProjection.GetBuffer() );
+		bInfo2.offset = 0;
+		bInfo2.range = sizeof(Core::Matrix44f) * 2;
 
-		/*VkWriteDescriptorSet descWrite = {};
+	   VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descWrite.dstSet = m_DescriptorSet;
 		descWrite.dstBinding = 0;
 		descWrite.dstArrayElement = 0;
 		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descWrite.descriptorCount = 1;
-		descWrite.pBufferInfo = &bInfo2;
+		descWrite.pBufferInfo = &bInfo2;*/
 
-		m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);*/
+		 //m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
-		// VkPipelineShaderStageCreateInfo ssci[] = {
-		//	CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT,
-		//_vertexShader.GetModule(), "main" ), 	CreateShaderStageInfo(
-		// VK_SHADER_STAGE_FRAGMENT_BIT, _fragmentShader.GetModule(), "main" )
-		//};
+		VkShaderModule vert = vlk::LoadShader("Data/shaders/vertex.vert");
+		VkShaderModule frag = vlk::LoadShader("Data/shaders/frag.frag");
+
+		 VkPipelineShaderStageCreateInfo ssci[] = {
+			vlk::CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT, vert, "main" ), 	
+			vlk::CreateShaderStageInfo( VK_SHADER_STAGE_FRAGMENT_BIT, frag, "main" )
+		};
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -469,14 +478,15 @@ namespace Graphics
 		pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
 
-		// pipelineInfo.pStages = ssci;
-		// pipelineInfo.stageCount = ARRSIZE( ssci );
+		 pipelineInfo.pStages = ssci;
+		 pipelineInfo.stageCount = ARRSIZE( ssci );
 
 		vkCreateGraphicsPipelines(m_Context->Device, nullptr, 1, &pipelineInfo, nullptr, &pipeline);
 
-		// DestroyShader( &_vertexShader );
-		// DestroyShader( &_fragmentShader );
 
+		vlk::DestroyShader(vert);
+		vlk::DestroyShader(frag);
+		
 		return pipeline;
 	}
 

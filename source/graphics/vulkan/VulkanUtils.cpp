@@ -34,17 +34,21 @@ namespace vlk
 	VkShaderModule LoadShader(const char* filepath)
 	{
 		Core::File shader(filepath, Core::FileMode::READ_FILE);
-		VkShaderModuleCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shader.GetSize();
-		createInfo.pCode = (const uint32_t*)shader.GetBuffer();
+		VkShaderModuleCreateInfo create_info = {};
+		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		create_info.codeSize = shader.GetSize();
+		create_info.pCode = (const uint32_t*)shader.GetBuffer();
 
 		VkShaderModule shaderModule = nullptr;
-		if(vkCreateShaderModule(g_Context->Device, &createInfo, nullptr, &shaderModule) !=
-		   VK_SUCCESS)
-			ASSERT(false, "Failed to create VkShaderModule!");
+		VkResult result = vkCreateShaderModule(g_Context->Device, &create_info, nullptr, &shaderModule);
+		ASSERT(result == VK_SUCCESS, "Failed to create VkShaderModule!");
 
 		return shaderModule;
+	}
+
+	void DestroyShader(VkShaderModule module) 
+	{
+		vkDestroyShaderModule(g_Context->Device, module, nullptr);
 	}
 
 	void CreateInstance(const char* appName, int32 appVersion, const char* engineName,
@@ -349,6 +353,7 @@ namespace vlk
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		alloc_info.descriptorSetCount = nof_desc_set;
 		alloc_info.pSetLayouts = layouts;
+		alloc_info.descriptorPool = desc_pool;
 		VkDescriptorSet set = nullptr;
 		if(vkAllocateDescriptorSets(g_Context->Device, &alloc_info, &set) != VK_SUCCESS)
 			ASSERT(false, "Failed to allocate DescriptorSet!");

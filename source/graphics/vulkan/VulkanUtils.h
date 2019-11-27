@@ -13,6 +13,8 @@ namespace vlk
 {
 
 	VkShaderModule LoadShader(const char* filepath);
+	void DestroyShader(VkShaderModule module);
+
 
 	void CreateInstance(const char* appName, int32 appVersion, const char* engineName,
 						int32 engineVersion, int32 apiVersion, Graphics::RenderContextVulkan* ctx);
