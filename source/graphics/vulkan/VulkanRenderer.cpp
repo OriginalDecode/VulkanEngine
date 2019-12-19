@@ -20,6 +20,7 @@
 #include "graphics/RenderContextVulkan.h"
 #include "graphics/vulkan/VulkanRasterizerStateInfos.h"
 #include "graphics/vulkan/VulkanDepthStencilInfos.h"
+#include "graphics/vulkanpipeline.h"
 
 namespace Graphics
 {
@@ -28,6 +29,9 @@ namespace Graphics
 
 		VkDevice device = m_Context->Device;
 
+		vkDestroyImage(device, m_DefaultDepthImage, nullptr);
+		vkDestroyImageView(device, m_DefaultDepthImageView, nullptr);
+		vkFreeMemory(device, m_DepthMemory, nullptr);
 		vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr);
 		vkDestroyPipeline(device, m_Pipeline, nullptr);
 		vkDestroySemaphore(device, m_DrawDone, nullptr);
@@ -36,7 +40,7 @@ namespace Graphics
 		vkDestroyFence(device, m_CommandFence, nullptr);
 
 		vkFreeCommandBuffers(device, m_CommandPool, m_NofCommandBuffers, m_CommandsBuffers);
-		for(int32 i = 0; i < m_NofFrameBuffers; i++)
+		for(uint32 i = 0; i < m_NofFrameBuffers; i++)
 			vkDestroyFramebuffer(device, m_FrameBuffers[i], nullptr);
 
 		delete[] m_CommandsBuffers;
@@ -48,8 +52,7 @@ namespace Graphics
 		m_Context = ctx;
 		const Window::Size& windowSize = ctx->Window->GetSize();
 
-		m_CommandPool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-											   ctx->QueueFamily);
+		m_CommandPool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, ctx->QueueFamily);
 
 		m_CommandsBuffers = vlk::CreateCommandBuffers(m_CommandPool, ctx->SwapchainCtx.ImageCount);
 		m_NofFrameBuffers = ctx->SwapchainCtx.ImageCount;
@@ -57,18 +60,15 @@ namespace Graphics
 
 		SetupDepthResources();
 		SetupRenderPass();
-		auto [format_list, nof_formats] =
-			vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
+		auto [format_list, nof_formats] = vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
 
-		for(int i = 0; i < m_NofFrameBuffers; i++)
+		for(uint32 i = 0; i < m_NofFrameBuffers; i++)
 		{
 
-			ctx->SwapchainCtx.Views[i] = vlk::Create2DImageView(
-				format_list[0].format, ctx->SwapchainCtx.Images[i], VK_IMAGE_ASPECT_COLOR_BIT);
+			ctx->SwapchainCtx.Views[i] = vlk::Create2DImageView(format_list[0].format, ctx->SwapchainCtx.Images[i], VK_IMAGE_ASPECT_COLOR_BIT);
 
 			VkImageView views[] = { ctx->SwapchainCtx.Views[i], m_DefaultDepthImageView };
-			m_FrameBuffers[i] = vlk::CreateFramebuffer(views, ARRSIZE(views), windowSize.m_Width,
-													   windowSize.m_Height, m_RenderPass);
+			m_FrameBuffers[i] = vlk::CreateFramebuffer(views, ARRSIZE(views), (uint32)windowSize.m_Width, (uint32)windowSize.m_Height, m_RenderPass);
 		}
 
 		m_Viewport.height = windowSize.m_Height;
@@ -85,13 +85,13 @@ namespace Graphics
 		m_NextImage = vlk::CreateDeviceSemaphore();
 		m_DrawDone = vlk::CreateDeviceSemaphore();
 
-		
-		VkDescriptorSetLayoutBinding uboLayoutBinding = vlk::CreateLayoutBinding(
-			0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1);
+		VkDescriptorSetLayoutBinding uboLayoutBinding = vlk::CreateLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1);
 
 		VkDescriptorSetLayoutBinding bindings[] = {
 			uboLayoutBinding,
 		};
+
+		VulkanPipeline pipeline();
 
 		m_DescriptorLayout = vlk::CreateDescLayout(bindings, ARRSIZE(bindings));
 
@@ -103,26 +103,23 @@ namespace Graphics
 			{ VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f) },
 		};
 
-		m_PipelineLayout = vlk::CreatePipelineLayout(descriptorLayouts, ARRSIZE(descriptorLayouts),
-													 pushRangeList, ARRSIZE(pushRangeList));
+		m_PipelineLayout = vlk::CreatePipelineLayout(descriptorLayouts, ARRSIZE(descriptorLayouts), pushRangeList, ARRSIZE(pushRangeList));
 		m_Pipeline = CreateGraphicsPipeline();
 
-		//CreateImGuiContext();
+		// CreateImGuiContext();
 		return true;
 	}
 
-	void VulkanRenderer::DrawFrame(float dt)
+	void VulkanRenderer::DrawFrame(float /*dt*/)
 	{
-		
-		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX,
-							  m_DrawDone, nullptr, &m_Index);
 
-		 //SetupRenderCommands(m_Index ^ 1);
+		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX, m_DrawDone, nullptr, &m_Index);
 
-		const VkPipelineStageFlags waitDstStageMask =
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
-														   // having
-														   // semaphores
+		SetupRenderCommands(m_Index ^ 1);
+
+		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
+																									 // having
+																									 // semaphores
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pWaitDstStageMask = &waitDstStageMask;
@@ -137,8 +134,7 @@ namespace Graphics
 		submitInfo.waitSemaphoreCount = 1;
 
 		vkQueueSubmit(m_Context->Queue, 1, &submitInfo, m_CommandFence);
-		vlk::PresentQueue(m_Context->Queue, m_Index, &m_DrawDone, 1,
-						  m_Context->SwapchainCtx.Swapchain);
+		vlk::PresentQueue(m_Context->Queue, m_Index, &m_DrawDone, 1, m_Context->SwapchainCtx.Swapchain);
 
 		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
 		vkResetFences(m_Context->Device, 1, &m_CommandFence);
@@ -156,8 +152,7 @@ namespace Graphics
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { (uint32)windowSize.m_Width,
-											 (uint32)windowSize.m_Height };
+		renderPassInfo.renderArea.extent = { (uint32)windowSize.m_Width, (uint32)windowSize.m_Height };
 		renderPassInfo.clearValueCount = ARRSIZE(clearValue);
 		renderPassInfo.pClearValues = clearValue;
 
@@ -170,13 +165,12 @@ namespace Graphics
 
 		VkResult result = vkBeginCommandBuffer(commandBuffer, &cmdInfo);
 		ASSERT(result == VK_SUCCESS, "Failed to begin CommandBuffer!");
-		
+
 		renderPassInfo.framebuffer = frameBuffer;
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0,
-								1, &m_DescriptorSet, 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -189,11 +183,9 @@ namespace Graphics
 
 		VkAttachmentDescription attDesc = {};
 
-		auto [format_list, nof_formats] =
-			vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
+		auto [format_list, nof_formats] = vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
 
-		VkSurfaceFormatKHR format = vlk::GetSurfaceFormat(
-			format_list, nof_formats, VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+		VkSurfaceFormatKHR format = vlk::GetSurfaceFormat(format_list, nof_formats, VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
 
 		vlk::FreePhysicalDeviceSurfaceFormatsList(format_list);
 
@@ -214,7 +206,7 @@ namespace Graphics
 		attRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = m_DepthFormat; /*m_Device->GetDepthFormat()*/
+		depthAttachment.format = m_DepthFormat;
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -239,8 +231,7 @@ namespace Graphics
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.srcAccessMask = 0;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask =
-			VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 		VkAttachmentDescription attachments[] = { attDesc, depthAttachment };
 		VkRenderPassCreateInfo rpInfo = {};
@@ -259,8 +250,7 @@ namespace Graphics
 	{
 		// get the depth format
 		VkFormat depthFormat = {};
-		VkFormat formats[] = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-							   VK_FORMAT_D24_UNORM_S8_UINT };
+		VkFormat formats[] = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
 
 		const VkFormatFeatureFlags features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		for(VkFormat format : formats)
@@ -274,23 +264,28 @@ namespace Graphics
 
 		const VkExtent2D extent = vlk::GetSurfaceCapabilities(m_Context->Surface).currentExtent;
 
-		auto [image, memory] = vlk::Create2DImage(
-			extent.width, extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		vlk::ImageCreateInfo create_info = {};
+		create_info.Height = extent.height;
+		create_info.Width = extent.width;
+		create_info.ImageFormat = depthFormat;
+		create_info.ImageTiling = VK_IMAGE_TILING_OPTIMAL;
+		create_info.UsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		create_info.MemoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		create_info.Offset = 0;
+
+		auto [image, memory] = vlk::Create2DImage(create_info);
 
 		m_DefaultDepthImage = image;
 		m_DepthMemory = memory;
-		m_DefaultDepthImageView =
-			vlk::Create2DImageView(depthFormat, m_DefaultDepthImage, VK_IMAGE_ASPECT_DEPTH_BIT);
+		m_DefaultDepthImageView = vlk::Create2DImageView(depthFormat, m_DefaultDepthImage, VK_IMAGE_ASPECT_DEPTH_BIT);
 		m_DepthFormat = depthFormat;
 
 		// setup a commandpool and commandbuffer
-		VkCommandPool pool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-													m_Context->QueueFamily);
+		VkCommandPool pool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_Context->QueueFamily);
 		const int32 nof_buffers = 1;
 		VkCommandBuffer* buffer = vlk::CreateCommandBuffers(pool, nof_buffers);
 
-		vlk::BeginSingleTimeCommand(buffer[0], pool, m_Context->Queue);
+		vlk::BeginSingleTimeCommand(buffer[0]);
 
 		VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -322,11 +317,10 @@ namespace Graphics
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
+		VkPipelineStageFlags sourceStage = {};
+		VkPipelineStageFlags destinationStage = {};
 
-		if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-		   newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -334,8 +328,7 @@ namespace Graphics
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
-		else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-				newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -343,12 +336,10 @@ namespace Graphics
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		}
-		else if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-				newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		else if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 		{
 			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-									VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -358,10 +349,9 @@ namespace Graphics
 			ASSERT(false, "unsupported layout transition!");
 		}
 
-		vkCmdPipelineBarrier(buffer[0], sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1,
-							 &barrier);
+		vkCmdPipelineBarrier(buffer[0], sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-		vlk::EndSingleTimeCommand(buffer[0], pool, m_Context->Queue);
+		vlk::EndSingleTimeCommand(buffer[0], m_Context->Queue);
 
 		vkFreeCommandBuffers(m_Context->Device, pool, nof_buffers, buffer);
 		vkDestroyCommandPool(m_Context->Device, pool, nullptr);
@@ -370,7 +360,6 @@ namespace Graphics
 
 	VkPipeline VulkanRenderer::CreateGraphicsPipeline()
 	{
-		VkPipeline pipeline;
 
 		// viewport
 		VkPipelineViewportStateCreateInfo vpCreateInfo = {};
@@ -381,12 +370,10 @@ namespace Graphics
 		vpCreateInfo.pViewports = &m_Viewport;
 
 		// depth
-		VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo =
-			vlk::depthStencilInfos[vlk::DEPTH_READ_WRITE];
+		VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo = vlk::depthStencilInfos[vlk::DEPTH_READ_WRITE];
 
 		// rasterizer
-		VkPipelineRasterizationStateCreateInfo rastCreateInfo =
-			vlk::rasterizerInfos[vlk::FILL_CULL_BACK_CLOCKWISE];
+		VkPipelineRasterizationStateCreateInfo rastCreateInfo = vlk::rasterizerInfos[vlk::FILL_CULL_BACK_CLOCKWISE];
 
 		// sampler
 		VkPipelineMultisampleStateCreateInfo pipelineMSCreateInfo = {};
@@ -411,17 +398,22 @@ namespace Graphics
 			Core::Vector4f color;
 		};
 
-		auto bindDesc	= vlk::CreateBindingDesc(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
-		auto attrDesc	= vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 0, 0);
-		auto attrDesc2	= vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 1, sizeof(Core::Vector4f));
-
-		 VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
-		 VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
-
+		/* */
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
+		/* input layout "technically" */
+		auto bindDesc = vlk::CreateBindingDesc(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
+		VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
 		vertexInputInfo.vertexBindingDescriptionCount = ARRSIZE(bindDescArr);
+
+		/*
+			Describes each input
+		*/
+		auto attrDesc = vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 0, 0);						/* float4 position */
+		auto attrDesc2 = vlk::CreateAttributeDesc(VK_FORMAT_R32G32B32A32_SFLOAT, 0, 1, sizeof(Core::Vector4f)); /* float4 color */
+
+		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
 		vertexInputInfo.vertexAttributeDescriptionCount = ARRSIZE(descriptions);
 
 		vertexInputInfo.pVertexBindingDescriptions = bindDescArr;
@@ -436,22 +428,26 @@ namespace Graphics
 		VkDescriptorSetLayout layouts[] = { m_DescriptorLayout };
 		m_DescriptorSet = vlk::AllocDescSet(m_DescriptorPool, 1, layouts);
 
-		 /*VkDescriptorBufferInfo bInfo2 = {};
+		/*
+
+		VkDescriptorBufferInfo bInfo2 = {};
 
 		bInfo2.buffer = static_cast<VkBuffer>( _ViewProjection.GetBuffer() );
 		bInfo2.offset = 0;
 		bInfo2.range = sizeof(Core::Matrix44f) * 2;
 
-	   VkWriteDescriptorSet descWrite = {};
+		VkWriteDescriptorSet descWrite = {};
 		descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descWrite.dstSet = m_DescriptorSet;
 		descWrite.dstBinding = 0;
 		descWrite.dstArrayElement = 0;
 		descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descWrite.descriptorCount = 1;
-		descWrite.pBufferInfo = &bInfo2;*/
+		descWrite.pBufferInfo = &bInfo2;
 
-		 //m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);
+		*/
+
+		// m_Device->UpdateDescriptorSets(1, &descWrite, 0, nullptr);
 
 		VkPipelineInputAssemblyStateCreateInfo pipelineIACreateInfo = {};
 		pipelineIACreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -461,10 +457,8 @@ namespace Graphics
 		VkShaderModule vert = vlk::LoadShader("Data/shaders/vertex.vert");
 		VkShaderModule frag = vlk::LoadShader("Data/shaders/frag.frag");
 
-		 VkPipelineShaderStageCreateInfo ssci[] = {
-			vlk::CreateShaderStageInfo( VK_SHADER_STAGE_VERTEX_BIT, vert, "main" ), 	
-			vlk::CreateShaderStageInfo( VK_SHADER_STAGE_FRAGMENT_BIT, frag, "main" )
-		};
+		VkPipelineShaderStageCreateInfo ssci[] = { vlk::CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, vert, "main"),
+												   vlk::CreateShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, frag, "main") };
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -478,15 +472,16 @@ namespace Graphics
 		pipelineInfo.pDepthStencilState = &pipelineDepthStencilStateCreateInfo;
 		pipelineInfo.pMultisampleState = &pipelineMSCreateInfo;
 
-		 pipelineInfo.pStages = ssci;
-		 pipelineInfo.stageCount = ARRSIZE( ssci );
+		pipelineInfo.pStages = ssci;
+		pipelineInfo.stageCount = ARRSIZE(ssci);
 
-		vkCreateGraphicsPipelines(m_Context->Device, nullptr, 1, &pipelineInfo, nullptr, &pipeline);
-
+		VkPipeline pipeline;
+		VkResult result = vkCreateGraphicsPipelines(m_Context->Device, nullptr, 1, &pipelineInfo, nullptr, &pipeline);
+		ASSERT(result == VK_SUCCESS, "Failed to create pipeline!");
 
 		vlk::DestroyShader(vert);
 		vlk::DestroyShader(frag);
-		
+
 		return pipeline;
 	}
 
@@ -510,20 +505,19 @@ namespace Graphics
 		if(!ImGui_ImplVulkan_Init(&info, m_RenderPass))
 			ASSERT(false, "Failed");
 
-		VkCommandPool pool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-													m_Context->QueueFamily);
+		VkCommandPool pool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_Context->QueueFamily);
 
-		if(vkResetCommandPool(m_Context->Device, pool, 0) != VK_SUCCESS)
-			ASSERT(false, "failed to reset commandPool");
+		VkResult result = vkResetCommandPool(m_Context->Device, pool, 0);
+		ASSERT(result == VK_SUCCESS, "failed to reset commandPool");
 
 		const int32 nof_buffers = 1;
 		VkCommandBuffer* buffer = vlk::CreateCommandBuffers(pool, nof_buffers);
 
-		vlk::BeginSingleTimeCommand(buffer[0], pool, m_Context->Queue);
+		vlk::BeginSingleTimeCommand(buffer[0]);
 
 		ImGui_ImplVulkan_CreateFontsTexture(buffer[0]);
 
-		vlk::EndSingleTimeCommand(buffer[0], pool, m_Context->Queue);
+		vlk::EndSingleTimeCommand(buffer[0], m_Context->Queue);
 
 		vkFreeCommandBuffers(m_Context->Device, pool, nof_buffers, buffer);
 		delete[] buffer;

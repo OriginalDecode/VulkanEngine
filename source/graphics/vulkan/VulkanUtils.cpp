@@ -9,16 +9,11 @@
 #ifndef ARRSIZE
 #define ARRSIZE(x) sizeof(x) / sizeof(x[0])
 #endif
-#define VK_GET_FNC_POINTER(function, instance) \
-	(PFN_##function) vkGetInstanceProcAddr(instance, #function)
+#define VK_GET_FNC_POINTER(function, instance) (PFN_##function) vkGetInstanceProcAddr(instance, #function)
 namespace vlk
 {
-	VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT /* flags */,
-													   VkDebugReportObjectTypeEXT /* objectType */,
-													   uint64_t /* object */, size_t /* location */,
-													   int32_t /* messageCode */,
-													   const char* /* pLayerPrefix */,
-													   const char* pMessage, void* /* pUserData */)
+	VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT /* flags */, VkDebugReportObjectTypeEXT /* objectType */, uint64_t /* object */, size_t /* location */,
+													   int32_t /* messageCode */, const char* /* pLayerPrefix */, const char* pMessage, void* /* pUserData */)
 	{
 		char temp[USHRT_MAX] = { 0 };
 		sprintf_s(temp, "Vulkan Warning :%s", pMessage);
@@ -46,13 +41,9 @@ namespace vlk
 		return shaderModule;
 	}
 
-	void DestroyShader(VkShaderModule module) 
-	{
-		vkDestroyShaderModule(g_Context->Device, module, nullptr);
-	}
+	void DestroyShader(VkShaderModule module) { vkDestroyShaderModule(g_Context->Device, module, nullptr); }
 
-	void CreateInstance(const char* appName, int32 appVersion, const char* engineName,
-						int32 engineVersion, int32 apiVersion, Graphics::RenderContextVulkan* ctx)
+	void CreateInstance(const char* appName, int32 appVersion, const char* engineName, int32 engineVersion, int32 apiVersion, Graphics::RenderContextVulkan* ctx)
 	{
 		g_Context = ctx; // set the "global" context
 
@@ -72,28 +63,25 @@ namespace vlk
 		instanceCreateInfo.enabledLayerCount = ARRSIZE(validationLayers);
 		instanceCreateInfo.ppEnabledLayerNames = &validationLayers[0];
 
-		const char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface",
-									 "VK_EXT_debug_report" };
+		const char* extentions[] = { "VK_KHR_surface", "VK_KHR_win32_surface", "VK_EXT_debug_report" };
 		instanceCreateInfo.enabledExtensionCount = ARRSIZE(extentions);
 		instanceCreateInfo.ppEnabledExtensionNames = extentions;
 		VkInstance instance;
-		if(vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &instance) != VK_SUCCESS)
-			ASSERT(false, "Failed to create Vulkan instance!");
+		VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr /*allocator*/, &instance);
+		ASSERT(result == VK_SUCCESS, "Failed to create Vulkan instance!");
 
 		auto create = VK_GET_FNC_POINTER(vkCreateDebugReportCallbackEXT, instance);
 		ASSERT(create, "Failed to create callback function!");
 
-		VkDebugReportFlagsEXT flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
-									  VK_DEBUG_REPORT_WARNING_BIT_EXT |
-									  VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+		VkDebugReportFlagsEXT flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
 
 		VkDebugReportCallbackCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.pfnCallback = &DebugReportCallback;
 		createInfo.flags = flags;
 
-		if(create(instance, &createInfo, nullptr, &debugCallback) != VK_SUCCESS)
-			ASSERT(false, "Failed to create vulkan debug callback!");
+		result = create(instance, &createInfo, nullptr, &debugCallback);
+		ASSERT(result == VK_SUCCESS, "Failed to create vulkan debug callback!");
 
 		g_Context->Instance = instance;
 	}
@@ -108,25 +96,24 @@ namespace vlk
 	std::tuple<VkPhysicalDevice*, uint32> AllocPhysicalDeviceList(VkInstance instance)
 	{
 		uint32 nof_devices;
-		if(vkEnumeratePhysicalDevices(instance, &nof_devices, nullptr) != VK_SUCCESS)
-			ASSERT(false, "Failed to enumerate gpus!");
+		VkResult result = vkEnumeratePhysicalDevices(instance, &nof_devices, nullptr);
+		ASSERT(result == VK_SUCCESS, "Failed to enumerate gpus!");
 
 		VkPhysicalDevice* device_list = new VkPhysicalDevice[nof_devices];
-		if(vkEnumeratePhysicalDevices(instance, &nof_devices, device_list) != VK_SUCCESS)
-			ASSERT(false, "Failed to enumerate device!");
+		result = vkEnumeratePhysicalDevices(instance, &nof_devices, device_list);
+		ASSERT(result == VK_SUCCESS, "Failed to enumerate device!");
 
 		return { device_list, nof_devices };
 	}
 
-	void AllocPhysicalDeviceList(VkInstance instance, VkPhysicalDevice* deviceList,
-								 uint32* nofDevices)
+	void AllocPhysicalDeviceList(VkInstance instance, VkPhysicalDevice* deviceList, uint32* nofDevices)
 	{
-		if(vkEnumeratePhysicalDevices(instance, nofDevices, nullptr) != VK_SUCCESS)
-			ASSERT(false, "Failed to enumerate gpus!");
+		VkResult result = vkEnumeratePhysicalDevices(instance, nofDevices, nullptr);
+		ASSERT(result == VK_SUCCESS, "Failed to enumerate gpus!");
 
 		deviceList = new VkPhysicalDevice[*nofDevices];
-		if(vkEnumeratePhysicalDevices(instance, nofDevices, deviceList) != VK_SUCCESS)
-			ASSERT(false, "Failed to enumerate device!");
+		result = vkEnumeratePhysicalDevices(instance, nofDevices, deviceList);
+		ASSERT(result == VK_SUCCESS, "Failed to enumerate device!");
 	}
 
 	void FreePhysicalDeviceList(VkPhysicalDevice* list)
@@ -135,8 +122,7 @@ namespace vlk
 		list = nullptr;
 	}
 
-	std::tuple<VkQueueFamilyProperties*, uint32>
-		AllocPhysicalDevicePropertiesList(VkPhysicalDevice device)
+	std::tuple<VkQueueFamilyProperties*, uint32> AllocPhysicalDevicePropertiesList(VkPhysicalDevice device)
 	{
 		uint32 nof_properties;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &nof_properties, nullptr);
@@ -151,19 +137,16 @@ namespace vlk
 		properties = nullptr;
 	}
 
-	std::tuple<VkSurfaceFormatKHR*, uint32>
-		AllocPhysicalDeviceSurfaceFormatsList(VkSurfaceKHR surface)
+	std::tuple<VkSurfaceFormatKHR*, uint32> AllocPhysicalDeviceSurfaceFormatsList(VkSurfaceKHR surface)
 	{
 		uint32 nof_formats;
-		if(vkGetPhysicalDeviceSurfaceFormatsKHR(g_Context->PhysicalDevice, surface, &nof_formats,
-												nullptr) != VK_SUCCESS)
+		if(vkGetPhysicalDeviceSurfaceFormatsKHR(g_Context->PhysicalDevice, surface, &nof_formats, nullptr) != VK_SUCCESS)
 		{
 			ASSERT(false, "Failed to get formats from surface!");
 			return { nullptr, 0 };
 		}
 		VkSurfaceFormatKHR* formats = new VkSurfaceFormatKHR[nof_formats];
-		if(vkGetPhysicalDeviceSurfaceFormatsKHR(g_Context->PhysicalDevice, surface, &nof_formats,
-												formats) != VK_SUCCESS)
+		if(vkGetPhysicalDeviceSurfaceFormatsKHR(g_Context->PhysicalDevice, surface, &nof_formats, formats) != VK_SUCCESS)
 		{
 			ASSERT(false, "Failed to allocate formats list!");
 			delete[] formats;
@@ -183,16 +166,14 @@ namespace vlk
 	VkSurfaceCapabilitiesKHR GetSurfaceCapabilities(VkSurfaceKHR surface)
 	{
 		VkSurfaceCapabilitiesKHR capabilities = {};
-		if(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_Context->PhysicalDevice, surface,
-													 &capabilities) != VK_SUCCESS)
+		if(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(g_Context->PhysicalDevice, surface, &capabilities) != VK_SUCCESS)
 		{
 			ASSERT(false, "Failed to get surface capabilities");
 		}
 		return capabilities;
 	}
 
-	VkSurfaceFormatKHR GetSurfaceFormat(VkSurfaceFormatKHR* formats, uint32 nof_formats,
-										VkFormat format, VkColorSpaceKHR color_space)
+	VkSurfaceFormatKHR GetSurfaceFormat(VkSurfaceFormatKHR* formats, uint32 nof_formats, VkFormat format, VkColorSpaceKHR color_space)
 	{
 		VkSurfaceFormatKHR format_usage = {};
 		if(nof_formats == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
@@ -217,33 +198,30 @@ namespace vlk
 		return format_usage;
 	}
 
-	bool HasDepthStencilComponent(VkFormat format)
-	{
-		return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT);
-	}
+	bool HasDepthStencilComponent(VkFormat format) { return (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT); }
 
-	void BeginSingleTimeCommand(VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue)
+	void BeginSingleTimeCommand(VkCommandBuffer buffer)
 	{
 		VkCommandBufferBeginInfo begin_info = {};
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		if(vkBeginCommandBuffer(buffer, &begin_info) != VK_SUCCESS)
-			ASSERT(false, "failed to begin commandbuffer!");
+		VkResult result = vkBeginCommandBuffer(buffer, &begin_info);
+		ASSERT(result == VK_SUCCESS, "failed to begin commandbuffer!");
 	}
 
-	void EndSingleTimeCommand(VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue)
+	void EndSingleTimeCommand(VkCommandBuffer buffer, VkQueue queue)
 	{
-		if(vkEndCommandBuffer(buffer) != VK_SUCCESS)
-			ASSERT(false, "Failed to end commandbuffer!");
+		VkResult result = vkEndCommandBuffer(buffer);
+		ASSERT(result == VK_SUCCESS, "Failed to end commandbuffer!");
 
 		VkSubmitInfo info = {};
 		info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		info.commandBufferCount = 1;
 		info.pCommandBuffers = &buffer;
 
-		if(vkQueueWaitIdle(queue) != VK_SUCCESS)
-			ASSERT(false, "vkQueueWaitIdle failed!");
+		result = vkQueueWaitIdle(queue);
+		ASSERT(result == VK_SUCCESS, "vkQueueWaitIdle failed!");
 	}
 
 	VkCommandBuffer* CreateCommandBuffers(VkCommandPool pool, uint32 nof_buffers)
@@ -255,8 +233,8 @@ namespace vlk
 		alloc_info.commandPool = pool;
 		alloc_info.commandBufferCount = nof_buffers;
 
-		if(vkAllocateCommandBuffers(g_Context->Device, &alloc_info, buffers) != VK_SUCCESS)
-			ASSERT(false, "Failed to create VkCommandBuffers!");
+		VkResult result = vkAllocateCommandBuffers(g_Context->Device, &alloc_info, buffers);
+		ASSERT(result == VK_SUCCESS, "Failed to create VkCommandBuffers!");
 
 		return buffers;
 	}
@@ -270,14 +248,12 @@ namespace vlk
 		create_info.flags = create_flags;
 		create_info.queueFamilyIndex = queue_family;
 
-		if(vkCreateCommandPool(g_Context->Device, &create_info, nullptr, &command_pool) !=
-		   VK_SUCCESS)
-			ASSERT(false, "Failed to create commandpool");
+		VkResult result = vkCreateCommandPool(g_Context->Device, &create_info, nullptr, &command_pool);
+		ASSERT(result == VK_SUCCESS, "Failed to create commandpool");
 		return command_pool;
 	}
 
-	void PresentQueue(VkQueue queue, uint32 imageIndex, VkSemaphore* waitSemaphores,
-					  uint32 nofSemaphores, VkSwapchainKHR swapchain)
+	void PresentQueue(VkQueue queue, uint32 imageIndex, VkSemaphore* waitSemaphores, uint32 nofSemaphores, VkSwapchainKHR swapchain)
 	{
 		VkPresentInfoKHR info = {};
 		info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -287,12 +263,11 @@ namespace vlk
 		info.pWaitSemaphores = waitSemaphores;
 		info.waitSemaphoreCount = nofSemaphores;
 
-		VERIFY(vkQueuePresentKHR(queue, &info) == VK_SUCCESS, "Failed to present the queue!");
+		VkResult result = vkQueuePresentKHR(queue, &info);
+		ASSERT(result == VK_SUCCESS, "Failed to present the queue!");
 	}
 
-	VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags,
-														  VkShaderModule shaderModule,
-														  const char* entrypoint)
+	VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags, VkShaderModule shaderModule, const char* entrypoint)
 	{
 		VkPipelineShaderStageCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -308,8 +283,7 @@ namespace vlk
 		vkGetPhysicalDeviceMemoryProperties(g_Context->PhysicalDevice, &memory_properties);
 		for(uint32 i = 0; i < memory_properties.memoryTypeCount; ++i)
 		{
-			if((type_filter & (1 << i)) &&
-			   (memory_properties.memoryTypes[i].propertyFlags & property_flags) == property_flags)
+			if((type_filter & (1 << i)) && (memory_properties.memoryTypes[i].propertyFlags & property_flags) == property_flags)
 			{
 				return i;
 			}
@@ -321,8 +295,7 @@ namespace vlk
 	bool CanPresent(VkSurfaceKHR surface)
 	{
 		VkBool32 can_present = VK_FALSE;
-		if(vkGetPhysicalDeviceSurfaceSupportKHR(g_Context->PhysicalDevice, g_Context->QueueFamily,
-												surface, &can_present) != VK_SUCCESS)
+		if(vkGetPhysicalDeviceSurfaceSupportKHR(g_Context->PhysicalDevice, g_Context->QueueFamily, surface, &can_present) != VK_SUCCESS)
 		{
 			ASSERT(false, "Failed to query if surface can present");
 			return false;
@@ -340,14 +313,13 @@ namespace vlk
 		alloc_info.pNext = nullptr;
 		alloc_info.memoryTypeIndex = memory_type_idx;
 
-		if(vkAllocateMemory(g_Context->Device, &alloc_info, nullptr, &memory) != VK_SUCCESS)
-			ASSERT(false, "Failed to allocate memory on GPU");
+		VkResult result = vkAllocateMemory(g_Context->Device, &alloc_info, nullptr, &memory);
+		ASSERT(result == VK_SUCCESS, "Failed to allocate memory on GPU");
 
 		return memory;
 	}
 
-	VkDescriptorSet AllocDescSet(VkDescriptorPool desc_pool, uint32 nof_desc_set,
-								 VkDescriptorSetLayout* layouts)
+	VkDescriptorSet AllocDescSet(VkDescriptorPool desc_pool, uint32 nof_desc_set, VkDescriptorSetLayout* layouts)
 	{
 		VkDescriptorSetAllocateInfo alloc_info = {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -355,14 +327,13 @@ namespace vlk
 		alloc_info.pSetLayouts = layouts;
 		alloc_info.descriptorPool = desc_pool;
 		VkDescriptorSet set = nullptr;
-		if(vkAllocateDescriptorSets(g_Context->Device, &alloc_info, &set) != VK_SUCCESS)
-			ASSERT(false, "Failed to allocate DescriptorSet!");
+		VkResult result = vkAllocateDescriptorSets(g_Context->Device, &alloc_info, &set);
+		ASSERT(result == VK_SUCCESS, "Failed to allocate DescriptorSet!");
 
 		return set;
 	}
 
-	VkFramebuffer CreateFramebuffer(VkImageView* image_views, uint32 nof_attachments, uint32 width,
-									uint32 height, VkRenderPass render_pass)
+	VkFramebuffer CreateFramebuffer(VkImageView* image_views, uint32 nof_attachments, uint32 width, uint32 height, VkRenderPass render_pass)
 	{
 		VkFramebufferCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -374,9 +345,8 @@ namespace vlk
 		create_info.layers = 1;
 
 		VkFramebuffer framebuffer = nullptr;
-		if(vkCreateFramebuffer(g_Context->Device, &create_info, nullptr, &framebuffer) !=
-		   VK_SUCCESS)
-			ASSERT(false, "Failed to create framebuffer!");
+		VkResult result = vkCreateFramebuffer(g_Context->Device, &create_info, nullptr, &framebuffer);
+		ASSERT(result == VK_SUCCESS, "Failed to create framebuffer!");
 
 		return framebuffer;
 	}
@@ -390,8 +360,8 @@ namespace vlk
 		create_info.pPoolSizes = pool_sizes;
 
 		VkDescriptorPool pool = nullptr;
-		if(vkCreateDescriptorPool(g_Context->Device, &create_info, nullptr, &pool) != VK_SUCCESS)
-			ASSERT(false, "Failed to create descriptor pool!");
+		VkResult result = vkCreateDescriptorPool(g_Context->Device, &create_info, nullptr, &pool);
+		ASSERT(result == VK_SUCCESS, "Failed to create descriptor pool!");
 
 		return pool;
 	}
@@ -418,8 +388,7 @@ namespace vlk
 		return semaphore;
 	}
 
-	VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* layouts, uint32 nof_layouts,
-										  VkPushConstantRange* pcr, uint32 nof_pcr)
+	VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* layouts, uint32 nof_layouts, const VkPushConstantRange* pcr, uint32 nof_pcr)
 	{
 		VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -431,13 +400,13 @@ namespace vlk
 		pipelineCreateInfo.pPushConstantRanges = pcr;
 
 		VkPipelineLayout pipeline;
-		vkCreatePipelineLayout(g_Context->Device, &pipelineCreateInfo, nullptr, &pipeline);
+		VkResult result = vkCreatePipelineLayout(g_Context->Device, &pipelineCreateInfo, nullptr, &pipeline);
+		ASSERT(result == VK_SUCCESS, "Failed to create pipelinelayout!");
 
 		return pipeline;
 	}
 
-	VkVertexInputAttributeDescription CreateAttributeDesc(VkFormat format, int32 binding,
-														  int32 location, int32 offset)
+	VkVertexInputAttributeDescription CreateAttributeDesc(VkFormat format, int32 binding, int32 location, int32 offset)
 	{
 		VkVertexInputAttributeDescription desc = {};
 		desc.binding = binding;
@@ -447,35 +416,29 @@ namespace vlk
 		return desc;
 	}
 
-	VkDescriptorSetLayout CreateDescLayout(VkDescriptorSetLayoutBinding* bindings,
-										   uint32 nof_bindings)
+	VkDescriptorSetLayout CreateDescLayout(const VkDescriptorSetLayoutBinding* bindings, uint32 nof_bindings)
 	{
 		VkDescriptorSetLayoutCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		create_info.bindingCount = nof_bindings;
 		create_info.pBindings = bindings;
 		VkDescriptorSetLayout layout = nullptr;
-		VkResult result =
-			vkCreateDescriptorSetLayout(g_Context->Device, &create_info, nullptr, &layout);
-
+		VkResult result = vkCreateDescriptorSetLayout(g_Context->Device, &create_info, nullptr, &layout);
 		ASSERT(result == VK_SUCCESS, "Failed to create DescriptorSetLayout");
 
 		return layout;
 	}
 
-	VkVertexInputBindingDescription CreateBindingDesc(uint32 binding, uint32 stride,
-													  VkVertexInputRate input_rate)
+	VkVertexInputBindingDescription CreateBindingDesc(uint32 binding, uint32 stride, VkVertexInputRate input_rate)
 	{
 		VkVertexInputBindingDescription desc = {};
 		desc.binding = binding;
 		desc.stride = stride;
-		desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		desc.inputRate = input_rate;
 		return desc;
 	}
 
-	VkDescriptorSetLayoutBinding CreateLayoutBinding(uint32 binding, VkDescriptorType type,
-													 VkShaderStageFlagBits shader_stage,
-													 uint32 nof_descriptors)
+	VkDescriptorSetLayoutBinding CreateLayoutBinding(uint32 binding, VkDescriptorType type, VkShaderStageFlagBits shader_stage, uint32 nof_descriptors)
 	{
 		VkDescriptorSetLayoutBinding layout_binding = {};
 		layout_binding.binding = binding;
@@ -492,8 +455,7 @@ namespace vlk
 		create_info.image = image;
 		create_info.format = format;
 		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-								   VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+		create_info.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
 		VkImageSubresourceRange& srr = create_info.subresourceRange;
 		srr.aspectMask = flags;
 		srr.baseMipLevel = 0;
@@ -508,37 +470,34 @@ namespace vlk
 		return view;
 	}
 
-	std::tuple<VkImage, VkDeviceMemory> Create2DImage(uint32 width, uint32 height, VkFormat format,
-													  VkImageTiling image_tilig,
-													  VkImageUsageFlags usage_flags,
-													  VkMemoryPropertyFlags memory_flags)
+	std::tuple<VkImage, VkDeviceMemory> Create2DImage(const ImageCreateInfo& image_create_info)
 	{
 		VkImageCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		create_info.imageType = VK_IMAGE_TYPE_2D;
-		create_info.extent.width = width;
-		create_info.extent.height = height;
+		create_info.extent.width = image_create_info.Width;
+		create_info.extent.height = image_create_info.Height;
 		create_info.extent.depth = 1;
 		create_info.mipLevels = 1;
 		create_info.arrayLayers = 1;
-		create_info.format = format;
-		create_info.tiling = image_tilig;
+		create_info.format = image_create_info.ImageFormat;
+		create_info.tiling = image_create_info.ImageTiling;
 		create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		create_info.usage = usage_flags;
+		create_info.usage = image_create_info.UsageFlags;
 		create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 		create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VkImage image = nullptr;
-		if(vkCreateImage(g_Context->Device, &create_info, nullptr, &image) != VK_SUCCESS)
-			ASSERT(false, "failed to create image!");
+		VkResult result = vkCreateImage(g_Context->Device, &create_info, nullptr, &image);
+		ASSERT(result == VK_SUCCESS, "failed to create image!");
 
 		VkMemoryRequirements memory_requirements = {};
 		vkGetImageMemoryRequirements(g_Context->Device, image, &memory_requirements);
 
-		VkDeviceMemory memory = AllocDeviceMemory(
-			memory_requirements, FindMemoryType(memory_requirements.memoryTypeBits, memory_flags));
+		VkDeviceMemory memory = AllocDeviceMemory(memory_requirements, FindMemoryType(memory_requirements.memoryTypeBits, image_create_info.MemoryFlags));
 
-		vkBindImageMemory(g_Context->Device, image, memory, 0);
+		result = vkBindImageMemory(g_Context->Device, image, memory, image_create_info.Offset);
+		ASSERT(result == VK_SUCCESS, "Failed to bind image memory!");
 
 		return { image, memory };
 	}

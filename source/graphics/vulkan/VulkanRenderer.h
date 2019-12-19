@@ -42,7 +42,7 @@ namespace Graphics
 		uint32 m_NofCommandBuffers{};
 
 		VkFramebuffer* m_FrameBuffers = nullptr;
-		uint32 m_NofFrameBuffers{};
+		uint32 m_NofFrameBuffers = {};
 
 		VkDescriptorPool m_DescriptorPool = nullptr;
 		VkRenderPass m_RenderPass = nullptr;
@@ -51,7 +51,7 @@ namespace Graphics
 		VkSemaphore m_DrawDone = nullptr;
 
 		VkFence m_CommandFence = nullptr;
-		VkFence m_FrameFence[2]{ nullptr, nullptr };
+		VkFence m_FrameFence[2] = { nullptr, nullptr };
 		uint32 m_Index{};
 
 		VkViewport m_Viewport;
@@ -67,9 +67,6 @@ namespace Graphics
 		VkImageView m_DefaultDepthImageView = nullptr;
 		VkDeviceMemory m_DepthMemory = nullptr;
 		VkFormat m_DepthFormat;
-
-		
-
 	};
 
 }; // namespace Graphics

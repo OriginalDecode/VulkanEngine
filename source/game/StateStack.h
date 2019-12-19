@@ -1,10 +1,10 @@
 #pragma once
 #include "core/Types.h"
-#include "core/containers/array.h"
+#include "core/containers/DynArray.h"
 
 class State;
-typedef Core::Array<State*> SubStateContainer;
-typedef Core::Array<SubStateContainer> MainStateContainer;
+typedef Core::DynArray<State*> SubStateContainer;
+typedef Core::DynArray<SubStateContainer> MainStateContainer;
 class StateStack
 {
 public:
@@ -18,12 +18,12 @@ public:
 
 	void PopCurrentMainState();
 	void PopCurrentSubState();
-	void PushState( State* game_state, EGameStateType game_state_type );
+	void PushState(State* game_state, EGameStateType game_state_type);
 	void PauseCurrentState();
 	void ResumeCurrentState();
 	// void PopState(u32 state_id);
 
-	bool UpdateCurrentState( float dt );
+	bool UpdateCurrentState(float dt);
 
 	void Clear();
 

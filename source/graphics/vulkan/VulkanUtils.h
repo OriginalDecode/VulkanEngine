@@ -15,25 +15,20 @@ namespace vlk
 	VkShaderModule LoadShader(const char* filepath);
 	void DestroyShader(VkShaderModule module);
 
-
-	void CreateInstance(const char* appName, int32 appVersion, const char* engineName,
-						int32 engineVersion, int32 apiVersion, Graphics::RenderContextVulkan* ctx);
+	void CreateInstance(const char* appName, int32 appVersion, const char* engineName, int32 engineVersion, int32 apiVersion, Graphics::RenderContextVulkan* ctx);
 
 	void DestroyInstance(VkInstance instance);
 
 	std::tuple<VkPhysicalDevice*, uint32> AllocPhysicalDeviceList(VkInstance instance);
 	void FreePhysicalDeviceList(VkPhysicalDevice* list);
 
-	std::tuple<VkQueueFamilyProperties*, uint32>
-		AllocPhysicalDevicePropertiesList(VkPhysicalDevice device);
+	std::tuple<VkQueueFamilyProperties*, uint32> AllocPhysicalDevicePropertiesList(VkPhysicalDevice device);
 	void FreePhysicalDevicePropertiesList(VkQueueFamilyProperties* properties);
 
-	std::tuple<VkSurfaceFormatKHR*, uint32>
-		AllocPhysicalDeviceSurfaceFormatsList(VkSurfaceKHR surface);
+	std::tuple<VkSurfaceFormatKHR*, uint32> AllocPhysicalDeviceSurfaceFormatsList(VkSurfaceKHR surface);
 	void FreePhysicalDeviceSurfaceFormatsList(VkSurfaceFormatKHR* formats);
 	VkSurfaceCapabilitiesKHR GetSurfaceCapabilities(VkSurfaceKHR surface);
-	VkSurfaceFormatKHR GetSurfaceFormat(VkSurfaceFormatKHR* formats, uint32 nof_formats,
-										VkFormat format, VkColorSpaceKHR color_space);
+	VkSurfaceFormatKHR GetSurfaceFormat(VkSurfaceFormatKHR* formats, uint32 nof_formats, VkFormat format, VkColorSpaceKHR color_space);
 
 	bool HasDepthStencilComponent(VkFormat format);
 
@@ -44,19 +39,16 @@ namespace vlk
 	/*
 		Takes an already made command buffer and reuses
 	*/
-	void BeginSingleTimeCommand(VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue);
+	void BeginSingleTimeCommand(VkCommandBuffer buffer);
 
 	/*
 		You have to free the CommandBuffer yourself after you end the singletime command.
 	*/
-	void EndSingleTimeCommand(VkCommandBuffer buffer, VkCommandPool pool, VkQueue queue);
+	void EndSingleTimeCommand(VkCommandBuffer buffer, VkQueue queue);
 
-	void PresentQueue(VkQueue queue, uint32 imageIndex, VkSemaphore* waitSemaphores,
-					  uint32 nofSemaphores, VkSwapchainKHR swapchain);
+	void PresentQueue(VkQueue queue, uint32 imageIndex, VkSemaphore* waitSemaphores, uint32 nofSemaphores, VkSwapchainKHR swapchain);
 
-	VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags,
-														  VkShaderModule shaderModule,
-														  const char* entrypoint);
+	VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags, VkShaderModule shaderModule, const char* entrypoint);
 
 	uint32 FindMemoryType(uint32 type_filter, VkMemoryPropertyFlags property_flags);
 
@@ -64,11 +56,9 @@ namespace vlk
 
 	VkDeviceMemory AllocDeviceMemory(VkMemoryRequirements memory_req, uint32 memory_type_idx);
 
-	VkDescriptorSet AllocDescSet(VkDescriptorPool desc_pool, uint32 nof_desc_set,
-								 VkDescriptorSetLayout* layouts);
+	VkDescriptorSet AllocDescSet(VkDescriptorPool desc_pool, uint32 nof_desc_set, VkDescriptorSetLayout* layouts);
 
-	VkFramebuffer CreateFramebuffer(VkImageView* image_views, uint32 nof_attachments, uint32 width,
-									uint32 height, VkRenderPass render_pass);
+	VkFramebuffer CreateFramebuffer(VkImageView* image_views, uint32 nof_attachments, uint32 width, uint32 height, VkRenderPass render_pass);
 
 	VkDescriptorPool CreateDescPool(VkDescriptorPoolSize* pool_sizes, uint32 size, uint32 max_sets);
 
@@ -76,27 +66,29 @@ namespace vlk
 
 	VkSemaphore CreateDeviceSemaphore();
 
-	VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* layouts, uint32 nof_layouts,
-										  VkPushConstantRange* pcr, uint32 nof_pcr);
+	VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* layouts, uint32 nof_layouts, const VkPushConstantRange* pcr, uint32 nof_pcr);
 
-	VkVertexInputAttributeDescription CreateAttributeDesc(VkFormat format, int32 binding,
-														  int32 location, int32 offset);
+	VkVertexInputAttributeDescription CreateAttributeDesc(VkFormat format, int32 binding, int32 location, int32 offset);
 
-	VkDescriptorSetLayout CreateDescLayout(VkDescriptorSetLayoutBinding* bindings,
-										   uint32 nof_bindings);
+	VkDescriptorSetLayout CreateDescLayout(const VkDescriptorSetLayoutBinding* bindings, uint32 nof_bindings);
 
-	VkVertexInputBindingDescription CreateBindingDesc(uint32 binding, uint32 stride,
-													  VkVertexInputRate input_rate);
+	VkVertexInputBindingDescription CreateBindingDesc(uint32 binding, uint32 stride, VkVertexInputRate input_rate);
 
-	VkDescriptorSetLayoutBinding CreateLayoutBinding(uint32 binding, VkDescriptorType type,
-													 VkShaderStageFlagBits shader_stage,
-													 uint32 nof_descriptors);
+	VkDescriptorSetLayoutBinding CreateLayoutBinding(uint32 binding, VkDescriptorType type, VkShaderStageFlagBits shader_stage, uint32 nof_descriptors);
 
 	VkImageView Create2DImageView(VkFormat format, VkImage image, VkImageAspectFlags flags);
 
-	std::tuple<VkImage, VkDeviceMemory> Create2DImage(uint32 width, uint32 height, VkFormat format,
-													  VkImageTiling image_tilig,
-													  VkImageUsageFlags usage_flags,
-													  VkMemoryPropertyFlags memory_flags);
+	struct ImageCreateInfo
+	{
+		uint32 Width = {};
+		uint32 Height = {};
+		uint32 Offset = {};
+		VkFormat ImageFormat = {};
+		VkImageTiling ImageTiling = {};
+		VkImageUsageFlags UsageFlags = {};
+		VkMemoryPropertyFlags MemoryFlags = {};
+	};
+
+	std::tuple<VkImage, VkDeviceMemory> Create2DImage(const ImageCreateInfo& image_create_info);
 
 }; // namespace vlk

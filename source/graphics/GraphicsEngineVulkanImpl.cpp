@@ -14,8 +14,7 @@ namespace Graphics
 	{
 		m_Context = new RenderContextVulkan;
 		m_Context->Window = &window;
-		vlk::CreateInstance("wce", VK_MAKE_VERSION(1, 0, 0), "wce", VK_MAKE_VERSION(1, 0, 0),
-							VK_VERSION_1_1, m_Context);
+		vlk::CreateInstance("wce", VK_MAKE_VERSION(1, 0, 0), "wce", VK_MAKE_VERSION(1, 0, 0), VK_VERSION_1_1, m_Context);
 
 		CreatePhysicalDevice();
 		CreateLogicalDevice();
@@ -25,7 +24,7 @@ namespace Graphics
 
 	void GraphicsEngineVulkanImpl::Destroy()
 	{
-		for(int32 i = 0; i < m_Context->SwapchainCtx.ImageCount; ++i)
+		for(uint32 i = 0; i < m_Context->SwapchainCtx.ImageCount; ++i)
 		{
 			vkDestroyImage(m_Context->Device, m_Context->SwapchainCtx.Images[i], nullptr);
 			vkDestroyImageView(m_Context->Device, m_Context->SwapchainCtx.Views[i], nullptr);
@@ -45,7 +44,7 @@ namespace Graphics
 
 		int32 queue_family = 0;
 		bool family_found = false;
-		for(int32 i = 0; i < device_count; ++i)
+		for(uint32 i = 0; i < device_count; ++i)
 		{
 			VkPhysicalDevice device = device_list[i];
 
@@ -55,12 +54,11 @@ namespace Graphics
 			VkPhysicalDeviceFeatures device_features = {};
 			vkGetPhysicalDeviceFeatures(device, &device_features);
 
-			if(device_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
-			   !device_features.geometryShader)
+			if(device_properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || !device_features.geometryShader)
 				continue;
 
 			auto [properties, property_count] = vlk::AllocPhysicalDevicePropertiesList(device);
-			for(int32 j = 0; j < property_count; ++j)
+			for(uint32 j = 0; j < property_count; ++j)
 			{
 				VkQueueFamilyProperties property = properties[j];
 				if(property.queueCount > 0 && property.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -104,9 +102,9 @@ namespace Graphics
 		create_info.pQueueCreateInfos = &queue_create_info;
 
 #ifdef _DEBUG
-		const char* debugLayers[] = { "VK_LAYER_LUNARG_standard_validation" };
-		create_info.enabledLayerCount = ARRSIZE(debugLayers);
-		create_info.ppEnabledLayerNames = debugLayers;
+		const char* debug_layers[] = { "VK_LAYER_LUNARG_standard_validation" };
+		create_info.enabledLayerCount = ARRSIZE(debug_layers);
+		create_info.ppEnabledLayerNames = debug_layers;
 #endif
 
 		const char* device_ext[] = { "VK_KHR_swapchain" };
@@ -114,12 +112,10 @@ namespace Graphics
 		create_info.ppEnabledExtensionNames = device_ext;
 		create_info.pEnabledFeatures = &enabled_features;
 
-		if(vkCreateDevice(m_Context->PhysicalDevice, &create_info, nullptr, &m_Context->Device) !=
-		   VK_SUCCESS)
-			ASSERT(false, "Failed to create device!");
+		VkResult result = vkCreateDevice(m_Context->PhysicalDevice, &create_info, nullptr, &m_Context->Device);
+		ASSERT(result == VK_SUCCESS, "Failed to create device!");
 
-		vkGetDeviceQueue(m_Context->Device, m_Context->QueueFamily, 0 /*queueIndex*/,
-						 &m_Context->Queue);
+		vkGetDeviceQueue(m_Context->Device, m_Context->QueueFamily, 0 /*queueIndex*/, &m_Context->Queue);
 	}
 
 	void GraphicsEngineVulkanImpl::CreateSwapchain()
@@ -130,20 +126,15 @@ namespace Graphics
 		surface_info.hwnd = (HWND)m_Context->Window->GetHandle();
 		surface_info.hinstance = ::GetModuleHandle(nullptr);
 
-		if(vkCreateWin32SurfaceKHR(m_Context->Instance, &surface_info, nullptr,
-								   &m_Context->Surface) != VK_SUCCESS)
-		{
-			ASSERT(false, "Failed to create surface!");
-		}
+		VkResult result = vkCreateWin32SurfaceKHR(m_Context->Instance, &surface_info, nullptr, &m_Context->Surface);
+		ASSERT(result == VK_SUCCESS, "Failed to create surface!");
 
 		int32 queue_family = -1;
 		int32 queue_index = -1;
-		VkQueueFamilyProperties* queue_family_props = {};
 
-		auto [properties, property_count] =
-			vlk::AllocPhysicalDevicePropertiesList(m_Context->PhysicalDevice);
+		auto [properties, property_count] = vlk::AllocPhysicalDevicePropertiesList(m_Context->PhysicalDevice);
 
-		for(int32 i = 0; i < property_count; ++i)
+		for(uint32 i = 0; i < property_count; ++i)
 		{
 			VkQueueFamilyProperties property = properties[i];
 
@@ -168,8 +159,7 @@ namespace Graphics
 
 		vlk::FreePhysicalDevicePropertiesList(properties);
 
-		VkSurfaceCapabilitiesKHR surface_capabilities =
-			vlk::GetSurfaceCapabilities(m_Context->Surface);
+		VkSurfaceCapabilitiesKHR surface_capabilities = vlk::GetSurfaceCapabilities(m_Context->Surface);
 		const uint32 image_count = 2;
 		ASSERT(image_count <= surface_capabilities.minImageCount, ""); // this assert is a bit
 																	   // strange?
@@ -179,11 +169,9 @@ namespace Graphics
 		create_info.minImageCount = surface_capabilities.minImageCount;
 
 		// Get the physical device surface format
-		auto [format_list, nof_formats] =
-			vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
+		auto [format_list, nof_formats] = vlk::AllocPhysicalDeviceSurfaceFormatsList(m_Context->Surface);
 
-		VkSurfaceFormatKHR format = vlk::GetSurfaceFormat(
-			format_list, nof_formats, VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+		VkSurfaceFormatKHR format = vlk::GetSurfaceFormat(format_list, nof_formats, VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
 
 		vlk::FreePhysicalDeviceSurfaceFormatsList(format_list);
 
@@ -224,25 +212,16 @@ namespace Graphics
 																 // on or off)
 		create_info.clipped = VK_TRUE;
 
-		if(vkCreateSwapchainKHR(m_Context->Device, &create_info, nullptr,
-								&m_Context->SwapchainCtx.Swapchain) != VK_SUCCESS)
-		{
-			ASSERT(false, "Failed to create swapchain");
-		}
+		result = vkCreateSwapchainKHR(m_Context->Device, &create_info, nullptr, &m_Context->SwapchainCtx.Swapchain);
+		ASSERT(result == VK_SUCCESS, "Failed to create swapchain");
 
 		uint32 nof_images;
-		if(vkGetSwapchainImagesKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain,
-								   &nof_images, nullptr) != VK_SUCCESS)
-		{
-			ASSERT(false, "Failed to get nof images from swapchain");
-		}
+		result = vkGetSwapchainImagesKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, &nof_images, nullptr);
+		ASSERT(result == VK_SUCCESS, "Failed to get nof images from swapchain");
 
 		m_Context->SwapchainCtx.Images = new VkImage[nof_images];
-		if(vkGetSwapchainImagesKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain,
-								   &nof_images, m_Context->SwapchainCtx.Images) != VK_SUCCESS)
-		{
-			ASSERT(false, "Failed to get images from swapchain");
-		}
+		result = vkGetSwapchainImagesKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, &nof_images, m_Context->SwapchainCtx.Images);
+		ASSERT(result == VK_SUCCESS, "Failed to get images from swapchain");
 
 		m_Context->SwapchainCtx.Views = new VkImageView[nof_images];
 		m_Context->SwapchainCtx.ImageCount = nof_images;

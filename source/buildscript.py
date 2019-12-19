@@ -134,7 +134,9 @@ def buildWindows(buildConfig):
         buildCommand = "msbuild"
     else:
         buildCommand = "C:\\VS2019\\MSBuild\\15.0\\Bin\\MSBuild.exe"
-        
+
+    print(buildCommand)    
+    print(args.build)
     os.system(buildCommand + " " + args.build + 
         " /p:GenerateFullPaths=true" +
         " /p:Configuration=" + buildConfig + 

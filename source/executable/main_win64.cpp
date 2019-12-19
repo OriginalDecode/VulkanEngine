@@ -123,7 +123,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			break;
 		case WM_SYSCOMMAND:
 			if((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-				return 0;
+				return false;
 			break;
 		case WM_SYSKEYDOWN:
 			if(wParam == VK_RETURN)

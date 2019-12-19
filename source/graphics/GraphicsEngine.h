@@ -31,7 +31,7 @@ namespace Graphics
 		GraphicsEngineVulkanImpl* m_VulkanImpl = nullptr;
 		VulkanRenderer* m_VulkanRenderer = nullptr;
 
-		const Window* m_Window{};
+		const Window* m_Window = nullptr;
 	};
 
 }; // namespace Graphics
