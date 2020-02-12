@@ -46,9 +46,9 @@ namespace Core
 		void RemoveCyclicAtIndex(uint32 index) { m_Data[index--] = GetLast(); }
 
 	private:
-		uint32 m_Size{ 0 };		 /**/
-		uint32 m_Capacity{ 20 }; /* */
-		T* m_Data{ nullptr };	/* 8 byte in */
+		uint32 m_Size = 0;
+		uint32 m_Capacity = 20;
+		T* m_Data = nullptr;
 	};
 
 	template <typename T>

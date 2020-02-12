@@ -4,12 +4,12 @@
 
 namespace Core
 {
-    std::wstring ToWideString( const std::string& str );
-    std::string ToString( const std::wstring& str );
+	std::wstring ToWString(const std::string& str);
+	std::string ToString(const std::wstring& str);
 
-    uint64 Hash( const std::string& str );
-    uint64 Hash( const std::string& str, uint32 seed );
+	uint64 Hash(const std::string& str);
+	uint64 Hash(const std::string& str, uint32 seed);
 
-    void DebugPrintLastError();
-    
-}; //namespace Core
+	void DebugPrintLastError();
+
+}; // namespace Core

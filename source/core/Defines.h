@@ -12,6 +12,8 @@
 #define DEFINE_VK_HANDLE(object) typedef struct object##_T* object;
 #define ARRSIZE(x) sizeof(x) / sizeof(x[0])
 
+#define MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
+
 #ifdef _WIN32
 #ifndef _WINDEF_
 struct HINSTANCE__;

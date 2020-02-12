@@ -2,29 +2,27 @@
 
 #ifdef RELEASE_BUILD
 
-#define ASSERT_VA( ... )
-#define ASSERT_OVERRIDE( string )
-#define ASSERT( expression, string )
+#define ASSERT_VA(...)
+#define ASSERT_OVERRIDE(string)
+#define ASSERT(expression, string)
 
-#define LOG_MESSAGE( ... )
+#define LOG_MESSAGE(...)
 
-#define LOG_DEBUG( ... ) Log::Debug::GetInstance()->DebugMessage( __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__ )
-
+#define LOG_DEBUG(...) Log::Debug::GetInstance()->DebugMessage(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define VERIFY(expr, ...) (void)(expr)
 #else
 
+#define ASSERT_VA(...) Log::Debug::GetInstance()->AssertMessageVA(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define ASSERT(expression, ...) \
+	if(expression == false)     \
+	Log::Debug::GetInstance()->AssertMessageVA(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
+#define ASSERT_OVERRIDE(string) Log::Debug::GetInstance()->AssertMessage(__FILE__, __LINE__, __FUNCTION__, string)
 
-#define ASSERT_VA( ... ) Log::Debug::GetInstance()->AssertMessageVA( __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__ )
-#define ASSERT( expression, string ) \
-	Log::Debug::GetInstance()->AssertMessage( expression, __FILE__, __LINE__, __FUNCTION__, string )
+#define LOG_MESSAGE(...) Log::Debug::GetInstance()->PrintMessageVA(__VA_ARGS__)
 
-#define ASSERT_OVERRIDE( string ) Log::Debug::GetInstance()->AssertMessage( __FILE__, __LINE__, __FUNCTION__, string )
+#define LOG_DEBUG(...) Log::Debug::GetInstance()->DebugMessage(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
-#define LOG_MESSAGE( ... ) Log::Debug::GetInstance()->PrintMessageVA( __VA_ARGS__ )
-
-#define LOG_DEBUG( ... ) Log::Debug::GetInstance()->DebugMessage( __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__ )
-
-// #define VERIFY(expr, ...) (void)(expr)
 #define VERIFY(expr, ...) ASSERT(expr, __VA_ARGS__)
 #endif
 
@@ -42,17 +40,17 @@ namespace Log
 		static void Destroy();
 		static Debug* GetInstance();
 
-		void WriteLog( const char* fmt, ... );
+		void WriteLog(const char* fmt, ...);
 
-		void PrintMessageVA( const char* fmt, ... );
+		void PrintMessageVA(const char* fmt, ...);
 
-		void DebugMessage( const char* fileName, int line, const char* fncName, const char* fmt, ... );
+		void DebugMessage(const char* fileName, int line, const char* fncName, const char* fmt, ...);
 
-		void AssertMessageVA( const char* fileName, int line, const char* fncName, const char* fmt, ... );
+		void AssertMessageVA(const char* fileName, int line, const char* fncName, const char* fmt, ...);
 
-		void AssertMessage( bool expr, const char* fileName, int line, const char* fncName, const char* str );
-		void AssertMessage( bool expr, const char* fileName, int line, const char* fncName, const std::string& str );
-		void AssertMessage( const char* fileName, int line, const char* fncName, const std::string& str );
+		void AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const char* str);
+		void AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const std::string& str);
+		void AssertMessage(const char* fileName, int line, const char* fncName, const std::string& str);
 
 		// void ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type );
 
