@@ -113,9 +113,7 @@ namespace Graphics
 	void VulkanRenderer::DrawFrame(float /*dt*/)
 	{
 
-		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX, m_DrawDone, nullptr, &m_Index);
-
-		SetupRenderCommands(m_Index ^ 1);
+		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX, m_NextImage, nullptr /* fence */, &m_Index);
 
 		const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // associated with
 																									 // having
@@ -133,28 +131,31 @@ namespace Graphics
 		submitInfo.pWaitSemaphores = &m_NextImage;
 		submitInfo.waitSemaphoreCount = 1;
 
-		vkQueueSubmit(m_Context->Queue, 1, &submitInfo, m_CommandFence);
+		VkResult result = vkQueueSubmit(m_Context->Queue, 1, &submitInfo, m_CommandFence);
+		ASSERT(result == VK_SUCCESS, "Failed to submit queue. Reason : %s", vlk::GetFailReason(result));
 		vlk::PresentQueue(m_Context->Queue, m_Index, &m_DrawDone, 1, m_Context->SwapchainCtx.Swapchain);
 
-		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(m_Context->Device, 1, &m_CommandFence);
+		SetupRenderCommands(m_Index ^ 1);
 	}
 
 	void VulkanRenderer::SetupRenderCommands(int index)
 	{
-		const Window::Size& windowSize = m_Context->Window->GetSize();
+		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(m_Context->Device, 1, &m_CommandFence);
 
-		VkClearValue clearValue[2] = {};
-		clearValue[0].color = { 0.f, 0.f, 0.f, 0.f };
-		clearValue[1].depthStencil = { 1.f, 0 };
+		const Window::Size& window_size = m_Context->Window->GetSize();
+
+		VkClearValue clear_value[2] = {};
+		clear_value[0].color = { 0.f, 0.f, 0.f, 0.f };
+		clear_value[1].depthStencil = { 1.f, 0 };
 
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { (uint32)windowSize.m_Width, (uint32)windowSize.m_Height };
-		renderPassInfo.clearValueCount = ARRSIZE(clearValue);
-		renderPassInfo.pClearValues = clearValue;
+		renderPassInfo.renderArea.extent = { (uint32)window_size.m_Width, (uint32)window_size.m_Height };
+		renderPassInfo.clearValueCount = ARRSIZE(clear_value);
+		renderPassInfo.pClearValues = clear_value;
 
 		VkCommandBufferBeginInfo cmdInfo = {};
 		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -164,13 +165,15 @@ namespace Graphics
 		VkCommandBuffer& commandBuffer = m_CommandsBuffers[index];
 
 		VkResult result = vkBeginCommandBuffer(commandBuffer, &cmdInfo);
-		ASSERT(result == VK_SUCCESS, "Failed to begin CommandBuffer!");
+		ASSERT(result == VK_SUCCESS, "Failed to begin CommandBuffer! Reason: %s", vlk::GetFailReason(result));
 
 		renderPassInfo.framebuffer = frameBuffer;
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+
+		/* things here , like imgui or cubes or something else */
 
 		vkCmdEndRenderPass(commandBuffer);
 

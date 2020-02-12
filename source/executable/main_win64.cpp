@@ -17,8 +17,6 @@
 #include <Windows.h>
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
-bool gameRunning = true; // we'll need this in the WindowProc
-
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 {
 	// Window* window = new Window({ 1920, 1080, instance, WindowProc });
@@ -51,6 +49,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 	state_stack.PushState(&game, StateStack::MAIN);
 
 	MSG msg;
+	bool game_running = true;
 	do
 	{
 		timer.Update();
@@ -68,7 +67,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 		if(msg.message == WM_QUIT || msg.message == WM_CLOSE)
 		{
-			gameRunning = false; // not so specific
+			game_running = false; // not so specific
 			break;
 		}
 		/* Windows Specific */
@@ -78,7 +77,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 		graphics_engine.Update();
 		// graphics_engine.Present( timer.GetTime() );
 
-	} while(gameRunning);
+	} while(game_running);
 
 	Input::InputManager::Destroy();
 
@@ -119,7 +118,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		case WM_EXITSIZEMOVE:
 			break;
 		case WM_CLOSE:
-			gameRunning = false;
 			break;
 		case WM_SYSCOMMAND:
 			if((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu

@@ -14,7 +14,8 @@ namespace Graphics
 	{
 		m_Context = new RenderContextVulkan;
 		m_Context->Window = &window;
-		vlk::CreateInstance("wce", VK_MAKE_VERSION(1, 0, 0), "wce", VK_MAKE_VERSION(1, 0, 0), VK_VERSION_1_1, m_Context);
+
+		vlk::CreateInstance("wce", MAKE_VERSION(1, 0, 0), "wce", MAKE_VERSION(1, 0, 0), VK_VERSION_1_1, m_Context);
 
 		CreatePhysicalDevice();
 		CreateLogicalDevice();
@@ -78,7 +79,7 @@ namespace Graphics
 			}
 		}
 
-		vlk::FreePhysicalDeviceList(device_list);
+		vlk::FreeList(device_list);
 	}
 
 	void GraphicsEngineVulkanImpl::CreateLogicalDevice()

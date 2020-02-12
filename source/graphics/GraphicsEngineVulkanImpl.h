@@ -19,7 +19,7 @@ namespace Graphics
 		RenderContextVulkan* GetRenderContext() { return m_Context; }
 
 	private:
-		RenderContextVulkan* m_Context{};
+		RenderContextVulkan* m_Context = nullptr;
 		void CreatePhysicalDevice();
 		void CreateLogicalDevice();
 		void CreateSwapchain();

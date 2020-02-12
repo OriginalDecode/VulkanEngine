@@ -1,7 +1,5 @@
 #pragma once
 
-#include "GraphicsDevice.h"
-
 class Window;
 namespace Graphics
 {

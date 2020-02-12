@@ -10,7 +10,7 @@ namespace Graphics
 		VkSwapchainKHR Swapchain = nullptr;
 		VkImage* Images = nullptr;
 		VkImageView* Views = nullptr;
-		uint32 ImageCount{};
+		uint32 ImageCount = {};
 	};
 
 	struct RenderContextVulkan
@@ -23,8 +23,8 @@ namespace Graphics
 		VkSurfaceKHR Surface = nullptr;
 		SwapchainContext SwapchainCtx;
 
-		uint32 QueueFamily{};
-		uint32 PresentFamily{};
+		uint32 QueueFamily = {};
+		uint32 PresentFamily = {};
 	};
 
 }; // namespace Graphics

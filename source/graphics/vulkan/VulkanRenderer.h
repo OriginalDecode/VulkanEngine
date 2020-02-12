@@ -1,22 +1,14 @@
 #pragma once
 
-#include "graphics/GraphicsDevice.h"
-
 #include "Core/utilities/utilities.h"
 #include "Core/Defines.h"
 
 #include <vulkan/vulkan_core.h>
 
-class Window;
-
 namespace Graphics
 {
 
-	typedef struct Shader HShader;
-
 	struct RenderContextVulkan;
-	class VulkanDevice;
-	class ConstantBuffer;
 	class VulkanRenderer
 	{
 	public:

@@ -19,6 +19,8 @@ namespace vlk
 
 	void DestroyInstance(VkInstance instance);
 
+	void FreeList(void* list);
+
 	std::tuple<VkPhysicalDevice*, uint32> AllocPhysicalDeviceList(VkInstance instance);
 	void FreePhysicalDeviceList(VkPhysicalDevice* list);
 
@@ -77,6 +79,8 @@ namespace vlk
 	VkDescriptorSetLayoutBinding CreateLayoutBinding(uint32 binding, VkDescriptorType type, VkShaderStageFlagBits shader_stage, uint32 nof_descriptors);
 
 	VkImageView Create2DImageView(VkFormat format, VkImage image, VkImageAspectFlags flags);
+
+	const char* GetFailReason(VkResult result);
 
 	struct ImageCreateInfo
 	{

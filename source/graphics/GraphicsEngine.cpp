@@ -3,8 +3,7 @@
 #include "vulkan/VulkanRenderer.h"
 #include "graphics/GraphicsEngineVulkanImpl.h"
 #include "thirdparty/imgui/imgui.h"
-
-#include <cassert>
+#include "logger/Assert.h"
 
 namespace Graphics
 {
@@ -15,19 +14,17 @@ namespace Graphics
 		ImGui::StyleColorsDark();
 	}
 
-	void GraphicsEngine::DestroyObjects()
-	{
-		delete m_VulkanRenderer;
-		m_VulkanRenderer = nullptr;
-
-		m_VulkanImpl->Destroy();
-		delete m_VulkanImpl;
-		m_VulkanImpl = nullptr;
-	}
-
 	GraphicsEngine* GraphicsEngine::m_Instance = nullptr;
 
-	void GraphicsEngine::Create() { m_Instance = new GraphicsEngine; }
+	void GraphicsEngine::Create()
+	{
+		if(!m_Instance)
+		{
+			m_Instance = new GraphicsEngine;
+		}
+		else
+			ASSERT(false, "GraphicsEngine already exists");
+	}
 
 	void GraphicsEngine::Destroy()
 	{
@@ -50,6 +47,16 @@ namespace Graphics
 		m_VulkanRenderer->Init(m_VulkanImpl->GetRenderContext());
 
 		return true;
+	}
+
+	void GraphicsEngine::DestroyObjects()
+	{
+		delete m_VulkanRenderer;
+		m_VulkanRenderer = nullptr;
+
+		m_VulkanImpl->Destroy();
+		delete m_VulkanImpl;
+		m_VulkanImpl = nullptr;
 	}
 
 	void GraphicsEngine::Update() { m_VulkanRenderer->DrawFrame(0.f); }
