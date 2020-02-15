@@ -50,7 +50,7 @@ namespace Graphics
 	bool VulkanRenderer::Init(RenderContextVulkan* ctx)
 	{
 		m_Context = ctx;
-		const Window::Size& windowSize = ctx->Window->GetSize();
+		const Window::Size& window_size = ctx->Window->GetInnerSize();
 
 		m_CommandPool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, ctx->QueueFamily);
 
@@ -68,17 +68,17 @@ namespace Graphics
 			ctx->SwapchainCtx.Views[i] = vlk::Create2DImageView(format_list[0].format, ctx->SwapchainCtx.Images[i], VK_IMAGE_ASPECT_COLOR_BIT);
 
 			VkImageView views[] = { ctx->SwapchainCtx.Views[i], m_DefaultDepthImageView };
-			m_FrameBuffers[i] = vlk::CreateFramebuffer(views, ARRSIZE(views), (uint32)windowSize.m_Width, (uint32)windowSize.m_Height, m_RenderPass);
+			m_FrameBuffers[i] = vlk::CreateFramebuffer(views, ARRSIZE(views), (uint32)window_size.m_Width, (uint32)window_size.m_Height, m_RenderPass);
 		}
 
-		m_Viewport.height = windowSize.m_Height;
-		m_Viewport.width = windowSize.m_Width;
+		m_Viewport.height = window_size.m_Height;
+		m_Viewport.width = window_size.m_Width;
 		m_Viewport.x = 0.f;
 		m_Viewport.y = 0.f;
 		m_Viewport.minDepth = 0.f;
 		m_Viewport.maxDepth = 1.f;
 
-		m_ScissorArea.extent = { (uint32)windowSize.m_Width, (uint32)windowSize.m_Height };
+		m_ScissorArea.extent = { (uint32)window_size.m_Width, (uint32)window_size.m_Height };
 		m_ScissorArea.offset = { 0, 0 };
 
 		m_CommandFence = vlk::CreateFence();
@@ -143,7 +143,7 @@ namespace Graphics
 		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
 		vkResetFences(m_Context->Device, 1, &m_CommandFence);
 
-		const Window::Size& window_size = m_Context->Window->GetSize();
+		const Window::Size& window_size = m_Context->Window->GetInnerSize();
 
 		VkClearValue clear_value[2] = {};
 		clear_value[0].color = { 0.f, 0.f, 0.f, 0.f };
