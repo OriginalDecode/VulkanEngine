@@ -15,6 +15,7 @@
 #endif
 #include "thirdparty/imgui/imgui.h"
 #include "graphics/imgui/imgui_impl_vulkan.h"
+#include "graphics/imgui/imgui_impl_win32.h"
 
 #include "graphics/vulkan/VulkanUtils.h"
 #include "graphics/RenderContextVulkan.h"
@@ -45,6 +46,11 @@ namespace Graphics
 
 		delete[] m_CommandsBuffers;
 		m_CommandsBuffers = nullptr;
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		ImGui::DestroyContext();
+		ImGui_ImplWin32_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
 	}
 
 	bool VulkanRenderer::Init(RenderContextVulkan* ctx)
@@ -106,12 +112,20 @@ namespace Graphics
 		m_PipelineLayout = vlk::CreatePipelineLayout(descriptorLayouts, ARRSIZE(descriptorLayouts), pushRangeList, ARRSIZE(pushRangeList));
 		m_Pipeline = CreateGraphicsPipeline();
 
-		// CreateImGuiContext();
+		CreateImGuiContext();
 		return true;
 	}
 
 	void VulkanRenderer::DrawFrame(float /*dt*/)
 	{
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+
+		ImGui::NewFrame();
+		static bool show_demo_window = true;
+		ImGui::ShowDemoWindow(&show_demo_window);
+		ImGui::Render();
 
 		vkAcquireNextImageKHR(m_Context->Device, m_Context->SwapchainCtx.Swapchain, UINT64_MAX, m_NextImage, nullptr /* fence */, &m_Index);
 
@@ -138,6 +152,7 @@ namespace Graphics
 		SetupRenderCommands(m_Index ^ 1);
 	}
 
+	// Is this code supposed to be generalized?
 	void VulkanRenderer::SetupRenderCommands(int index)
 	{
 		vkWaitForFences(m_Context->Device, 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
@@ -175,12 +190,15 @@ namespace Graphics
 
 		/* things here , like imgui or cubes or something else */
 
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 		vkCmdEndRenderPass(commandBuffer);
 
 		result = vkEndCommandBuffer(commandBuffer);
 		ASSERT(result == VK_SUCCESS, "Failed to end CommandBuffer!");
 	}
 
+	// Is this code supposed to be generalized?
 	void VulkanRenderer::SetupRenderPass()
 	{
 
@@ -249,6 +267,7 @@ namespace Graphics
 		vkCreateRenderPass(m_Context->Device, &rpInfo, nullptr, &m_RenderPass);
 	}
 
+	// This should probably be generalized
 	void VulkanRenderer::SetupDepthResources()
 	{
 		// get the depth format
@@ -361,6 +380,23 @@ namespace Graphics
 		delete[] buffer;
 	}
 
+	struct PipelineCreateInfo
+	{
+		VkRect2D* ScissorAreas = nullptr;
+		int32 ScissorAreaCount = 0;
+		VkViewport* Viewports = nullptr;
+		int32 ViewportCount = 0;
+
+		VkPipelineDepthStencilStateCreateInfo DepthStencilInfo;
+		VkPipelineRasterizationStateCreateInfo RasterInfo;
+		VkPipelineMultisampleStateCreateInfo MultiSampleInfo;
+		VkPipelineColorBlendStateCreateInfo BlendInfo;
+
+		VkVertexInputAttributeDescription* InputDescription = nullptr;
+		int32 InputDescriptionCount = 0;
+	};
+
+	// This should be generalized
 	VkPipeline VulkanRenderer::CreateGraphicsPipeline()
 	{
 
@@ -488,6 +524,7 @@ namespace Graphics
 		return pipeline;
 	}
 
+	/* This is pretty much done */
 	void VulkanRenderer::CreateImGuiContext()
 	{
 		const Window::Size& window_size = m_Context->Window->GetSize();
@@ -506,7 +543,7 @@ namespace Graphics
 		info.ImageCount = m_Context->SwapchainCtx.ImageCount;
 
 		if(!ImGui_ImplVulkan_Init(&info, m_RenderPass))
-			ASSERT(false, "Failed");
+			ASSERT(false, "Failed to initiate ImGui");
 
 		VkCommandPool pool = vlk::CreateCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_Context->QueueFamily);
 

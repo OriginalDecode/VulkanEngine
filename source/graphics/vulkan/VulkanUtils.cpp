@@ -226,8 +226,11 @@ namespace vlk
 		info.commandBufferCount = 1;
 		info.pCommandBuffers = &buffer;
 
-		result = vkQueueWaitIdle(queue);
+		result = vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
 		ASSERT(result == VK_SUCCESS, "vkQueueWaitIdle failed!");
+
+		result = vkDeviceWaitIdle(g_Context->Device);
+		ASSERT(result == VK_SUCCESS, "Device failed to wait");
 	}
 
 	VkCommandBuffer* CreateCommandBuffers(VkCommandPool pool, uint32 nof_buffers)
