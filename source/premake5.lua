@@ -17,7 +17,17 @@ newoption {
     description = "Set project flag",
     allowed = {
         { "unit_test", "unit test" },
-        { "engine", "engine" }
+        { "engine", "engine" },
+        { "thirdparty", "thirdparty" }
+    }
+}
+
+newoption {
+    trigger = "cflags",
+    value = "cflags",
+    description = "compiler flags to add things for compilation",
+    allowed = {
+        { "freetype", "freetype" }
     }
 }
 
@@ -112,11 +122,11 @@ end
     project "Graphics"
         kind "StaticLib"
         location ("./graphics")    
-        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp", 
-                "thirdparty/imgui/**.h", "thirdparty/imgui/**.cpp" }
-        dependson { "Core" }
+        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp" }
+        dependson { "Core", "ImGui" }
         links { "$(VULKAN_SDK)/lib/vulkan-1.lib", 
-                "thirdparty/freetype/freetype.lib" }
+                "thirdparty/freetype/freetype.lib", 
+                "Imgui" }
 
         includedirs { "$(VULKAN_SDK)/Include/",
                       "thirdparty/freetype/" }
@@ -149,4 +159,12 @@ end
         links { "Core" }
         dependson { "Core" }
         files{"logger/**.cpp", "logger/**.h", "logger/**.hpp", "logger/**.c"}
-            
+    
+    project "Imgui"
+        kind "StaticLib"
+        location("./imgui")
+        files("imgui/**")
+        if _OPTIONS["cflags"] ~= "freetype" then
+            print("excluding freetype")
+            excludes { "imgui/misc/freetype/**" }
+        end
