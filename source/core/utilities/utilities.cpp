@@ -23,15 +23,30 @@ namespace Core
 
 	void DebugPrintLastError()
 	{
-#ifdef WIN32
+#ifdef _WIN32
 		DWORD error = GetLastError();
 		LPWSTR lpMsgBuf = nullptr;
 		size_t size = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, error,
 									MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMsgBuf, 0, NULL);
 
 		std::wstring message(lpMsgBuf, size);
-		OutputDebugStringA(ToString(message).c_str());
+		OutputDebugStr(ToString(message).c_str());
 #endif
 	}
+
+	void OutputDebugStr(const char* fmt, ...)
+	{
+		char buffer[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsprintf_s(buffer, fmt, args);
+		perror(buffer);
+		va_end(args);
+#ifdef _WIN32
+		OutputDebugStringA(fmt);
+#endif
+	}
+
+	void OutputDebugStr(const std::string& str) { OutputDebugStr(str.c_str()); }
 
 }; // namespace Core

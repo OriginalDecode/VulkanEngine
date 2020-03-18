@@ -12,4 +12,7 @@ namespace Core
 
 	void DebugPrintLastError();
 
+	void OutputDebugStr(const std::string& str);
+	void OutputDebugStr(const char* fmt, ...);
+
 }; // namespace Core

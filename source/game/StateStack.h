@@ -1,10 +1,10 @@
 #pragma once
 #include "core/Types.h"
-#include "core/containers/DynArray.h"
+#include "core/containers/GrowingArray.h"
 
 class State;
-typedef Core::DynArray<State*> SubStateContainer;
-typedef Core::DynArray<SubStateContainer> MainStateContainer;
+typedef Core::GrowingArray<State*> SubStateContainer;
+typedef Core::GrowingArray<SubStateContainer> MainStateContainer;
 class StateStack
 {
 public:
