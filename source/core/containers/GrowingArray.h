@@ -5,20 +5,20 @@
 namespace Core
 {
 	template <typename T>
-	class DynArray
+	class GrowingArray
 	{
 	public:
-		DynArray();
-		~DynArray();
-		DynArray(int32 size)
+		GrowingArray();
+		~GrowingArray();
+		GrowingArray(int32 size)
 			: m_Capacity(size)
 			, m_Data(new T[m_Capacity])
 		{
 		}
 
-		DynArray(const DynArray<T>& other) { *this = other; }
+		GrowingArray(const GrowingArray<T>& other) { *this = other; }
 
-		DynArray<T>& operator=(const DynArray<T>& other)
+		GrowingArray<T>& operator=(const GrowingArray<T>& other)
 		{
 			m_Size = other.m_Size;
 			m_Capacity = other.m_Capacity;
@@ -42,23 +42,24 @@ namespace Core
 		}
 
 		T& GetLast() { return m_Data[m_Size - 1]; }
+		T& GetFirst() { return m_Data[0]; }
 
 		void RemoveCyclicAtIndex(uint32 index) { m_Data[index--] = GetLast(); }
 
 	private:
 		uint32 m_Size = 0;
-		uint32 m_Capacity = 20;
+		uint32 m_Capacity = 10;
 		T* m_Data = nullptr;
 	};
 
 	template <typename T>
-	DynArray<T>::DynArray()
+	GrowingArray<T>::GrowingArray()
 	{
 		m_Data = new T[m_Capacity];
 	}
 
 	template <typename T>
-	DynArray<T>::~DynArray()
+	GrowingArray<T>::~GrowingArray()
 	{
 		delete[] m_Data;
 		m_Data = nullptr;
