@@ -7,7 +7,7 @@
 #include "StackWalker.h"
 #include <sys/types.h>
 #include <sys/timeb.h>
-#ifdef RELEASE_BUILD
+#ifndef DEBUG
 #include <ShlObj.h>
 #endif
 
@@ -18,7 +18,7 @@ namespace Log
 
 	void Debug::Create()
 	{
-#ifndef RELEASE_BUILD
+#ifdef DEBUG
 		assert(!m_Instance && "Debugobject already created");
 		m_Instance = new Debug();
 		if(!m_Instance)
@@ -39,8 +39,6 @@ namespace Log
 		std::stringstream ss;
 		ss << logFolder << buf << "_log.txt";
 		m_Instance->m_Stream.open(ss.str().c_str());
-#else
-		aFile;
 #endif
 	}
 
@@ -157,15 +155,5 @@ namespace Log
 		m_Instance->m_Stream << buffer << std::endl;
 		m_Instance->m_Stream.flush();
 	}
-
-	// void Debug::ShowMessageBox( HWND hwnd, LPCSTR text, LPCSTR title, UINT type )
-	//{
-	//	// std::string msg = "[";
-	//	// msg += aTitle;
-	//	// msg += "] ";
-	//	// msg += aText;
-	//	// DL_PRINT(msg.c_str());
-	//	// MessageBox( hwnd, text, title, type );
-	//}
 
 }; // namespace Log

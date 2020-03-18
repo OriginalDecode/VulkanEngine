@@ -8,9 +8,9 @@ namespace Log
 	{
 	}
 
-	StackWalker::StackWalker( unsigned int aProcessId, HANDLE aProcess )
-		: BaseStackWalker( aProcessId, aProcess )
+	StackWalker::StackWalker(unsigned int aProcessId, HANDLE aProcess)
+		: BaseStackWalker(aProcessId, aProcess)
 	{
 	}
-	void StackWalker::OnOutput( char* aString ) { LOG_MESSAGE( "%s", aString ); }
+	void StackWalker::OnOutput(char* aString) { LOG("%s", aString); }
 } // namespace Log
