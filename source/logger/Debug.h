@@ -2,7 +2,7 @@
 
 #ifndef DEBUG
 #define ASSERT(expression, string)
-#define LOG(...)
+#define LOG_MESSAGE(...)
 #define LOG_DEBUG(...)
 #define VERIFY(expr, ...) (void)(expr)
 #else
@@ -13,7 +13,7 @@
 
 #define ASSERT_OVERRIDE(string) Log::Debug::GetInstance()->AssertMessage(__FILE__, __LINE__, __FUNCTION__, string)
 
-#define LOG(...) Log::Debug::GetInstance()->PrintMessageVA(__VA_ARGS__)
+#define LOG_MESSAGE(...) Log::Debug::GetInstance()->PrintMessageVA(__VA_ARGS__)
 
 #define LOG_DEBUG(...) Log::Debug::GetInstance()->DebugMessage(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 

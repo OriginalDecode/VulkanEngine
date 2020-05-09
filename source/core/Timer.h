@@ -12,7 +12,8 @@ namespace Core
 
 		const float GetTotalTime() const;
 		const float GetTime() const;
-		void Start();
+		void Init();
+		void Reset();
 		void Stop();
 		void Pause();
 		void Resume();

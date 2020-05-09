@@ -12,5 +12,5 @@ namespace Log
 		: BaseStackWalker(aProcessId, aProcess)
 	{
 	}
-	void StackWalker::OnOutput(char* aString) { LOG("%s", aString); }
+	void StackWalker::OnOutput(char* aString) { LOG_MESSAGE("%s", aString); }
 } // namespace Log

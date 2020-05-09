@@ -1,15 +1,16 @@
 
 
 #include "graphics/Window.h"
+#include "graphics/GraphicsEngine.h"
+
 #include "core/Timer.h"
 #include "input/InputManager.h"
 #include "Logger/Debug.h"
 
 #include "game/StateStack.h"
 #include "game/Game.h"
-
 #include "imgui/imgui.h"
-#include "graphics/imgui/imgui_impl_win32.h"
+//#include "imgui/imgui_impl_win32.h"
 
 #include <memory>
 #include <iostream>
@@ -25,18 +26,21 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 	Window::CreateInfo createInfo{ 1920.f, 1080.f, instance, WindowProc };
 
 	Window window(createInfo);
-	window.SetText("Dark Roast Bean");
+	window.SetText("Kaffe bönan");
 
-	/*if(!graphics_engine.Init(window))
-		return -1;*/
+	Graphics::GraphicsEngine::Create();
+	Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
+
+	if(!graphics_engine.Init(window))
+		return -1;
 
 	Input::InputManager& input = Input::InputManager::Get();
 	input.Initialize(window.GetHandle(), instance);
 
 	Core::Timer timer;
-	timer.Start();
+	timer.Init();
 
-	ImGui_ImplWin32_Init(window.GetHandle());
+	// ImGui_ImplWin32_Init(window.GetHandle());
 
 	Game game;
 	StateStack state_stack;
@@ -69,7 +73,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 		state_stack.UpdateCurrentState(timer.GetTime());
 		input.Update();
 		// graphics_engine.Update();
-		// graphics_engine.Present( timer.GetTime() );
+		graphics_engine.Present(timer.GetTime());
 
 	} while(game_running);
 

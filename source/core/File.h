@@ -5,25 +5,29 @@ namespace Core
 {
 	enum class FileMode
 	{
-		NONE,
-		READ_FILE,
-		WRITE_FILE
+		NONE = 0,
+		READ_FILE = 1,
+		WRITE_FILE = 2,
+		APPEND = 4,
+		ATE = 8,
+		TRUNC = 16
+
 	};
 
 	class File
 	{
 	public:
-		File( const char* filepath, FileMode mode = FileMode::READ_FILE );
+		File(const char* filepath, FileMode mode = FileMode::READ_FILE);
 		~File();
 
-		void Open( const char* filepath, FileMode mode );
+		void Open(const char* filepath, FileMode mode);
 
 		uint32 GetSize() const { return m_FileSize; }
 		const char* const GetBuffer() const { return m_Buffer; }
-		void Write( const void* data, uint32 element_size, uint32 nof_elements );
+		void Write(const void* data, uint32 element_size, uint32 nof_elements);
 
 	private:
-		void Resize( const uint32 element_size, const uint32 nof_elements );
+		void Resize(const uint32 element_size, const uint32 nof_elements);
 
 		void OpenForWrite();
 		void OpenForRead();
