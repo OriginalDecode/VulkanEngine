@@ -31,6 +31,17 @@ newoption {
     }
 }
 
+if os.isdir('../bin/') == nil then
+    print('no direcotry, creating')
+    os.mkdir('../bin/')
+end
+
+if os.isfile('../bin/.gitignore') == false then
+    print('no')
+    io.writefile('../bin/.gitignore', '*')
+end
+    
+
 --beware of the scope issue https://github.com/premake/premake-core/wiki/Scopes-and-Inheritance
 if _OPTIONS["project"] == nil then
     print("No project set, will not configure")
