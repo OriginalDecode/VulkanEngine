@@ -52,6 +52,6 @@
 
 Makefile
 
-/node_modules/**
-/scripts/logs/**
-/scripts/output/**
+**/node_modules/**
+**/scripts/logs/**
+**/scripts/output/**
