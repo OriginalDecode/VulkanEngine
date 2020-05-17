@@ -55,7 +55,7 @@ elseif _OPTIONS["project"] == "unit_test" then
     print("configuring UnitTest")
 workspace "UnitTest"
 else
-return
+    return
 end
     -- fnc.setWorkspace("Engine")
     -- fnc.addConfig("Debug")

@@ -1,3 +1,2 @@
 @echo off
-
-%python% buildscript.py -c=vs2017 -p=unit_test
+node ./source/scripts/output/main.js -configure -p unit_test -g vs2019

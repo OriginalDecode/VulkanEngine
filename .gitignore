@@ -55,3 +55,4 @@ Makefile
 **/node_modules/**
 **/scripts/logs/**
 **/scripts/output/**
+/source/external_libs/**

@@ -1,0 +1,1 @@
+node ./source/scripts/output/main.js -compile_shaders
