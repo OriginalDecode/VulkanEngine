@@ -3,7 +3,7 @@ ColumnLimit: 180
 AlignEscapedNewlinesLeft: 'true'
 AlignTrailingComments: 'true'
 AllowShortBlocksOnASingleLine: 'false'
-AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: 'false'
 AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
 AlignTrailingComments: 'true'
