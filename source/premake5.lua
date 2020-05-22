@@ -110,7 +110,7 @@ if _OPTIONS["project"] ~= nil then
             targetname "%{wks.name}_%{cfg.buildcfg}"
             kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
             location ("./executable")
-
+            includedirs { "./external_libs/" }
             dependson { "Core", "Graphics", "Input", "Logger", "Game" }
             links { "Graphics", "Core", "Input", "Logger", "Game" } --libraries to link
 
@@ -134,6 +134,7 @@ end
         kind "StaticLib"
         location ("./graphics")    
         files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp" }
+        includedirs { "./external_libs/" }
         dependson { "Core", "ImGui" }
         links { "$(VULKAN_SDK)/lib/vulkan-1.lib", 
                 "thirdparty/freetype/freetype.lib", 
@@ -173,9 +174,10 @@ end
     
     project "Imgui"
         kind "StaticLib"
-        location("./imgui")
-        files("imgui/**")
+        location("./external_libs/imgui")
+        files(  "external_libs/imgui/*.cpp", "external_libs/imgui/*.c", "external_libs/imgui/*.h", 
+                "external_libs/imgui/*.hpp", "external_libs/imgui/misc/**" )
         if _OPTIONS["cflags"] ~= "freetype" then
             print("excluding freetype")
-            excludes { "imgui/misc/freetype/**" }
+            excludes { "./external_libs/imgui/misc/freetype/**" }
         end

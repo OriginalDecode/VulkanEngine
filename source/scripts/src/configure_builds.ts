@@ -48,8 +48,6 @@ export namespace configure {
       });
     });
 
-    const ignore = ['external_libs', 'node_modules', 'unit_test', 'shaders', 'scripts', 'obj'];
-
     // remove object files, pdb, ilk etc..
     if (isDir(`${rootDir}\\source\\obj`)) {
       exec(`rd -r ${rootDir}\\source\\obj /s /q`, (err) => {
@@ -68,6 +66,7 @@ export namespace configure {
       });
     }
 
+    const ignore = ['external_libs', 'node_modules', 'unit_test', 'shaders', 'scripts', 'obj', 'premake5'];
     // remove all vcxproj related files
     let source = fs.readdirSync(`${rootDir}\\source`).filter((value) => value.search(/\..+/) < 0);
     source = source.filter((el) => {
