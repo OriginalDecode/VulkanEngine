@@ -1,3 +1,9 @@
 [submodule "source/external_libs/dxc"]
 	path = source/external_libs/dxc
 	url = https://github.com/microsoft/DirectXShaderCompiler
+[submodule "external_libs/imgui"]
+	path = external_libs/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "source/external_libs/imgui"]
+	path = source/external_libs/imgui
+	url = https://github.com/ocornut/imgui
