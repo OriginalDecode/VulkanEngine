@@ -31,6 +31,8 @@ typedef signed int int32;
 
 #if defined(_MSC_VER)
 typedef unsigned __int64 uint64;
+typedef unsigned __int64 uint64_ptr;
+typedef __int64 int64_ptr;
 typedef __int64 int64;
 #else
 typedef unsigned long long uint64;
