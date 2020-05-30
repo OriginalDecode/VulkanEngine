@@ -54,7 +54,10 @@ namespace Log
 		m_Instance = nullptr;
 	}
 
-	Debug* Debug::GetInstance() { return m_Instance; }
+	Debug* Debug::GetInstance()
+	{
+		return m_Instance;
+	}
 
 	void Debug::WriteLog(const char* fmt, ...)
 	{
@@ -101,15 +104,13 @@ namespace Log
 		OutputDebugStringA(buffer);
 #endif
 		m_Stream << buffer << std::endl;
-		m_Stream.flush(); /* maybe shouldn't flush ever call, only at end of frame? */
+		m_Stream.flush(); /* maybe shouldn't flush ever call, only at end of frame? Could be more performant, but this gives the most data */
 	}
 
 	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const char* str)
 	{
-		if(expr == false)
-		{
+		if(!expr)
 			AssertMessage(fileName, line, fncName, str);
-		}
 	}
 
 	void Debug::AssertMessageVA(const char* fileName, int line, const char* fncName, const char* fmt, ...)
@@ -124,7 +125,10 @@ namespace Log
 		AssertMessage(fileName, line, fncName, buffer);
 	}
 
-	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const std::string& str) { AssertMessage(expr, fileName, line, fncName, str.c_str()); }
+	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const std::string& str)
+	{
+		AssertMessage(expr, fileName, line, fncName, str.c_str());
+	}
 
 	void Debug::AssertMessage(const char* fileName, int line, const char* fncName, const std::string& str)
 	{
