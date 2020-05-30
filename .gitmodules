@@ -7,3 +7,6 @@
 [submodule "source/external_libs/imgui"]
 	path = source/external_libs/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "source/external_libs/googletest"]
+	path = source/external_libs/googletest
+	url = https://github.com/google/googletest.git
