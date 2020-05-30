@@ -3,17 +3,17 @@
 
 class Camera;
 
-class Game : public State
+class Game final : public State
 {
 public:
 	Game() = default;
 	~Game() = default;
 
-	STATE_INTERFACE;
-
+	void InitState(StateStack* state_stack) override;
+	void Update(float dt) override;
+	void Render(bool render_through = false) override;
+	void EndState() override;
 
 private:
-
-	Camera* m_Camera{ nullptr };
-
+	Camera* m_Camera = nullptr;
 };
