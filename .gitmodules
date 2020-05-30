@@ -10,3 +10,6 @@
 [submodule "source/external_libs/googletest"]
 	path = source/external_libs/googletest
 	url = https://github.com/google/googletest.git
+[submodule "source/external_libs/physx"]
+	path = source/external_libs/physx
+	url = https://github.com/NVIDIAGameWorks/PhysX.git
