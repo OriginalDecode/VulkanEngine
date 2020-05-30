@@ -123,7 +123,10 @@ if _OPTIONS["project"] ~= nil then
             location ("./unit_test")
 
             dependson { "Core", "Graphics" }
-            links { "Graphics", "Core", "Input", "Logger", "gtest_%{cfg.buildcfg}" } --libraries to link
+            links { "Graphics", "Core", "Input", "Logger", "external_libs/googletest/lib/Debug/gtestd.lib", 
+                                                            "external_libs/googletest/lib/Debug/gtest_maind.lib",
+                                                            "external_libs/googletest/lib/Debug/gmockd.lib", 
+                                                            "external_libs/googletest/lib/Debug/gmock_maind.lib" } --libraries to link
             files { "unit_test/*.cpp" }
     end
 else
@@ -138,7 +141,7 @@ end
         dependson { "Core", "ImGui" }
         links { "$(VULKAN_SDK)/lib/vulkan-1.lib", 
                 "thirdparty/freetype/freetype.lib", 
-                "Imgui" }
+                "ImGui" }
 
         includedirs { "$(VULKAN_SDK)/Include/",
                       "thirdparty/freetype/" }
@@ -172,11 +175,14 @@ end
         dependson { "Core" }
         files{"logger/**.cpp", "logger/**.h", "logger/**.hpp", "logger/**.c"}
     
-    project "Imgui"
+    project "ImGui"
         kind "StaticLib"
         location("./external_libs/imgui")
-        files(  "external_libs/imgui/*.cpp", "external_libs/imgui/*.c", "external_libs/imgui/*.h", 
-                "external_libs/imgui/*.hpp", "external_libs/imgui/misc/**" )
+        includedirs { "./external_libs/", "$(VULKAN_SDK)/Include/" }
+        files{  "external_libs/imgui/*.h", "external_libs/imgui/*.cpp", 
+                "external_libs/imgui/misc/**.cpp", "external_libs/imgui/misc/**.h",
+                "external_libs/imgui/examples/imgui_impl_win32.*", 
+                "external_libs/imgui/examples/imgui_impl_vulkan.*" }
         if _OPTIONS["cflags"] ~= "freetype" then
             print("excluding freetype")
             excludes { "./external_libs/imgui/misc/freetype/**" }
