@@ -26,10 +26,8 @@
 
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #include "imgui/imgui.h"
-#include "graphics/imgui_impl_vulkan.h"
-#include "graphics/imgui_impl_win32.h"
-
-VkClearColorValue _clearColor = { 0.f, 0.f, 0.f, 0.f };
+#include "imgui/examples/imgui_impl_vulkan.h"
+#include "imgui/examples/imgui_impl_win32.h"
 
 VkRenderPass _renderPass = nullptr;
 
@@ -50,144 +48,23 @@ Graphics::Camera _Camera;
 
 Window::Size _size;
 
+Core::Vector4f _LightDir;
+Core::Matrix44f _LightObject = Core::Matrix44f::Identity();
+
+// Vertex Description
 struct Vertex
 {
 	Core::Vector4f position;
 	Core::Vector4f color;
-};
-
-constexpr Vertex _triangle[3] = {
-	{ { 0.0f, -0.75f, 0.f }, { 1.f, 0.f, 0.f } },
-	{ { 0.25f, 0.5f, 0.f }, { 0.f, 1.f, 0.f } },
-	{ { -0.25f, 0.5f, 0.f }, { 0.f, 0.f, 1.f } },
-};
-
-constexpr Core::Vector4f v0{ -1.f, -1.f, -1.f };
-constexpr Core::Vector4f v1{ -1.f, 1.f, -1.f };
-constexpr Core::Vector4f v2{ 1.f, 1.f, -1.f };
-constexpr Core::Vector4f v3{ 1.f, -1.f, -1.f };
-
-constexpr Core::Vector4f v4{ -1.f, -1.f, 1.f };
-constexpr Core::Vector4f v5{ -1.f, 1.f, 1.f };
-constexpr Core::Vector4f v6{ 1.f, 1.f, 1.f };
-constexpr Core::Vector4f v7{ 1.f, -1.f, 1.f };
-
-constexpr Vertex _cube[] = {
-	// front
-	{ v2, { 1.f, 0.f, 0.f } }, // 0
-	{ v0, { 1.f, 0.f, 0.f } }, // 1
-	{ v1, { 1.f, 0.f, 0.f } }, // 2
-
-	{ v2, { 1.f, 0.f, 0.f } }, // 3
-	{ v3, { 1.f, 0.f, 0.f } }, // 4
-	{ v0, { 1.f, 0.f, 0.f } }, // 5
-
-	// right
-	{ v6, { 0.f, 1.f, 0.f } }, // 6
-	{ v3, { 0.f, 1.f, 0.f } }, // 7
-	{ v2, { 0.f, 1.f, 0.f } }, // 8
-
-	{ v6, { 0.f, 1.f, 0.f } }, // 9
-	{ v7, { 0.f, 1.f, 0.f } }, // 10
-	{ v3, { 0.f, 1.f, 0.f } }, // 11
-
-	// back
-	{ v5, { 0.f, 0.f, 1.f } }, // 12
-	{ v7, { 0.f, 0.f, 1.f } }, // 13
-	{ v6, { 0.f, 0.f, 1.f } }, // 14
-
-	{ v5, { 0.f, 0.f, 1.f } }, // 15
-	{ v4, { 0.f, 0.f, 1.f } }, // 16
-	{ v7, { 0.f, 0.f, 1.f } }, // 17
-
-	// left
-	{ v1, { 1.f, 1.f, 0.f } }, // 18
-	{ v4, { 1.f, 1.f, 0.f } }, // 19
-	{ v5, { 1.f, 1.f, 0.f } }, // 20
-
-	{ v1, { 1.f, 1.f, 0.f } }, // 21
-	{ v0, { 1.f, 1.f, 0.f } }, // 22
-	{ v4, { 1.f, 1.f, 0.f } }, // 23
-
-	// top
-	{ v6, { 1.f, 1.f, 1.f } }, // 24
-	{ v1, { 1.f, 1.f, 1.f } }, // 25
-	{ v5, { 1.f, 1.f, 1.f } }, // 26
-
-	{ v6, { 1.f, 1.f, 1.f } }, // 27
-	{ v2, { 1.f, 1.f, 1.f } }, // 28
-	{ v1, { 1.f, 1.f, 1.f } }, // 29
-
-	// bottom
-	{ v3, { 0.f, 1.f, 1.f } }, // 30
-	{ v4, { 0.f, 1.f, 1.f } }, // 31
-	{ v0, { 0.f, 1.f, 1.f } }, // 32
-
-	{ v3, { 0.f, 1.f, 1.f } }, // 33
-	{ v7, { 0.f, 1.f, 1.f } }, // 34
-	{ v4, { 0.f, 1.f, 1.f } }, // 35
-
+	Core::Vector4f normal;
 };
 
 namespace Graphics
 {
-
-	// This should be a memory allocator class
-
-	uint32 findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags, VkPhysicalDevice device)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(device, &memProperties);
-
-		for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-		{
-			if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
-			{
-				return i;
-			}
-		}
-		ASSERT(false, "Failed to find suitable memory type!");
-		return 0;
-	}
-
-	VkDeviceMemory GPUAllocateMemory(const VkMemoryRequirements& memRequirements, VkDevice logicalDevice, VkPhysicalDevice physDevice)
-	{
-		VkDeviceMemory memory;
-		VkMemoryAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, physDevice);
-
-		if(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS)
-			ASSERT(false, "Failed to allocate memory on GPU!");
-
-		return memory;
-	}
-
-	void CreateBuffer(const VkBufferCreateInfo& createInfo, VkBuffer* buffer, VkDeviceMemory* memory, VkDevice device, VkPhysicalDevice physicalDevice)
-	{
-		if(vkCreateBuffer(device, &createInfo, nullptr, buffer) != VK_SUCCESS)
-			ASSERT(false, "Failed to create vertex buffer!");
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
-
-		*memory = GPUAllocateMemory(memRequirements, device, physicalDevice);
-
-		if(vkBindBufferMemory(device, *buffer, *memory, 0) != VK_SUCCESS)
-			ASSERT(false, "Failed to bind buffer memory!");
-	}
-	// to here
-
-	struct GPUBuffer
+	struct VertexBuffer
 	{
 		VkBuffer m_Buffer;
 		VkDeviceMemory m_Memory;
-	};
-
-	struct VertexBuffer
-	{
-		GPUBuffer m_VertexBuffer;
 		int32 m_VertexCount = 0;
 		int32 m_Stride = 0;
 		int32 m_Offset = 0;
@@ -198,26 +75,45 @@ namespace Graphics
 		VertexBuffer m_VertexBuffer;
 		Core::Matrix44f m_Orientation;
 
+		void update(float /*dt*/)
+		{
+		}
+
 		void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 		{
 
-			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f), &m_Orientation);
+			char* data = new char[sizeof(Core::Matrix44f)];
+			memset(data, 0, sizeof(Core::Matrix44f));
+			memcpy(&data[0], &m_Orientation, sizeof(Core::Matrix44f));
+			// memcpy(&data[sizeof(Core::Matrix44f)], &_LightDir, sizeof(Core::Vector4f)); // This is not good at all
+
+			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f), data);
 			/* This is quite a strange one, this is only gonna be available in non-instanced entities for position */
 
 			VkDeviceSize offset = 0;
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.m_VertexBuffer.m_Buffer, &offset);
-			// vkCmdExecuteCommands( commandBuffer, 1, nullptr ); /* second paramter is probably related to the
-			// nofsecondaries* /
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.m_Buffer, &offset);
+
+			// This executes secondary commandBuffers inside of the primary commandBuffer
+			// vkCmdExecuteCommands(commandBuffer, 0, nullptr);
+
 			vkCmdDraw(commandBuffer, m_VertexBuffer.m_VertexCount, 1, 0, 0);
+
+			delete[] data;
+			data = nullptr;
 		}
 
-		void destroy(VkDevice device) { vkDestroyBuffer(device, m_VertexBuffer.m_VertexBuffer.m_Buffer, nullptr); }
-
-		void init(VkDevice device, VkPhysicalDevice physicalDevice)
+		void destroy(VkDevice device)
 		{
+			vkDestroyBuffer(device, m_VertexBuffer.m_Buffer, nullptr);
+		}
+
+		void init(VlkDevice* device, VlkPhysicalDevice* physicalDevice)
+		{
+			Core::File loader("cube.mdl", Core::File::READ_FILE);
+
 			m_Orientation = Core::Matrix44f::Identity();
 			m_VertexBuffer.m_Stride = sizeof(Vertex);
-			m_VertexBuffer.m_VertexCount = ARRSIZE(_cube);
+			m_VertexBuffer.m_VertexCount = (loader.GetSize() / sizeof(Vertex));
 			m_VertexBuffer.m_Offset = 0;
 
 			const int32 dataSize = m_VertexBuffer.m_Stride * m_VertexBuffer.m_VertexCount;
@@ -228,25 +124,33 @@ namespace Graphics
 			createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			CreateBuffer(createInfo, &m_VertexBuffer.m_VertexBuffer.m_Buffer, &m_VertexBuffer.m_VertexBuffer.m_Memory, device, physicalDevice);
+			m_VertexBuffer.m_Buffer = device->CreateBuffer(createInfo, &m_VertexBuffer.m_Memory, physicalDevice);
 
 			void* data = nullptr;
-			if(vkMapMemory(device, m_VertexBuffer.m_VertexBuffer.m_Memory, 0, dataSize, 0, &data) != VK_SUCCESS)
+			if(vkMapMemory(device->GetDevice(), m_VertexBuffer.m_Memory, 0, dataSize, 0, &data) != VK_SUCCESS)
 				ASSERT(false, "Failed to map memory!");
-			memcpy(data, _cube, dataSize);
-			vkUnmapMemory(device, m_VertexBuffer.m_VertexBuffer.m_Memory);
+
+			memcpy(data, loader.GetBuffer(), loader.GetSize());
+			vkUnmapMemory(device->GetDevice(), m_VertexBuffer.m_Memory);
 		}
 
-		void setPosition(const Core::Vector4f& position) { m_Orientation.SetPosition(position); }
+		void setPosition(const Core::Vector4f& position)
+		{
+			m_Orientation.SetPosition(position);
+		}
 	};
 
 	struct Shader
 	{
 		VkShaderModule m_Module = nullptr;
-
-		void Create(VkShaderModule module) { m_Module = module; }
-
-		VkShaderModule GetModule() { return m_Module; }
+		void Create(VkShaderModule module)
+		{
+			m_Module = module;
+		}
+		VkShaderModule GetModule()
+		{
+			return m_Module;
+		}
 	};
 
 	Shader _vertexShader;
@@ -280,10 +184,15 @@ namespace Graphics
 		for(VkFramebuffer buffer : m_FrameBuffers)
 			vkDestroyFramebuffer(device, buffer, nullptr);
 
-		/*ImGui_ImplVulkan_DestroyFontUploadObjects();
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
 		ImGui::DestroyContext();
 		ImGui_ImplWin32_Shutdown();
-		ImGui_ImplVulkan_Shutdown();*/
+		ImGui_ImplVulkan_Shutdown();
+
+		SAFE_DELETE(m_Swapchain);
+		SAFE_DELETE(m_LogicalDevice);
+		SAFE_DELETE(m_PhysicalDevice);
+		SAFE_DELETE(m_Instance);
 	}
 
 	bool vkGraphicsDevice::Init(const Window& window)
@@ -292,25 +201,30 @@ namespace Graphics
 		_Camera.InitPerspectiveProjection(_size.m_Width, _size.m_Height, 0.1f, 1000.f, 90.f);
 		_Camera.SetTranslation({ 0.f, 0.f, -25.f, 1.f });
 
-		m_Instance = std::make_unique<VlkInstance>();
+		m_Instance = new VlkInstance();
 		m_Instance->Init();
 
-		m_PhysicalDevice = std::make_unique<VlkPhysicalDevice>();
-		m_PhysicalDevice->Init(m_Instance.get());
+		m_PhysicalDevice = new VlkPhysicalDevice();
+		m_PhysicalDevice->Init(m_Instance);
 
-		m_LogicalDevice = std::make_unique<VlkDevice>();
-		m_LogicalDevice->Init(m_PhysicalDevice.get());
+		m_LogicalDevice = new VlkDevice();
+		m_LogicalDevice->Init(m_PhysicalDevice);
 
-		m_Swapchain = std::make_unique<VlkSwapchain>();
-		m_Swapchain->Init(m_Instance.get(), m_LogicalDevice.get(), m_PhysicalDevice.get(), window);
+		m_Swapchain = new VlkSwapchain();
+		m_Swapchain->Init(m_Instance, m_LogicalDevice, m_PhysicalDevice, window);
 
-		_ViewProjection.RegVar(_Camera.GetView());
-		_ViewProjection.RegVar(_Camera.GetProjection());
-		//_ViewProjection.RegVar( _Camera.GetViewProjectionPointer() );
+		//_ViewProjection.RegVar(_Camera.GetView());
+		//_ViewProjection.RegVar(_Camera.GetProjection());
+		_ViewProjection.RegVar(_Camera.GetViewProjectionPointer());
+		_ViewProjection.RegVar(&_LightDir);
 
 		CreateConstantBuffer(&_ViewProjection);
 		CreateCommandPool();
-		CreateCommandBuffer();
+
+		// Create two commandBuffers and push into the array
+		m_CmdBuffers.push_back(CreateCommandBuffer(m_LogicalDevice->GetDevice(), m_CmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		m_CmdBuffers.push_back(CreateCommandBuffer(m_LogicalDevice->GetDevice(), m_CmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
 		CreateDepthResources();
 		_renderPass = CreateRenderPass();
 
@@ -326,7 +240,7 @@ namespace Graphics
 		}
 
 		LoadShader(&_vertexShader, "Data/Shaders/vertex.vert");
-		LoadShader(&_fragmentShader, "Data/Shaders/frag.frag");
+		LoadShader(&_fragmentShader, "Data/Shaders/frag.hlsl");
 
 		CreateViewport(0.f, 0.f, _size.m_Width, _size.m_Height, 0.f, 1.f, &_Viewport);
 		SetupScissorArea((uint32)_size.m_Width, (uint32)_size.m_Height, 0, 0, &_Scissor);
@@ -348,7 +262,7 @@ namespace Graphics
 		};
 
 		VkPushConstantRange pushRangeList[] = {
-			{ VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f) },
+			{ VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Core::Matrix44f) + sizeof(Core::Vector4f) },
 		};
 
 		_pipelineLayout = CreatePipelineLayout(descriptorLayouts, ARRSIZE(descriptorLayouts), pushRangeList, ARRSIZE(pushRangeList));
@@ -366,7 +280,7 @@ namespace Graphics
 		{
 			_Cubes.push_back(Cube());
 			Cube& last = _Cubes.back();
-			last.init(m_LogicalDevice->GetDevice(), m_PhysicalDevice->GetDevice());
+			last.init(m_LogicalDevice, m_PhysicalDevice);
 			last.setPosition(position);
 
 			position.x += 5.f;
@@ -383,7 +297,7 @@ namespace Graphics
 		if(vkCreateFence(m_LogicalDevice->GetDevice(), &fenceCreateInfo, nullptr, &m_CommandFence) != VK_SUCCESS)
 			ASSERT(false, "Failed to create fence!");
 
-		// SetupImGui();
+		SetupImGui();
 
 		return true;
 	}
@@ -402,41 +316,24 @@ namespace Graphics
 	void vkGraphicsDevice::DrawFrame(float dt)
 	{
 
-		// ImGui_ImplVulkan_NewFrame();
-		// ImGui_ImplWin32_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplWin32_NewFrame();
 
-		// ImGui::NewFrame();
+		ImGui::NewFrame();
 		// static bool show_demo_window = true;
 		// ImGui::ShowDemoWindow(&show_demo_window);
 
-		// ImGui::SetNextWindowSize(ImVec2(_size.m_Width * 0.5f, _size.m_Height * 0.25f));
-		// if(ImGui::Begin("log", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
-		//{
-		//	for(auto& it : m_LogMessages)
-		//	{
-		//		if(it.find("warning") != it.npos)
-		//		{
-		//			ImGui::TextColored(ImVec4(1, 1, 0, 1), it.c_str());
-		//		}
-		//		else if(it.find("error") != it.npos)
-		//		{
-		//			ImGui::TextColored(ImVec4(1, 0, 0, 1), it.c_str());
-		//		}
-		//		else
-		//		{
-		//			ImGui::TextColored(ImVec4(1, 1, 1, 1), it.c_str());
-		//		}
-		//	}
-		//	if(m_LogIsDirty)
-		//	{
-		//		m_LogIsDirty = false;
-		//		ImGui::SetScrollHereY(1.0);
-		//	}
+		ImGui::SetNextWindowSize(ImVec2(_size.m_Width * 0.15f, _size.m_Height * 0.25f));
+		if(ImGui::Begin("blank", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+		{
+			ImGui::Text("LightDir: X: %.3f Y: %.3f Z: %.3f", _LightDir.x, _LightDir.y, _LightDir.z);
+			ImGui::End();
+		}
 
-		//	ImGui::End();
-		//}
+		ImGui::Render();
 
-		// ImGui::Render();
+		_LightObject = _LightObject * Core::Matrix44f::CreateRotateAroundX(Core::DegreeToRad(45.f) * dt);
+		_LightDir = _LightObject.GetForward();
 
 		if(vkAcquireNextImageKHR(m_LogicalDevice->GetDevice(), m_Swapchain->GetSwapchain(), UINT64_MAX, m_AcquireNextImageSemaphore, VK_NULL_HANDLE /*fence*/, &m_Index) !=
 		   VK_SUCCESS)
@@ -453,46 +350,20 @@ namespace Graphics
 		input.GetDevice(Input::EDeviceType_Keyboard, &keyboard);
 		const float speed = 10.f;
 
-		if(keyboard->OnDown(DIK_P))
-		{
-			AddLogText("adding some text to the log");
-		}
-
-		if(keyboard->OnDown(DIK_L))
-		{
-			AddLogText("error some text were added");
-		}
-
-		if(keyboard->OnDown(DIK_O))
-		{
-			AddLogText("warning some text were added");
-		}
-
 		if(keyboard->IsDown(DIK_W))
-		{
 			_Camera.Forward(speed * dt);
-		}
-
 		if(keyboard->IsDown(DIK_S))
-		{
 			_Camera.Forward(-speed * dt);
-		}
+
 		if(keyboard->IsDown(DIK_D))
-		{
 			_Camera.Right(speed * dt);
-		}
 		if(keyboard->IsDown(DIK_A))
-		{
 			_Camera.Right(-speed * dt);
-		}
+
 		if(keyboard->IsDown(DIK_R))
-		{
 			_Camera.Up(speed * dt);
-		}
 		if(keyboard->IsDown(DIK_F))
-		{
 			_Camera.Up(-speed * dt);
-		}
 
 		if(mouse->IsDown(1))
 		{
@@ -535,6 +406,11 @@ namespace Graphics
 		if(vkQueuePresentKHR(m_LogicalDevice->GetQueue(), &presentInfo) != VK_SUCCESS)
 			ASSERT(false, "Failed to present!");
 
+		for(Cube& cube : _Cubes)
+		{
+			cube.update(dt);
+		}
+
 		SetupRenderCommands(m_Index ^ 1);
 	}
 
@@ -542,7 +418,6 @@ namespace Graphics
 
 	VkRenderPass vkGraphicsDevice::CreateRenderPass()
 	{
-
 		VkAttachmentDescription attDesc = {};
 		attDesc.format = m_Swapchain->GetFormat().format;
 		attDesc.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -619,23 +494,24 @@ namespace Graphics
 	}
 	//_____________________________________________
 
-	void vkGraphicsDevice::CreateCommandBuffer()
+	VkCommandBuffer vkGraphicsDevice::CreateCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBufferLevel bufferLevel)
 	{
 		VkCommandBufferAllocateInfo cmdBufAllocInfo = {};
 		cmdBufAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cmdBufAllocInfo.commandPool = m_CmdPool;
-		cmdBufAllocInfo.commandBufferCount = (uint32)m_Swapchain->GetNofImages();
-		cmdBufAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		m_CmdBuffers.resize(m_Swapchain->GetNofImages());
+		cmdBufAllocInfo.commandPool = pool;
+		cmdBufAllocInfo.commandBufferCount = 1; //(uint32)m_Swapchain->GetNofImages(); // This is just about the nof command buffers to be created.
+		cmdBufAllocInfo.level = bufferLevel;	// VK_COMMAND_BUFFER_LEVEL_PRIMARY; // Type of commandBuffer
 
-		if(vkAllocateCommandBuffers(m_LogicalDevice->GetDevice(), &cmdBufAllocInfo, m_CmdBuffers.data()) != VK_SUCCESS)
+		VkCommandBuffer buffer = nullptr;
+		if(vkAllocateCommandBuffers(device, &cmdBufAllocInfo, &buffer) != VK_SUCCESS)
 			ASSERT(false, "Failed to create VkCommandBuffer!");
+
+		return buffer;
 	}
 	//_____________________________________________
 
 	VkPipeline vkGraphicsDevice::CreateGraphicsPipeline()
 	{
-
 		// viewport
 		VkPipelineViewportStateCreateInfo vpCreateInfo = {};
 		vpCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -687,12 +563,16 @@ namespace Graphics
 		blendCreateInfo.attachmentCount = 1;
 		blendCreateInfo.pAttachments = &blendAttachState;
 
-		auto bindDesc = CreateBindDesc();
-		auto attrDesc = CreateAttrDesc(0, 0);
+		// Input Assembler
+		auto bindDesc = CreateBindDesc();	 // Define the size of the input assembler
+		auto attrDesc = CreateAttrDesc(0, 0); // Define each attribute of the input assembler
 		auto attrDesc2 = CreateAttrDesc(1, 16);
+		auto attrDesc3 = CreateAttrDesc(2, 32);
+		// This is 100% based on the vertex and not something that should be manually setup.
+		// Vertex Description should be on the model
 
 		VkVertexInputBindingDescription bindDescArr[] = { bindDesc };
-		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2 };
+		VkVertexInputAttributeDescription descriptions[] = { attrDesc, attrDesc2, attrDesc3 };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -727,6 +607,7 @@ namespace Graphics
 		pipelineIACreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		pipelineIACreateInfo.primitiveRestartEnable = VK_FALSE;
 
+		// the entry point of shader cannot be defined like this.
 		VkPipelineShaderStageCreateInfo ssci[] = { CreateShaderStageInfo(VK_SHADER_STAGE_VERTEX_BIT, _vertexShader.GetModule(), "main"),
 												   CreateShaderStageInfo(VK_SHADER_STAGE_FRAGMENT_BIT, _fragmentShader.GetModule(), "main") };
 
@@ -770,7 +651,6 @@ namespace Graphics
 
 	void vkGraphicsDevice::CreateDescriptorPool()
 	{
-
 		VkDescriptorPoolSize poolSize = {};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSize.descriptorCount = 1; // (uint32_t)m_Swapchain->GetNofImages();
@@ -807,7 +687,6 @@ namespace Graphics
 	VkPipelineLayout vkGraphicsDevice::CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange,
 															int32 pushConstantRangeCount)
 	{
-
 		VkPipelineLayoutCreateInfo pipelineCreateInfo = {};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
@@ -826,6 +705,8 @@ namespace Graphics
 
 	VkImageView vkGraphicsDevice::CreateImageView(VkFormat format, VkImage image, VkImageAspectFlags aspectFlag)
 	{
+		// This is a logic device operation
+
 		VkImageViewCreateInfo vcInfo = {};
 		vcInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		vcInfo.image = image;
@@ -845,20 +726,21 @@ namespace Graphics
 		return view;
 	}
 
+	// This is wrong, this is not how a frame buffer should be created. It should take a width & height not a window
 	VkFramebuffer vkGraphicsDevice::CreateFramebuffer(VkImageView* view, int32 attachmentCount, const Window& window)
 	{
-
-		VkFramebufferCreateInfo fbInfo = {};
-		fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		fbInfo.renderPass = _renderPass;
-		fbInfo.attachmentCount = attachmentCount;
-		fbInfo.pAttachments = view;
-		fbInfo.width = (uint32)window.GetInnerSize().m_Width;
-		fbInfo.height = (uint32)window.GetInnerSize().m_Height;
-		fbInfo.layers = 1;
+		// This is a logic device operation
+		VkFramebufferCreateInfo ci = {};
+		ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		ci.renderPass = _renderPass;
+		ci.attachmentCount = attachmentCount;
+		ci.pAttachments = view;
+		ci.width = (uint32)window.GetInnerSize().m_Width;
+		ci.height = (uint32)window.GetInnerSize().m_Height;
+		ci.layers = 1;
 
 		VkFramebuffer framebuffer;
-		if(vkCreateFramebuffer(m_LogicalDevice->GetDevice(), &fbInfo, nullptr, &framebuffer) != VK_SUCCESS)
+		if(vkCreateFramebuffer(m_LogicalDevice->GetDevice(), &ci, nullptr, &framebuffer) != VK_SUCCESS)
 			ASSERT(false, "Failed to create framebuffer!");
 		return framebuffer;
 	}
@@ -896,7 +778,7 @@ namespace Graphics
 
 	VkShaderModule vkGraphicsDevice::LoadShader(const char* filepath, VkDevice pDevice)
 	{
-		Core::File shader(filepath, Core::FileMode::READ_FILE);
+		Core::File shader(filepath, Core::File::READ_FILE);
 		VkShaderModuleCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = shader.GetSize();
@@ -909,7 +791,10 @@ namespace Graphics
 		return shaderModule;
 	}
 
-	void vkGraphicsDevice::LoadShader(HShader* shader, const char* filepath) { shader->Create(LoadShader(filepath, m_LogicalDevice->GetDevice())); }
+	void vkGraphicsDevice::LoadShader(HShader* shader, const char* filepath)
+	{
+		shader->Create(LoadShader(filepath, m_LogicalDevice->GetDevice()));
+	}
 
 	void vkGraphicsDevice::BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset)
 	{
@@ -955,7 +840,7 @@ namespace Graphics
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(lDevice, vulkan_buffer, &memRequirements);
 
-		VkDeviceMemory deviceMem = GPUAllocateMemory(memRequirements, lDevice, pDevice);
+		VkDeviceMemory deviceMem = m_LogicalDevice->AllocateMemory(memRequirements, m_PhysicalDevice);
 
 		if(vkBindBufferMemory(lDevice, vulkan_buffer, deviceMem, 0) != VK_SUCCESS)
 			ASSERT(false, "Failed to bind buffer memory!");
@@ -969,18 +854,6 @@ namespace Graphics
 		vkWaitForFences(m_LogicalDevice->GetDevice(), 1, &m_CommandFence, VK_TRUE, UINT64_MAX);
 		vkResetFences(m_LogicalDevice->GetDevice(), 1, &m_CommandFence);
 
-		VkClearValue clearValue[2] = {};
-		clearValue[0].color = _clearColor;
-		clearValue[1].depthStencil = { 1.f, 0 };
-
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = _renderPass;
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { (uint32)_size.m_Width, (uint32)_size.m_Height };
-		renderPassInfo.clearValueCount = ARRSIZE(clearValue);
-		renderPassInfo.pClearValues = clearValue;
-
 		VkCommandBufferBeginInfo cmdInfo = {};
 		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -990,20 +863,24 @@ namespace Graphics
 
 		if(vkBeginCommandBuffer(commandBuffer, &cmdInfo) != VK_SUCCESS)
 			ASSERT(false, "Failed to begin CommandBuffer!");
-		renderPassInfo.framebuffer = frameBuffer;
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		VkRenderPassBeginInfo pass_info = {};
+		PrepareRenderPass(&pass_info, frameBuffer, _size.m_Width, _size.m_Height);
+
+		vkCmdBeginRenderPass(commandBuffer, &pass_info, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSet, 0, nullptr);
 
 		/* This thing right here is what I'm looking for */
 
 		for(Cube& cube : _Cubes)
+		{
 			cube.Draw(commandBuffer, _pipelineLayout);
+		}
 
 		/* This is what draws the cubes */
 
-		// ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1011,9 +888,15 @@ namespace Graphics
 			ASSERT(false, "Failed to end CommandBuffer!");
 	}
 
-	void vkGraphicsDevice::DestroyShader(HShader* pShader) { vkDestroyShaderModule(m_LogicalDevice->GetDevice(), pShader->GetModule(), nullptr); }
+	void vkGraphicsDevice::DestroyShader(HShader* pShader)
+	{
+		vkDestroyShaderModule(m_LogicalDevice->GetDevice(), pShader->GetModule(), nullptr);
+	}
 
-	Camera* vkGraphicsDevice::GetCamera() { return &_Camera; }
+	Camera* vkGraphicsDevice::GetCamera()
+	{
+		return &_Camera;
+	}
 
 	VkFormat vkGraphicsDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
 	{
@@ -1042,7 +925,10 @@ namespace Graphics
 								   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 
-	bool hasStencilComponent(VkFormat format) { return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT; }
+	bool hasStencilComponent(VkFormat format)
+	{
+		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+	}
 
 	void vkGraphicsDevice::CreateDepthResources()
 	{
@@ -1112,6 +998,7 @@ namespace Graphics
 		vkBindImageMemory(device, image, imageMemory, 0);
 	}
 
+	// Need to look into what this function actually does
 	void vkGraphicsDevice::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -1177,11 +1064,12 @@ namespace Graphics
 
 		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		// vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 		endSingleTimeCommands(commandBuffer);
 	}
 
+	// Util Function
 	void vkGraphicsDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -1193,25 +1081,21 @@ namespace Graphics
 		endSingleTimeCommands(commandBuffer);
 	}
 
+	// Extends a commandbuffer
 	VkCommandBuffer vkGraphicsDevice::beginSingleTimeCommands()
 	{
 		VkDevice device = m_LogicalDevice->GetDevice();
-		VkCommandBufferAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = m_CmdPool;
-		allocInfo.commandBufferCount = 1;
 
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+		VkCommandBuffer buffer;
+		buffer = CreateCommandBuffer(device, m_CmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		VERIFY(vkBeginCommandBuffer(buffer, &beginInfo) == VK_SUCCESS, "vkBeginCommandBuffer failed!");
 
-		return commandBuffer;
+		return buffer;
 	}
 
 	void vkGraphicsDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer)
@@ -1251,7 +1135,6 @@ namespace Graphics
 
 	void vkGraphicsDevice::SetupImGui()
 	{
-
 		ImGuiIO& io = ImGui::GetIO();
 		io.DisplaySize.x = _size.m_Width;
 		io.DisplaySize.y = _size.m_Height;
@@ -1287,17 +1170,18 @@ namespace Graphics
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
-	void vkGraphicsDevice::AddLogText(const char* fmt, ...)
+	void vkGraphicsDevice::PrepareRenderPass(VkRenderPassBeginInfo* pass_info, VkFramebuffer framebuffer, uint32 width, uint32 height)
 	{
-		char buffer[1024];
-		va_list args;
-		va_start(args, fmt);
-		vsprintf_s(buffer, fmt, args);
-		perror(buffer);
-		va_end(args);
-
-		m_LogMessages.push_back(buffer);
-		m_LogIsDirty = true;
+		static VkClearValue clearValue[2] = {};
+		clearValue[0].color = { 0.f, 0.f, 0.f, 0.f };
+		clearValue[1].depthStencil = { 1.f, 0 };
+		pass_info->sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		pass_info->renderPass = _renderPass;
+		pass_info->renderArea.offset = { 0, 0 };
+		pass_info->renderArea.extent = { width, height };
+		pass_info->clearValueCount = ARRSIZE(clearValue);
+		pass_info->pClearValues = clearValue;
+		pass_info->framebuffer = framebuffer;
 	}
 
 }; // namespace Graphics
