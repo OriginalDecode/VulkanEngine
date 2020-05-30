@@ -12,7 +12,10 @@ namespace Core
 	{
 		if(m_Mode == FileMode::WRITE_FILE)
 		{
-			if(FILE* hFile = fopen(m_Filepath, "wb"))
+			char buff[128]{ 0 };
+			GetFlags(buff);
+
+			if(FILE* hFile = fopen(m_Filepath, buff))
 			{
 				fwrite(m_Buffer, 1, m_FileSize, hFile);
 				fclose(hFile);
@@ -33,6 +36,43 @@ namespace Core
 			OpenForWrite();
 		else
 			assert(!"Failed to open file!");
+	}
+
+	void File::Flush()
+	{
+		if(m_Mode == FileMode::WRITE_FILE)
+		{
+			char buff[128]{ 0 };
+			GetFlags(buff);
+
+			if(FILE* hFile = fopen(m_Filepath, buff))
+			{
+				fwrite(m_Buffer, 1, m_FileSize, hFile);
+			}
+		}
+	}
+
+	void File::GetFlags(char* const fileMode)
+	{
+		int32 pos = 0;
+
+		if(m_Mode & FileMode::READ_FILE)
+		{
+			sprintf(&fileMode[pos], "r");
+			pos += sizeof(char);
+		}
+
+		if(m_Mode & FileMode::WRITE_FILE)
+		{
+			sprintf(&fileMode[pos], "w");
+			pos += sizeof(char);
+		}
+
+		if(m_Mode & FileMode::BINARY)
+		{
+			sprintf(&fileMode[pos], "b");
+			pos += sizeof(char);
+		}
 	}
 
 	void File::Resize(const uint32 element_size, const uint32 nof_elements)
