@@ -10,17 +10,17 @@
 #include "game/StateStack.h"
 #include "game/Game.h"
 #include "imgui/imgui.h"
-//#include "imgui/imgui_impl_win32.h"
+#include "imgui/examples/imgui_impl_win32.h"
 
 #include <memory>
 #include <iostream>
 #include <Windows.h>
 
-LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
-{
-	// Window* window = new Window({ 1920, 1080, instance, WindowProc });
+#include "core/utilities/utilities.h"
 
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE /*prevInstance*/, LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
+{
 	Log::Debug::Create();
 
 	Window::CreateInfo createInfo{ 1920.f, 1080.f, instance, WindowProc };
@@ -30,7 +30,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 	Graphics::GraphicsEngine::Create();
 	Graphics::GraphicsEngine& graphics_engine = Graphics::GraphicsEngine::Get();
-
+	Graphics::CreateImGuiContext();
 	if(!graphics_engine.Init(window))
 		return -1;
 
@@ -40,14 +40,13 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 	Core::Timer timer;
 	timer.Init();
 
-	// ImGui_ImplWin32_Init(window.GetHandle());
+	ImGui_ImplWin32_Init(window.GetHandle());
 
 	Game game;
 	StateStack state_stack;
 	state_stack.PushState(&game, StateStack::MAIN);
 
 	MSG msg;
-	bool game_running = true;
 	do
 	{
 		timer.Update();
@@ -65,7 +64,6 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 		if(msg.message == WM_QUIT || msg.message == WM_CLOSE)
 		{
-			game_running = false; // not so specific
 			break;
 		}
 		/* Windows Specific */
@@ -75,7 +73,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int)
 		// graphics_engine.Update();
 		graphics_engine.Present(timer.GetTime());
 
-	} while(game_running);
+	} while(true);
 
 	Input::InputManager::Destroy();
 
