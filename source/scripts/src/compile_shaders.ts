@@ -61,9 +61,9 @@ function getArgs(inputFile: string): { failed: boolean; data: string[] } {
 
 async function compileShaders(rootDir: string) {
   const config = {
-    compiler: `${rootDir}\\external_libs\\dxc\\bin\\Debug\\bin\\dxc.exe`,
-    shaderFolder: `${rootDir}\\shaders\\`,
-    outputFolder: `${rootDir}\\..\\bin\\Data\\Shaders\\`,
+    compiler: `${rootDir}\\source\\external_libs\\dxc\\bin\\Debug\\bin\\dxc.exe`,
+    shaderFolder: `${rootDir}\\source\\shaders\\`,
+    outputFolder: `${rootDir}\\bin\\Data\\Shaders\\`,
     options: ['-spirv', '-Zpr', '-fspv-target-env=vulkan1.1'],
   };
 
