@@ -40,6 +40,8 @@ namespace Graphics
 		QueueProperties FindFamilyIndices(VlkSurface* pSurface);
 		VkPhysicalDevice GetDevice() { return m_PhysicalDevice; }
 
+		uint32 FindMemoryType(uint32 typeFilter, VkMemoryPropertyFlags flags);
+
 	private:
 		bool SurfaceCanPresent(VkSurfaceKHR pSurface) const;
 		uint32 GetSurfacePresentModeCount(VkSurfaceKHR pSurface) const;
