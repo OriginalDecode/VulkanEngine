@@ -4,6 +4,9 @@
 
 namespace Core
 {
+	float RadToDegree(float rad);
+	float DegreeToRad(float degree);
+
 	std::wstring ToWString(const std::string& str);
 	std::string ToString(const std::wstring& str);
 

@@ -3,9 +3,26 @@
 #include <Windows.h>
 namespace Core
 {
-	std::wstring ToWString(const std::string& str) { return std::wstring(str.begin(), str.end()); }
 
-	std::string ToString(const std::wstring& str) { return std::string(str.begin(), str.end()); }
+	float RadToDegree(float rad)
+	{
+		return (rad * 180.f) / 3.1415926535f;
+	}
+
+	float DegreeToRad(float degree)
+	{
+		return (degree * 3.1415926535f) / 180.f;
+	}
+
+	std::wstring ToWString(const std::string& str)
+	{
+		return std::wstring(str.begin(), str.end());
+	}
+
+	std::string ToString(const std::wstring& str)
+	{
+		return std::string(str.begin(), str.end());
+	}
 
 	uint64 Hash(const std::string& str)
 	{
@@ -47,6 +64,9 @@ namespace Core
 #endif
 	}
 
-	void OutputDebugStr(const std::string& str) { OutputDebugStr(str.c_str()); }
+	void OutputDebugStr(const std::string& str)
+	{
+		OutputDebugStr(str.c_str());
+	}
 
 }; // namespace Core
