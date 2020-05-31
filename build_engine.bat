@@ -1,3 +1,2 @@
 @echo off
-
-%python% buildscript.py -b=Engine.sln -v=m
+node_main.bat -build Engine.sln -c Debug -v m

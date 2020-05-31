@@ -1,2 +1,2 @@
 @echo off
-node ./source/scripts/output/main.js %*
+node_main.bat %*

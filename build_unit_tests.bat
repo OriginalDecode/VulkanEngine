@@ -1,3 +1,2 @@
 @echo off
-
-%python% buildscript.py -b=UnitTest.sln -v=m
+node_main.bat -build UnitTest.sln -c Debug -v m

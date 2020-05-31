@@ -1,5 +1,5 @@
 import { compileShaders } from './compile_shaders';
-
+import { build } from './build';
 import { configure } from './configure_builds';
 import os from 'os';
 import { utils } from './utils';
@@ -15,8 +15,6 @@ if (args.indexOf('-compile_shaders') !== -1) {
 }
 
 if (args.indexOf('-configure') !== -1) {
-  console.log(args);
-
   const project = args[args.indexOf('-p') + 1];
   const generator = args[args.indexOf('-g') + 1];
   const clean = args.indexOf('-clean') != -1;
@@ -26,12 +24,21 @@ if (args.indexOf('-configure') !== -1) {
     throw 'Invalid params';
   }
 
-  // console.log({ project, generator, platform, clean });
-
   configure.configure(process.cwd(), {
     project: project,
     platform: platform == 'win32' ? 'windows' : platform,
     clean: clean,
     generator: generator,
   });
+}
+
+if (args.indexOf('-build') != -1) {
+  const platform = os.platform();
+  if (platform === 'win32') {
+    const solution = `source\\${args[args.indexOf('-build') + 1]}`;
+    const verbosity = args[args.indexOf('-v') + 1];
+    const config = args[args.indexOf('-c') + 1];
+    const clean = args.indexOf('-clean') != -1;
+    build(process.cwd(), { platform, solution, verbosity, config });
+  }
 }

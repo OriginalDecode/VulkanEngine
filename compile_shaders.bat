@@ -1,1 +1,2 @@
-node ./source/scripts/output/main.js -compile_shaders
+@echo off
+node_main.bat -compile_shaders
