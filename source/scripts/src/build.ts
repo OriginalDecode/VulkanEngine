@@ -46,11 +46,18 @@ function buildWindows(rootDir: string, options: BuildOptions) {
     '/p:GenerateFullPaths=true',
     `/p:Configuration=${options.config}`,
     '/p:Platform=Windows',
-    '/t:build',
+    '/t:rebuild',
     `-v:${options.verbosity}`,
   ]);
   proc.stdout.pipe(split2()).on('data', (data: any) => {
-    console.log(chalk.white(data.toString()));
+    const string = data.toString();
+    if (string.indexOf('warning') !== -1) {
+      console.log(chalk.yellow(string));
+    } else if (string.indexOf('error') !== -1) {
+      console.log(chalk.red(string));
+    } else if (string.indexOf('message') !== -1) {
+      console.log(chalk.blueBright(string));
+    }
   });
 
   proc.stderr.pipe(split2()).on('data', (data: any) => {
