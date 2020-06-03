@@ -1,2 +1,1 @@
-@echo off
-node ./source/scripts/output/main.js %*
+tsc && node ./source/scripts/output/main.js %*
