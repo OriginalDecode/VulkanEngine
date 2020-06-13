@@ -118,8 +118,9 @@ export namespace configure {
       `${options.generator}`,
       options.clean ? 'clean' : '',
     ]);
+    
     proc.stdout.pipe(split2()).on('data', (data: any) => {
-      console.log(chalk.white(data.toString()));
+      console.log(chalk.blueBright(data.toString()));
     });
 
     proc.stderr.pipe(split2()).on('data', (data: any) => {
