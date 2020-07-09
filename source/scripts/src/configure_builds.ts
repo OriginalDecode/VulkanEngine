@@ -92,13 +92,18 @@ export namespace configure {
   }
 
   export async function configure(rootDir: string, options: Options) {
+    console.log(rootDir);
+
+
     let premake = `${rootDir}\\premake5`;
     if (!fs.existsSync(premake)) {
-      premake = `${rootDir}\\source\\premake5`;
+      premake = `${rootDir}/source/premake5`;
+      console.log(premake);
       if (!fs.existsSync(premake)) {
         throw 'Failed to find premake5';
       }
     }
+    console.log(premake);
 
     if (options.clean) {
       await clean(rootDir);
