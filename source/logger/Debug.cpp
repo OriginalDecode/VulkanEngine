@@ -107,12 +107,6 @@ namespace Log
 		m_Stream.flush(); /* maybe shouldn't flush ever call, only at end of frame? Could be more performant, but this gives the most data */
 	}
 
-	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const char* str)
-	{
-		if(!expr)
-			AssertMessage(fileName, line, fncName, str);
-	}
-
 	void Debug::AssertMessageVA(const char* fileName, int line, const char* fncName, const char* fmt, ...)
 	{
 		char buffer[1024];
@@ -121,8 +115,12 @@ namespace Log
 		vsprintf_s(buffer, fmt, args);
 		perror(buffer);
 		va_end(args);
-
 		AssertMessage(fileName, line, fncName, buffer);
+	}
+
+	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const char* str)
+	{
+		if(!expr) AssertMessage(fileName, line, fncName, str);
 	}
 
 	void Debug::AssertMessage(bool expr, const char* fileName, int line, const char* fncName, const std::string& str)
