@@ -1,2 +1,2 @@
 @echo off
-node_main.bat -configure -p engine -g vs2019 %*
+ts-node source/scripts/src/main.ts -configure -p engine -g vs2019 %*

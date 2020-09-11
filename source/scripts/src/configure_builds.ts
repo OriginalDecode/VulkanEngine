@@ -5,6 +5,12 @@ import chalk from 'chalk';
 import * as utils from './utils';
 
 export namespace configure {
+  export enum Platform {
+    NONE,
+    LINUX,
+    WINDOWS,
+    MACOS,
+  };
   export interface Options {
     project: string;
     platform: string;
@@ -92,24 +98,20 @@ export namespace configure {
   }
 
   export async function configure(rootDir: string, options: Options) {
-    console.log(rootDir);
-
-
     let premake = `${rootDir}\\premake5`;
     if (!fs.existsSync(premake)) {
       premake = `${rootDir}/source/premake5`;
-      console.log(premake);
-      if (!fs.existsSync(premake)) {
+      if (!fs.existsSync(`${premake}.exe`)) {
         throw 'Failed to find premake5';
       }
     }
-    console.log(premake);
+    console.log({premake});
 
     if (options.clean) {
       await clean(rootDir);
     }
 
-    console.log(options);
+    console.log({options});
 
     const proc = spawn(premake, [
       `--file=${premake}.lua`,
@@ -124,7 +126,10 @@ export namespace configure {
     });
 
     proc.stderr.pipe(split2()).on('data', (data: any) => {
-      console.error(chalk.red.underline.bold(data.toString()));
+      const buffer = data.toString();
+      if(buffer.search(/err/gi) !== -1) console.error(chalk.red.underline.bold(buffer));
+      if(buffer.search(/warn/gi) !== -1) console.warn(buffer);
+      else console.log(buffer);
     });
   }
 }
