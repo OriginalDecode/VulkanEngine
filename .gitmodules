@@ -10,3 +10,6 @@
 [submodule "source/external_libs/physx"]
 	path = source/external_libs/physx
 	url = https://github.com/NVIDIAGameWorks/PhysX.git
+[submodule "source/external_libs/VulkanMemoryAllocator"]
+	path = source/external_libs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
