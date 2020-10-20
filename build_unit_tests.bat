@@ -1,2 +1,2 @@
 @echo off
-node_main.bat -build UnitTest.sln -c Debug -v m %*
+ts-node source/scripts/src/main.ts -build source/UnitTest.sln -c Debug -v m %*

@@ -119,7 +119,7 @@ if _OPTIONS["project"] ~= nil then
             targetname "%{wks.name}_%{cfg.buildcfg}Test"
             kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
             location ("./unit_test")
-            define { "UNIT_TEST" }
+            defines { "UNIT_TEST" }
             dependson { "Core" }
             links { "Core", "Input", "Logger", "external_libs/googletest/lib/Debug/gtestd.lib", 
                                                             "external_libs/googletest/lib/Debug/gtest_maind.lib",
@@ -143,6 +143,9 @@ end
 
         includedirs { "$(VULKAN_SDK)/Include/",
                       "thirdparty/freetype/" }
+        if _OPTIONS["project"] == "unit_test" then
+            flags {"ExcludeFromBuild"}
+        end
         -- symbolspath does not seem to work as inteded
         -- symbolspath "%{wks.location}/bin/%{cfg.buildcfg}/%{prj.name}.pdb"
         

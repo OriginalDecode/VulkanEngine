@@ -1,2 +1,2 @@
 @echo off
-node_main.bat -configure -p unit_test -g vs2019 %*
+ts-node source/scripts/src/main.ts -configure -p unit_test -g vs2019 %*

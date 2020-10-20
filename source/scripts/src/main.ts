@@ -50,7 +50,7 @@ if (getArgValue('-build')) {
     verbosity: getArgValue('-v')!,
     config: getArgValue('-c')!,
     rebuild: getArgValue('-rebuild') !== null,
-    solution: getArgValue('-solution'),
+    solution: getArgValue('-build'),
     platform: getPlatform(os.platform())
   };
   build(process.cwd(), options);

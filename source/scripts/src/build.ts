@@ -16,11 +16,7 @@ function isDebug(config: string): boolean {
 }
 
 function getConfig(options: BuildOptions): string {
-  const is_debug: boolean = isDebug(options.config);
-  if (options.platform === 'osx') return is_debug ? 'debug_osx' : 'release_osx';
-  if (options.platform === 'win32') return is_debug ? 'debug_win32' : 'release_win32';
-  if (options.platform === 'linux') return is_debug ? 'debug_linux' : 'release_linux';
-  throw new Error('No valid platform');
+  return isDebug(options.config) ? `debug_${options.platform}` : `release_${options.platform}`;
 }
 
 function buildOSX(rootDir: string, options: BuildOptions): ChildProcess {
@@ -70,7 +66,7 @@ function buildWindows(rootDir: string, options: BuildOptions): ChildProcess {
 
 function doBuild(rootDir: string, options: BuildOptions): ChildProcess {
   console.log(options.platform);
-  if (options.platform === 'win32') return buildWindows(rootDir, options);
+  if (options.platform === 'windows') return buildWindows(rootDir, options);
   if (options.platform === 'osx') return buildOSX(rootDir, options);
   if (options.platform === 'linux') return buildLinux(rootDir, options);
 
@@ -78,6 +74,7 @@ function doBuild(rootDir: string, options: BuildOptions): ChildProcess {
 }
 
 function build(rootDir: string, options: BuildOptions) {
+  console.log({options});
   const proc = doBuild(rootDir, options);
   if (!proc) throw new Error('No process spawned. Failed to build');
 
