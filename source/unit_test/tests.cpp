@@ -93,6 +93,27 @@ TEST(GrowingArray, Copy)
 	ASSERT_NE(data, data2);
 }
 
+TEST(GrowingArray, InitList) 
+{
+	Core::GrowingArray<int> array ({1,2,3,4,5,6,7,8,9,10});
+	ASSERT_EQ(array.Size(), 10);
+	ASSERT_EQ(array.Capacity(), 10);
+	ASSERT_EQ(array.Size(), array.Capacity());
+	int i = 1;
+	for(int x : array)
+	{
+		ASSERT_EQ(x , i);
+		i++;
+	}
+}
+
+TEST(GrowingArray, Grow) 
+{
+	Core::GrowingArray<int> array({1,2,3,4,5,6,7,8,9,10});
+	array.Add(11);
+}
+
+
 GTEST_API_ int main(int argc, char** argv)
 {
 	printf("Running main() from %s\n", __FILE__);

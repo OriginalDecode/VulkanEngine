@@ -1,6 +1,7 @@
 #pragma once
 #include "core/Types.h"
 #include "logger/debug.h"
+#include <initializer_list>
 
 namespace Core
 {
@@ -14,6 +15,14 @@ namespace Core
 			: m_Capacity(size)
 			, m_Data(new T[m_Capacity])
 		{
+		}
+
+		GrowingArray(std::initializer_list<T> initList)
+		{
+			m_Capacity = initList.size();
+			m_Size = m_Capacity;
+			m_Data = new T[m_Capacity];
+			memcpy(m_Data, initList.begin(), m_Capacity * sizeof(T));
 		}
 
 		GrowingArray(const GrowingArray<T>& other) { *this = other; }
@@ -30,12 +39,33 @@ namespace Core
 		T& operator[](uint32 index) { return m_Data[index]; }
 		const T& operator[](uint32 index) const { return m_Data[index]; }
 
+		void ReInit(int32 size)
+		{
+			delete[] m_Data;
+			m_Capacity = size;
+			m_Data = new T[m_Capacity];
+		}
+
+		void ReSize(int32 size)
+		{
+			m_Capacity = size;
+			T* memory = new T[m_Capacity];
+			memcpy(memory, m_Data, sizeof(T) * m_Size);
+			delete[] m_Data;
+			m_Data = memory;
+		}
+
 		uint32 Size() const { return m_Size; }
 		uint32 Capacity() const { return m_Capacity; }
 
 		void Add(const T& object)
 		{
-			ASSERT(m_Size < m_Capacity, "Array is full. Can't add more to it");
+
+			if(m_Size == m_Capacity)
+			{
+				ASSERT(false, "Array is full. Can't add more to it. Will grow.");
+				ReSize(m_Capacity * 2);
+			}
 
 			if(m_Size < m_Capacity)
 				m_Data[m_Size++] = object;
@@ -45,6 +75,13 @@ namespace Core
 		T& GetFirst() { return m_Data[0]; }
 
 		void RemoveCyclicAtIndex(uint32 index) { m_Data[index--] = GetLast(); }
+
+		typedef T* iterator;
+		typedef const T* const_iterator;
+		iterator begin() { return &m_Data[0]; }
+		const_iterator begin() const { return &m_Data[0]; }
+		iterator end() { return &m_Data[m_Size]; }
+		const_iterator end() const { return &m_Data[m_Size]; }
 
 	private:
 		uint32 m_Size = 0;
