@@ -22,9 +22,9 @@ namespace Graphics
 		{
 			uint32 property_count = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &property_count, nullptr);
+			m_QueueProperties.ReSize(property_count);
 
-			m_QueueProperties.resize(property_count);
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &property_count, m_QueueProperties.data());
+			vkGetPhysicalDeviceQueueFamilyProperties(device, &property_count, &m_QueueProperties[0]);
 
 			QueueProperties queueProp = FindFamilyIndices(nullptr);
 			if(queueProp.queueIndex > -1)
@@ -41,50 +41,42 @@ namespace Graphics
 	VkDevice VlkPhysicalDevice::CreateDevice(const VkDeviceCreateInfo& createInfo) const
 	{
 		VkDevice device = nullptr;
-		VERIFY(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &device) == VK_SUCCESS, "Failed to create device!");
+		VERIFY(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &device) == VK_SUCCESS,
+			   "Failed to create device!");
 		return device;
 	}
 
 	VkSurfaceCapabilitiesKHR VlkPhysicalDevice::GetSurfaceCapabilities(VkSurfaceKHR pSurface) const
 	{
 		VkSurfaceCapabilitiesKHR capabilities = {};
-		VERIFY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, pSurface, &capabilities) == VK_SUCCESS, "Failed to get surface capabilities");
+		VERIFY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, pSurface, &capabilities) == VK_SUCCESS,
+			   "Failed to get surface capabilities");
 		return capabilities;
 	}
 
 	bool VlkPhysicalDevice::SurfaceCanPresent(VkSurfaceKHR pSurface) const
 	{
 		VkBool32 present_supported = VK_FALSE;
-		VERIFY(vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, m_QueueFamilyIndex, pSurface, &present_supported) == VK_SUCCESS, "Failed to get present_supported!");
+		VERIFY(vkGetPhysicalDeviceSurfaceSupportKHR(m_PhysicalDevice, m_QueueFamilyIndex, pSurface,
+													&present_supported) == VK_SUCCESS,
+			   "Failed to get present_supported!");
 		return present_supported != VK_FALSE;
 	}
 
-	void VlkPhysicalDevice::GetSurfaceInfo(VkSurfaceKHR pSurface, bool* canPresent, uint32* formatCount, std::vector<VkSurfaceFormatKHR>* formats, uint32* presentCount,
-										   std::vector<VkPresentModeKHR>* presentModes, VkSurfaceCapabilitiesKHR* capabilities)
+	void VlkPhysicalDevice::GetSurfaceInfo(VkSurfaceKHR pSurface, bool* canPresent,
+										   Core::GrowingArray<VkSurfaceFormatKHR>& formats,
+										   Core::GrowingArray<VkPresentModeKHR>& presentModes,
+										   VkSurfaceCapabilitiesKHR* capabilities)
 	{
 
 		if(canPresent)
 			*canPresent = SurfaceCanPresent(pSurface);
 
-		if(formatCount)
-		{
-			*formatCount = GetSurfaceFormatCount(pSurface);
-			if(formats)
-			{
-				formats->resize(*formatCount);
-				GetSurfaceFormats(pSurface, *formatCount, formats->data());
-			}
-		}
+		formats.ReSize(GetSurfaceFormatCount(pSurface));
+		GetSurfaceFormats(pSurface, formats.Size(), &formats[0]);
 
-		if(presentCount)
-		{
-			*presentCount = GetSurfacePresentModeCount(pSurface);
-			if(presentModes)
-			{
-				presentModes->resize(*presentCount);
-				GetSurfacePresentModes(pSurface, *presentCount, presentModes->data());
-			}
-		}
+		presentModes.ReSize(GetSurfacePresentModeCount(pSurface));
+		GetSurfacePresentModes(pSurface, presentModes.Size(), &presentModes[0]);
 
 		if(capabilities)
 			*capabilities = GetSurfaceCapabilities(pSurface);
@@ -94,7 +86,7 @@ namespace Graphics
 	{
 		QueueProperties properties = {};
 
-		for(size_t i = 0; i < m_QueueProperties.size(); ++i)
+		for(size_t i = 0; i < m_QueueProperties.Size(); ++i)
 		{
 			const VkQueueFamilyProperties& property = m_QueueProperties[i];
 			if(pSurface && property.queueCount > 0 && pSurface->CanPresent())
@@ -128,19 +120,48 @@ namespace Graphics
 		return 0;
 	}
 
+	VkFormat VlkPhysicalDevice::FindSupportedFormat(const Core::GrowingArray<VkFormat>& formats,
+													VkImageTiling tilingOption, VkFormatFeatureFlags features)
+	{
+		for(VkFormat format : formats)
+		{
+			VkFormatProperties properties;
+			vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &properties);
+			if(tilingOption == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
+				return format;
+			else if(tilingOption == VK_IMAGE_TILING_OPTIMAL &&
+					(properties.optimalTilingFeatures & features) == features)
+				return format;
+		}
+
+		return VK_FORMAT_UNDEFINED;
+	}
+
+	VkFormat VlkPhysicalDevice::FindDepthFormat()
+	{
+		return FindSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+								   VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
 	uint32 VlkPhysicalDevice::GetSurfacePresentModeCount(VkSurfaceKHR pSurface) const
 	{
 		uint32 presentModeCount = 0;
-		VERIFY(vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, pSurface, &presentModeCount, nullptr) == VK_SUCCESS, "Failed to enumerate surface present modes!");
+		VERIFY(vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, pSurface, &presentModeCount, nullptr) ==
+				   VK_SUCCESS,
+			   "Failed to enumerate surface present modes!");
 		return presentModeCount;
 	}
 
-	void VlkPhysicalDevice::GetSurfacePresentModes(VkSurfaceKHR pSurface, uint32 presentModeCount, VkPresentModeKHR* presentModes) const
+	void VlkPhysicalDevice::GetSurfacePresentModes(VkSurfaceKHR pSurface, uint32 presentModeCount,
+												   VkPresentModeKHR* presentModes) const
 	{
-		VERIFY(vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, pSurface, &presentModeCount, presentModes) == VK_SUCCESS, "Failed to get surface present modes!");
+		VERIFY(vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, pSurface, &presentModeCount, presentModes) ==
+				   VK_SUCCESS,
+			   "Failed to get surface present modes!");
 	}
 
-	void VlkPhysicalDevice::GetSurfaceFormats(VkSurfaceKHR pSurface, uint32 formatCount, VkSurfaceFormatKHR* formats) const
+	void VlkPhysicalDevice::GetSurfaceFormats(VkSurfaceKHR pSurface, uint32 formatCount,
+											  VkSurfaceFormatKHR* formats) const
 	{
 		vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, pSurface, &formatCount, formats);
 	}

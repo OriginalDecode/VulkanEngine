@@ -1,13 +1,13 @@
 #pragma once
 #include "Core/Defines.h"
 #include "Core/Types.h"
+#include <Core/containers/GrowingArray.h>
 #include "GraphicsDecl.h"
 
-#include <vector>
 #include <vulkan/vulkan_core.h>
 
-DEFINE_HANDLE( VkSurfaceKHR );
-DEFINE_HANDLE( VkPhysicalDevice );
+DEFINE_HANDLE(VkSurfaceKHR);
+DEFINE_HANDLE(VkPhysicalDevice);
 struct VkWin32SurfaceCreateInfoKHR;
 
 namespace Graphics
@@ -17,21 +17,21 @@ namespace Graphics
 	class VlkSurface
 	{
 		friend class VlkSwapchain;
+
 	public:
 		VlkSurface();
 		~VlkSurface();
 		void Release();
 
-		void Init( VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice );
+		void Init(VkSurfaceKHR pSurface, VlkPhysicalDevice* physicalDevice);
 
-		bool CanPresent()const;
+		bool CanPresent() const { return m_CanPresent; }
 
-		uint32 GetPresentModeCount(VkPhysicalDevice pPhysicalDevice) const;
 		const VkSurfaceCapabilitiesKHR& GetCapabilities() const;
 
+		const Core::GrowingArray<VkSurfaceFormatKHR>& GetSurfaceFormats() const { return m_Formats; }
 
-		uint32 GetFormatCount( ) const;
-		const std::vector<VkSurfaceFormatKHR>& GetSurfaceFormats()const;
+		const Core::GrowingArray<VkPresentModeKHR>& GetPresentModes() const { return m_PresentModes; }
 
 		VkSurfaceKHR GetSurface() { return m_Surface; }
 
@@ -41,11 +41,8 @@ namespace Graphics
 
 		VkSurfaceCapabilitiesKHR m_Capabilities;
 
-		uint32 m_FormatCount = 0;
-		std::vector<VkSurfaceFormatKHR> m_Formats;
-		
-		uint32 m_PresentCount = 0;
-		std::vector<VkPresentModeKHR> m_PresentModes;
+		Core::GrowingArray<VkSurfaceFormatKHR> m_Formats;
 
+		Core::GrowingArray<VkPresentModeKHR> m_PresentModes;
 	};
 }; // namespace Graphics

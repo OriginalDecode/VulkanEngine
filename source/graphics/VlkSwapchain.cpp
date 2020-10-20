@@ -18,19 +18,19 @@
 namespace Graphics
 {
 
-	VkSurfaceFormatKHR GetFormat( const std::vector<VkSurfaceFormatKHR>& formats )
+	VkSurfaceFormatKHR GetFormat(const Core::GrowingArray<VkSurfaceFormatKHR>& formats)
 	{
 		VkSurfaceFormatKHR format = formats[0];
-		if( formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED )
+		if(formats.Size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
 		{
 			format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 		}
 		else
 		{
-			for( const auto& availableFormat : formats )
+			for(const auto& availableFormat : formats)
 			{
-				if( availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
-					availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR )
+				if(availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+				   availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				{
 					format = availableFormat;
 				}
@@ -39,7 +39,7 @@ namespace Graphics
 		return format;
 	}
 
-	VkSurfaceFormatKHR VlkSwapchain::GetFormat() { return Graphics::GetFormat( m_Surface->GetSurfaceFormats() ); }
+	VkSurfaceFormatKHR VlkSwapchain::GetFormat() { return Graphics::GetFormat(m_Surface->GetSurfaceFormats()); }
 
 	VlkSwapchain::VlkSwapchain() = default;
 	VlkSwapchain::~VlkSwapchain() { Release(); }
@@ -47,34 +47,34 @@ namespace Graphics
 	void VlkSwapchain::Release()
 	{
 		VlkDevice& device = GraphicsEngine::GetDevice().GetVlkDevice();
-		device.DestroySwapchain( m_Swapchain );
+		device.DestroySwapchain(m_Swapchain);
 	}
 
-	void VlkSwapchain::Init( VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice,
-							 const Window& window )
+	void VlkSwapchain::Init(VlkInstance* instance, VlkDevice* device, VlkPhysicalDevice* physicalDevice,
+							const Window& window)
 	{
 		VkWin32SurfaceCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hwnd = static_cast<HWND>( window.GetHandle() );
-		createInfo.hinstance = ::GetModuleHandle( nullptr );
+		createInfo.hwnd = static_cast<HWND>(window.GetHandle());
+		createInfo.hinstance = ::GetModuleHandle(nullptr);
 
-		m_Surface = instance->CreateSurface( createInfo, physicalDevice );
-		QueueProperties queueProp = physicalDevice->FindFamilyIndices( m_Surface.get() );
+		m_Surface = instance->CreateSurface(createInfo, physicalDevice);
+		QueueProperties queueProp = physicalDevice->FindFamilyIndices(m_Surface.get());
 
-		if( !m_Surface->CanPresent() )
+		if(!m_Surface->CanPresent())
 		{
-			assert( !"Surface cannot present!" );
+			assert(!"Surface cannot present!");
 			return;
 		}
 
 		const VkSurfaceCapabilitiesKHR& capabilities = m_Surface->GetCapabilities();
 
 		uint32 swapchain_image_count = 2;
-		assert( swapchain_image_count < capabilities.maxImageCount );
+		assert(swapchain_image_count < capabilities.maxImageCount);
 
 		VkExtent2D vkExtent = capabilities.currentExtent;
 
-		VkSurfaceFormatKHR format = Graphics::GetFormat( m_Surface->GetSurfaceFormats() );
+		VkSurfaceFormatKHR format = Graphics::GetFormat(m_Surface->GetSurfaceFormats());
 
 		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -85,10 +85,10 @@ namespace Graphics
 		swapchainCreateInfo.imageExtent = vkExtent;
 		swapchainCreateInfo.imageArrayLayers = 1;
 
-		if( queueProp.queueIndex != queueProp.familyIndex )
+		if(queueProp.queueIndex != queueProp.familyIndex)
 		{
 			const uint32_t queueIndices[] = { (uint32_t)queueProp.queueIndex, (uint32_t)queueProp.familyIndex };
-			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE( queueIndices );
+			swapchainCreateInfo.queueFamilyIndexCount = ARRSIZE(queueIndices);
 			swapchainCreateInfo.pQueueFamilyIndices = queueIndices;
 			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		}
@@ -100,7 +100,7 @@ namespace Graphics
 		}
 
 		VkSurfaceTransformFlagBitsKHR transformFlags = capabilities.currentTransform;
-		if( capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR )
+		if(capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
 			transformFlags = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
 		swapchainCreateInfo.preTransform = transformFlags;
@@ -113,10 +113,10 @@ namespace Graphics
 
 		swapchainCreateInfo.clipped = VK_TRUE;
 
-		m_Swapchain = device->CreateSwapchain( swapchainCreateInfo );
+		m_Swapchain = device->CreateSwapchain(swapchainCreateInfo);
 
-		device->GetSwapchainImages( &m_Swapchain, &m_Images );
-		m_ImageViews.resize( m_Images.size() );
+		device->GetSwapchainImages(&m_Swapchain, &m_Images);
+		m_ImageViews.resize(m_Images.size());
 	}
 
 	VkExtent2D VlkSwapchain::GetExtent() const

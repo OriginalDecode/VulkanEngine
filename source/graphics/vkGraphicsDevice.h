@@ -10,10 +10,9 @@
 #include <vulkan/vulkan_core.h>
 
 class Window;
+typedef struct Shader HShader;
 namespace Graphics
 {
-
-	typedef struct Shader HShader;
 
 	class ConstantBuffer;
 	class VlkInstance;
@@ -32,14 +31,8 @@ namespace Graphics
 
 		void DrawFrame(float dt);
 
-		VlkInstance& GetVlkInstance()
-		{
-			return *m_Instance;
-		}
-		VlkDevice& GetVlkDevice()
-		{
-			return *m_LogicalDevice;
-		}
+		VlkInstance& GetVlkInstance() { return *m_Instance; }
+		VlkDevice& GetVlkDevice() { return *m_LogicalDevice; }
 
 		virtual void BindConstantBuffer(ConstantBuffer* constantBuffer, uint32 offset) override;
 		virtual void CreateConstantBuffer(ConstantBuffer* constantBuffer) override;
@@ -57,9 +50,6 @@ namespace Graphics
 		std::vector<VkCommandBuffer> m_CmdBuffers;
 		VkCommandPool m_CmdPool = nullptr;
 
-		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-		VkFormat findDepthFormat();
-
 		VkSemaphore m_AcquireNextImageSemaphore = nullptr;
 
 		VkSemaphore m_DrawDone = nullptr;
@@ -73,16 +63,18 @@ namespace Graphics
 		VkCommandBuffer CreateCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBufferLevel bufferLevel);
 		VkPipeline CreateGraphicsPipeline();
 
-		VkDescriptorSetLayout CreateDescriptorLayout(VkDescriptorSetLayoutBinding* descriptorBindings, int32 bindingCount);
+		VkDescriptorSetLayout CreateDescriptorLayout(VkDescriptorSetLayoutBinding* descriptorBindings,
+													 int32 bindingCount);
 		void CreateDescriptorPool();
 		void CreateDescriptorSet();
 
-		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount, VkPushConstantRange* pushConstantRange,
-											  int32 pushConstantRangeCount);
+		VkPipelineLayout CreatePipelineLayout(VkDescriptorSetLayout* descriptorLayouts, int32 descriptorLayoutCount,
+											  VkPushConstantRange* pushConstantRange, int32 pushConstantRangeCount);
 		VkImageView CreateImageView(VkFormat format, VkImage image, VkImageAspectFlags aspectFlag);
 		VkFramebuffer CreateFramebuffer(VkImageView* view, int32 attachmentCount, const Window& window);
 
-		void CreateImage(uint32 width, uint32 height, VkFormat format, VkImageTiling imageTiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,
+		void CreateImage(uint32 width, uint32 height, VkFormat format, VkImageTiling imageTiling,
+						 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image,
 						 VkDeviceMemory& imageMemory);
 
 		VkVertexInputBindingDescription CreateBindDesc();
@@ -102,16 +94,19 @@ namespace Graphics
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		// rewrite
 
-		VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags, VkShaderModule module, const char* entryPoint);
+		VkPipelineShaderStageCreateInfo CreateShaderStageInfo(VkShaderStageFlagBits stageFlags, VkShaderModule module,
+															  const char* entryPoint);
 
-		void CreateViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth, VkViewport* viewport);
+		void CreateViewport(float topLeftX, float topLeftY, float width, float height, float minDepth, float maxDepth,
+							VkViewport* viewport);
 
 		void SetupScissorArea(uint32 width, uint32 height, int32 offsetX, int32 offsetY, VkRect2D* scissorArea);
 
 		void SetupImGui();
 
 		void SetupRenderCommands(int index);
-		void PrepareRenderPass(VkRenderPassBeginInfo* pass_info, VkFramebuffer framebuffer, uint32 width, uint32 height);
+		void PrepareRenderPass(VkRenderPassBeginInfo* pass_info, VkFramebuffer framebuffer, uint32 width,
+							   uint32 height);
 	};
 
 	class ConstantBuffer
@@ -129,38 +124,17 @@ namespace Graphics
 			uint32 size = 0;
 		};
 
-		void SetBuffer(void* buffer)
-		{
-			m_Buffer = buffer;
-		}
-		void SetDeviceMemory(void* memory)
-		{
-			m_DeviceMemory = memory;
-		}
+		void SetBuffer(void* buffer) { m_Buffer = buffer; }
+		void SetDeviceMemory(void* memory) { m_DeviceMemory = memory; }
 
 		template <typename T>
 		void RegVar(T* var);
 
-		void* GetBuffer()
-		{
-			return m_Buffer;
-		}
-		void* GetDeviceMemory()
-		{
-			return m_DeviceMemory;
-		}
-		uint32 GetSize() const
-		{
-			return m_BufferSize;
-		}
-		void* GetData()
-		{
-			return m_Vars.data();
-		}
-		const std::vector<Variable>& GetVariables() const
-		{
-			return m_Vars;
-		}
+		void* GetBuffer() { return m_Buffer; }
+		void* GetDeviceMemory() { return m_DeviceMemory; }
+		uint32 GetSize() const { return m_BufferSize; }
+		void* GetData() { return m_Vars.data(); }
+		const std::vector<Variable>& GetVariables() const { return m_Vars; }
 
 	private:
 		uint32 m_BufferSize = 0;
