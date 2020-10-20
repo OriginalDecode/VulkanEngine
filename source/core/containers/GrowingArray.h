@@ -46,17 +46,19 @@ namespace Core
 			m_Data = new T[m_Capacity];
 		}
 
+		/*
+			Does change the size of the array, deletes the old array completely.
+		*/
 		void ReSize(int32 size)
 		{
-			m_Capacity = size;
-			T* memory = new T[m_Capacity];
-			memcpy(memory, m_Data, sizeof(T) * m_Size);
-			delete[] m_Data;
-			m_Data = memory;
+			ReInit(size);
+			m_Size = size;
 		}
 
 		uint32 Size() const { return m_Size; }
 		uint32 Capacity() const { return m_Capacity; }
+
+		void Insert(const T& object, int32 index) { m_Data[index] = object; }
 
 		void Add(const T& object)
 		{
@@ -64,7 +66,7 @@ namespace Core
 			if(m_Size == m_Capacity)
 			{
 				ASSERT(false, "Array is full. Can't add more to it. Will grow.");
-				ReSize(m_Capacity * 2);
+				Grow(m_Capacity * 2);
 			}
 
 			if(m_Size < m_Capacity)
@@ -84,6 +86,15 @@ namespace Core
 		const_iterator end() const { return &m_Data[m_Size]; }
 
 	private:
+		void Grow(int32 size)
+		{
+			m_Capacity = size;
+			T* memory = new T[m_Capacity];
+			memcpy(memory, m_Data, sizeof(T) * m_Size);
+			delete[] m_Data;
+			m_Data = memory;
+		}
+
 		uint32 m_Size = 0;
 		uint32 m_Capacity = 10;
 		T* m_Data = nullptr;
