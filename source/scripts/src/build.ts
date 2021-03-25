@@ -1,120 +1,32 @@
-import { spawn, ChildProcess } from 'child_process';
-import split2 from 'split2';
-import fs from 'fs';
-import chalk from 'chalk';
+import { ChildProcess } from 'child_process';
+import { logger } from './logger';
+import { Builder, BuildOptions } from './builder';
+import { WindowsBuilder } from './windowsBuilder';
+import { LinuxBuilder } from './linuxBuilder';
+import { MacBuilder } from './macBuilder';
 
-interface BuildOptions {
-  platform: string;
-  solution: string | null; // rename target?
-  verbosity: string;
-  config: string;
-  rebuild: boolean;
-}
+function build(options: BuildOptions) {
+    let builder: Builder;
+    options.source = process.cwd() + '/source/';
+    if (options.platform === 'windows') builder = new WindowsBuilder(options);
+    else if (options.platform === 'osx') builder = new MacBuilder(options);
+    else if (options.platform === 'linux') builder = new LinuxBuilder(options);
+    else throw Error('No builder found');
+    builder!.build();
 
-function isDebug(config: string): boolean {
-  return config.toLowerCase() === 'debug';
-}
-
-function getConfig(options: BuildOptions): string {
-  return isDebug(options.config) ? `debug_${options.platform}` : `release_${options.platform}`;
-}
-
-function buildOSX(rootDir: string, options: BuildOptions): ChildProcess {
-  process.env.CXXFLAGS = '-fdeclspec -std=c++2a';
-  return spawn('make', ['-C', `${rootDir}/source/`, `config=${getConfig(options)}`]);
-}
-
-function buildLinux(rootDir: string, options: BuildOptions): ChildProcess {
-  return spawn('make', [`${rootDir}/source`]);
-}
-
-function buildWindows(rootDir: string, options: BuildOptions): ChildProcess {
-  const programFilesx86 = process.env['ProgramFiles(x86)'];
-  const version = ['Community', 'Professional', 'Enterprise', 'BuildTools'];
-  let path = `${programFilesx86!}\\Microsoft Visual Studio`;
-  const visualStudio = fs.readdirSync(path);
-  let compiler: string | undefined = undefined;
-  if (visualStudio.indexOf('2019') !== -1) {
-    path = `${path}\\2019`;
-    version.forEach((version) => {
-      const pathVersion = `${path}\\${version}`;
-      if (fs.existsSync(pathVersion)) {
-        if (fs.existsSync(`${pathVersion}\\MSBuild\\Current`)) {
-          compiler = `${pathVersion}\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe`;
-        } else {
-          const dir = fs.readdirSync(`${pathVersion}`);
-          dir.forEach((subDir) => {
-            if (fs.existsSync(`${pathVersion}\\MSBuild\\${subDir}\\Bin\\`)) {
-              compiler = `${pathVersion}\\MSBuild\\${subDir}\\Bin\\amd64\\MSBuild.exe`;
-            }
-          });
-        }
-      }
+    let warnings = 0;
+    let errors = 0;
+    logger.on('warning', () => {
+        warnings++;
     });
-  }
-  if (!compiler) throw new Error('Failed to find a compiler!');
-  console.log(`Compiler found!\ncompiler: ${chalk.green(compiler)}`);
-  return spawn(compiler, [
-    options.solution!,
-    '/p:GenerateFullPaths=true',
-    `/p:Configuration=${options.config}`,
-    '/p:Platform=Windows',
-    '/t:build',
-    `-v:${options.verbosity}`,
-  ]);
+    logger.on('error', () => {
+        errors++;
+    });
+    logger.on('exit', (data: any) => {
+        logger.info({ warnings, errors });
+        if (data === 0) logger.success('Compile finished successfully!');
+        else logger.critical('Failed to compile!');
+    });
 }
 
-function doBuild(rootDir: string, options: BuildOptions): ChildProcess {
-  console.log(options.platform);
-  if (options.platform === 'windows') return buildWindows(rootDir, options);
-  if (options.platform === 'osx') return buildOSX(rootDir, options);
-  if (options.platform === 'linux') return buildLinux(rootDir, options);
-
-  throw new Error('No valid build option found. Check platform');
-}
-
-function build(rootDir: string, options: BuildOptions) {
-  console.log({options});
-  const proc = doBuild(rootDir, options);
-  if (!proc) throw new Error('No process spawned. Failed to build');
-
-  let warnings = 0;
-  let errors = 0;
-  proc.stdout!.pipe(split2()).on('data', (data: any) => {
-    const string = data.toString();
-    if (string.indexOf('warning') !== -1) {
-      console.log(chalk.yellow(string));
-      warnings++;
-    } else if (string.indexOf('error') !== -1) {
-      console.log(chalk.red(string));
-      errors++;
-    } else if (string.indexOf('message') !== -1) {
-      console.log(chalk.blueBright(string));
-    } else {
-      console.log(string);
-    }
-  });
-
-  proc.stderr!.pipe(split2()).on('data', (data: any) => {
-    const string = data.toString();
-    if (string.indexOf('warning') !== -1) {
-      console.log(chalk.yellow(string));
-      warnings++;
-    } else if (string.indexOf('error') !== -1) {
-      console.log(chalk.red(string));
-      errors++;
-    } else if (string.indexOf('message') !== -1) {
-      console.log(chalk.blueBright(string));
-    } else {
-      console.log(string);
-    }
-  });
-
-  proc.on('exit', (data: any) => {
-    console.log({ warnings, errors });
-    if (data === 0) console.log(chalk.green('Compile finished successfully!'));
-    else console.log(chalk.red.bold('Failed to compile!'));
-  });
-}
-
-export { build, BuildOptions };
+export { build };
