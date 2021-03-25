@@ -54,6 +54,7 @@ if (getArgValue('-build')) {
         rebuild: getArgValue('-rebuild') !== null,
         solution: getArgValue('-build'),
         platform: getPlatform(os.platform()),
+        source: '/source/',
     };
     build(options);
 }
