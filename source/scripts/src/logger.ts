@@ -19,10 +19,10 @@ class Logger {
     logProcess(proc: ChildProcess) {
         proc.stdout!.pipe(split2()).on('data', (data: any) => {
             const string = data.toString();
-            if (string.indexOf('warning') !== -1) {
+            if (string.search(/warn/gi) !== -1) {
                 logger.warning(string);
                 this.eventEmitter.emit('warning');
-            } else if (string.indexOf('error') !== -1) {
+            } else if (string.search(/err/gi) !== -1) {
                 logger.error(string);
                 this.eventEmitter.emit('error');
             } else if (string.indexOf('message') !== -1) {
@@ -34,10 +34,10 @@ class Logger {
 
         proc.stderr!.pipe(split2()).on('data', (data: any) => {
             const string = data.toString();
-            if (string.indexOf('warning') !== -1) {
+            if (string.search(/warn/gi) !== -1) {
                 logger.warning(string);
                 this.eventEmitter.emit('warning');
-            } else if (string.indexOf('error') !== -1) {
+            } else if (string.search(/err/gi) !== -1) {
                 logger.error(string);
                 this.eventEmitter.emit('error');
             } else if (string.indexOf('message') !== -1) {
