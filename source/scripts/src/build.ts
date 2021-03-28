@@ -1,4 +1,3 @@
-import { ChildProcess } from 'child_process';
 import { logger } from './logger';
 import { Builder, BuildOptions } from './builder';
 import { WindowsBuilder } from './windowsBuilder';

@@ -1,2 +1,2 @@
 @echo off
-node_main.bat -compile_shaders
+ts-node source/scripts/src/main.ts -compile_shaders

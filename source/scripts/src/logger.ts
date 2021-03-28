@@ -8,11 +8,8 @@ import util from 'util';
 class Logger {
     constructor() {
         if (!fs.existsSync('./buildlogs')) fs.mkdirSync('./buildlogs');
-        this.outStream = fs.createWriteStream('buildlogs/latest.log', { flags: 'w+' });
-        // this.warningEvent = new Event('warning');
+        this.outStream = fs.createWriteStream(`buildlogs/Log${new Date().toLocaleDateString()}.log`, { flags: 'w+' });
         this.eventEmitter = new EventEmitter();
-        // this.errorEvent = new CustomEvent('error');
-        // this.exitEvent = new CustomEvent('exit');
     }
 
     on(event: string, handler: any) {
