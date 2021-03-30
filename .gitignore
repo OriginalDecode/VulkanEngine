@@ -56,3 +56,4 @@ Makefile
 **/scripts/logs/**
 **/scripts/output/**
 /source/obj/**
+/dependencies/**
