@@ -6,7 +6,7 @@
     {
       "label": "build engine | Debug",
       "type": "shell",
-      "command": "build_engine.bat",
+      "command": "${workspaceFolder}/build_engine.bat",
       "problemMatcher": ["$msCompile"],
       "group": {
         "kind": "build",
