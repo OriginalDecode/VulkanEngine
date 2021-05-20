@@ -29,7 +29,7 @@ newoption {
 }
 
 if os.isdir('../bin/') == nil then
-    print('no direcotry, creating')
+    print('no directory, creating')
     os.mkdir('../bin/')
 end
 
@@ -92,32 +92,10 @@ end
 
 if _OPTIONS["project"] ~= nil then
     if _OPTIONS["project"] == "engine" then
-        startproject "Executable"
-        project "Executable" --project name
-            targetname "%{wks.name}_%{cfg.buildcfg}"
-            kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-            location ("./%{prj.name}")
-            includedirs { "./external_libs/" }
-            dependson { "Core", "Graphics", "Input", "Logger", "Game" }
-            links { "Graphics", "Core", "Input", "Logger", "Game" } --libraries to link
-
-            files { "executable/*.cpp" }
+        include("./executable/executable.lua")
     elseif _OPTIONS["project"] == "unit_test" then
-        startproject "UnitTest"
-        project "UnitTest" --project name
-            targetname "%{wks.name}_%{cfg.buildcfg}Test"
-            kind "ConsoleApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-            location ("./unit_test")
-            defines { "UNIT_TEST" }
-            dependson { "Core" }
-            links { "Core", "Input", "Logger", "external_libs/googletest/lib/Debug/gtestd.lib", 
-                                                            "external_libs/googletest/lib/Debug/gtest_maind.lib",
-                                                            "external_libs/googletest/lib/Debug/gmockd.lib", 
-                                                            "external_libs/googletest/lib/Debug/gmock_maind.lib" } --libraries to link
-            files { "unit_test/*.cpp" }
+        include("./unit_test/unittest.lua")
     end
-else
-    print("No project set")
 end
 
     include("./graphics/graphics.lua")
@@ -125,16 +103,4 @@ end
     include("./core/core.lua")
     include("./game/game.lua")
     include("./logger/logger.lua")
-    
-    project "ImGui"
-        kind "StaticLib"
-        location("./external_libs/imgui")
-        includedirs { "./external_libs/", "$(VULKAN_SDK)/Include/" }
-        files{  "external_libs/imgui/*.h", "external_libs/imgui/*.cpp", 
-                "external_libs/imgui/misc/**.cpp", "external_libs/imgui/misc/**.h",
-                "external_libs/imgui/examples/imgui_impl_win32.*", 
-                "external_libs/imgui/examples/imgui_impl_vulkan.*" }
-        if _OPTIONS["cflags"] ~= "freetype" then
-            print("excluding freetype")
-            excludes { "./external_libs/imgui/misc/freetype/**" }
-        end
+    include("./imgui.lua")
