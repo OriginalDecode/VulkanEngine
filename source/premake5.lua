@@ -1,4 +1,3 @@
-
 newoption {
     trigger = "platform",
     value = "Platform",
@@ -55,25 +54,15 @@ workspace "UnitTest"
 else
     return
 end
-    -- fnc.setWorkspace("Engine")
-    -- fnc.addConfig("Debug")
-    -- fnc.addConfig("Release")
-    -- fnc.setPlatform("Windows")
     configurations { "Debug" , "Release" }
 
     platforms { _OPTIONS["platform"] }
     debugdir "%{wks.location}../bin"
     
--- language "C++"
     cppdialect "c++17"
     disablewarnings { "4201" }
--- flags { "C++14" }
---filename "whiteroom"
--- platforms { "Windows" }
     architecture "x64"
     includedirs { ".\\" }
-    -- libdirs { "" }
-    -- flags { "StaticRuntime" }
     warnings "Extra"
 
     objdir "%{wks.location}/obj/%{cfg.buildcfg}/%{prj.name}"
@@ -107,7 +96,7 @@ if _OPTIONS["project"] ~= nil then
         project "Executable" --project name
             targetname "%{wks.name}_%{cfg.buildcfg}"
             kind "WindowedApp" --type [ConsoleApp, WindowedApp, SharedLib, StaticLib, Makefile, Utility, None, AndroidProj], WindowedApp is important on Windows and Mac OS X
-            location ("./executable")
+            location ("./%{prj.name}")
             includedirs { "./external_libs/" }
             dependson { "Core", "Graphics", "Input", "Logger", "Game" }
             links { "Graphics", "Core", "Input", "Logger", "Game" } --libraries to link
@@ -131,50 +120,11 @@ else
     print("No project set")
 end
 
-    project "Graphics"
-        kind "StaticLib"
-        location ("./graphics")    
-        files { "graphics/**.cpp", "graphics/**.c", "graphics/**.cxx", "graphics/**.h", "graphics/**.hpp" }
-        includedirs { "./external_libs/" }
-        dependson { "Core", "ImGui" }
-        links { "$(VULKAN_SDK)/lib/vulkan-1.lib", 
-                "thirdparty/freetype/freetype.lib", 
-                "ImGui" }
-
-        includedirs { "$(VULKAN_SDK)/Include/",
-                      "thirdparty/freetype/" }
-        if _OPTIONS["project"] == "unit_test" then
-            flags {"ExcludeFromBuild"}
-        end
-        -- symbolspath does not seem to work as inteded
-        -- symbolspath "%{wks.location}/bin/%{cfg.buildcfg}/%{prj.name}.pdb"
-        
-
-    project "Core"
-        kind "StaticLib"
-        location ("./core")
-        files { "core/**.cpp", "core/**.h", "core/**.c", "core/**.hpp" }
-
-    project "Input"
-        kind "StaticLib"
-        location("./input")
-        files{"input/**.cpp", "input/**.h", "input/**.hpp", "input/**.c"}
-        dependson{"Core"}
-        links { "Core" }
-    
-    project "Game"
-        kind "StaticLib"
-        location("./game")
-        files{"game/**.cpp", "game/**.h", "game/**.hpp", "game/**.c"}
-        dependson{"Core", "Input"}
-        links { "Core", "Input"}
-
-    project "Logger"
-        kind "StaticLib"
-        location("./logger")
-        links { "Core" }
-        dependson { "Core" }
-        files{"logger/**.cpp", "logger/**.h", "logger/**.hpp", "logger/**.c"}
+    include("./graphics/graphics.lua")
+    include("./input/input.lua")
+    include("./core/core.lua")
+    include("./game/game.lua")
+    include("./logger/logger.lua")
     
     project "ImGui"
         kind "StaticLib"
